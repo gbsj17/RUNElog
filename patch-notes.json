@@ -1,10 +1,26 @@
 {
-  "currentVersion": "v1.2.1",
+  "currentVersion": "v1.2.2",
   "patches": [
     {
+      "_comentario_titulo": "=== PATCH v1.2.2 (ATUAL) ===",
+      "id": "patch-122",
+      "version": "v1.2.2",
+      "badge": "Novo",
+      "title": "Padronização Visual Corporativa e Correção da Aba de Representantes",
+      "details": [
+        "<strong>Padronização da Aba de Representantes:</strong> Ajustada a função JavaScript <code>alternarAbaAdmin</code> no Bloco 7 para eliminar o comportamento isolado que exibia a aba \"Reps\" em tom roxo (<code>text-purple-600</code>) quando selecionada.",
+        "<strong>Unificação de Cores no Rodapé Mobile:</strong> O indicador de estado ativo para a navegação de representantes na barra inferior agora aplica corretamente o azul-marinho padrão (<code>#152e50</code>), alinhando-se visualmente com as demais abas do painel (Rotas, Painel, Equipe e Admins).",
+        "<strong>Alinhamento de Classes Dinâmicas:</strong> Sincronizado o comportamento dos elementos DOM no script de gerenciamento de abas para manter a identidade corporativa consistente e evitar sobrescritas visuais indesejadas durante a navegação móvel.",
+        "<strong>Ícones Superiores (Cabeçalho):</strong> Todos os ícones principais do topo em todas as abas do painel administrador foram atualizados para a cor dourada (<code>#fac043</code>), aplicando a regra diretamente no Bloco 4.",
+        "<strong>Correção Definitiva da Aba \"Reps\":</strong> A lógica de troca de abas na função <code>alternarAbaAdmin</code> (Bloco 7) foi limpa para remover o tom roxo (<code>text-purple-600</code>), unificando o estado ativo da navegação inferior mobile com o azul-marinho padrão (<code>#152e50</code>).",
+        "<strong>Botões de Ação:</strong> Os botões de submissão e formulários de cadastro do painel foram revisados para manter a consistência visual em relação à paleta corporativa."
+      ]
+    },
+    {
+      "_comentario_titulo": "=== PATCH v1.2.1 ===",
       "id": "patch-121",
       "version": "v1.2.1",
-      "badge": "Novo",
+      "badge": "",
       "title": "Filtragem Dinâmica de Paradas e Versionamento Automático PWA",
       "details": [
         "<strong>Filtragem Dinâmica de Origem/Destino:</strong> A cidade de Jequié passou a ser oculta dinamicamente apenas quando se encontra nas extremidades da rota (início ou fim), garantindo que origens e destinos de outras regiões sejam registrados, exibidos e contabilizados normalmente.",
@@ -15,6 +31,7 @@
       ]
     },
     {
+      "_comentario_titulo": "=== PATCH v1.2.0 ===",
       "id": "patch-120",
       "version": "v1.2.0",
       "badge": "",
@@ -28,6 +45,7 @@
       ]
     },
     {
+      "_comentario_titulo": "=== PATCH v1.1.5 ===",
       "id": "patch-115",
       "version": "v1.1.5",
       "badge": "",
@@ -45,6 +63,7 @@
       ]
     },
     {
+      "_comentario_titulo": "=== PATCH v1.1.4 ===",
       "id": "patch-114",
       "version": "v1.1.4",
       "badge": "",
@@ -57,6 +76,7 @@
       ]
     },
     {
+      "_comentario_titulo": "=== PATCH v1.1.3 ===",
       "id": "patch-113",
       "version": "v1.1.3",
       "badge": "",
@@ -68,6 +88,7 @@
       ]
     },
     {
+      "_comentario_titulo": "=== PATCH v1.1.2 ===",
       "id": "patch-112",
       "version": "v1.1.2",
       "badge": "",
@@ -79,6 +100,7 @@
       ]
     },
     {
+      "_comentario_titulo": "=== PATCH v1.1.1 ===",
       "id": "patch-111",
       "version": "v1.1.1",
       "badge": "",
@@ -90,6 +112,7 @@
       ]
     },
     {
+      "_comentario_titulo": "=== PATCH v1.1.0 ===",
       "id": "patch-110",
       "version": "v1.1.0",
       "badge": "",
