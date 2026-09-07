@@ -345,24 +345,24 @@
         <!-- ========================================== -->
         <!-- TELA INICIAL (CAPA COM VISUAL NOVO) -->
         <div id="screenInitial" class="min-h-full flex flex-col items-center justify-center p-4 sm:p-6 bg-[#f8faf8] relative pb-28 screen-android-animate">
-            <div class="w-full max-w-sm bg-white rounded-3xl p-6 shadow-xl border border-slate-100 flex flex-col justify-between min-h-[540px]">
+            <div class="w-full max-w-sm bg-white rounded-[28px] p-6 shadow-xl border border-slate-100 flex flex-col justify-between min-h-[560px]">
                 
                 <!-- Topo: Status de Conexão, Alerta de Atualização e Configurações -->
                 <div class="flex items-center justify-between gap-2">
                     <!-- Status da Conexão (Canto Superior Esquerdo) -->
-                    <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 text-[11px] font-bold text-slate-700 shadow-sm">
+                    <div class="flex items-center gap-2 bg-[#152e50]/[0.07] px-4 py-2.5 rounded-full text-[13px] font-semibold text-[#152e50]">
                         <span id="webConnectionBadgeDot" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
                         <span id="webConnectionBadgeText">Conectando...</span>
                     </div>
 
                     <!-- Lado Direito: Botão de Atualização (Compacto/Expandido) + Configurações -->
                     <div class="flex items-center gap-2">
-                        <button id="btnPwaUpdateNotice" onclick="forcarAtualizacaoPwa()" class="w-10 h-10 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#152e50] flex items-center justify-center transition-all duration-300 active:scale-95 shadow-sm" title="Verificar / Forçar Atualização">
+                        <button id="btnPwaUpdateNotice" onclick="forcarAtualizacaoPwa()" class="w-11 h-11 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#152e50] flex items-center justify-center transition-all duration-300 active:scale-95 shadow-sm" title="Verificar / Forçar Atualização">
                             <i id="iconPwaUpdate" class="fa-solid fa-rotate text-sm transition-transform"></i>
                             <span id="textPwaUpdate" class="hidden text-xs font-bold text-slate-900 ml-1.5 whitespace-nowrap">Atualização disponível</span>
                         </button>
 
-                        <button onclick="abrirModalConfig()" class="relative w-10 h-10 rounded-xl bg-slate-50 hover:bg-slate-100 active:scale-95 border border-slate-200 text-[#152e50] flex items-center justify-center transition-all">
+                        <button onclick="abrirModalConfig()" class="relative w-11 h-11 rounded-2xl bg-slate-50 hover:bg-slate-100 active:scale-95 border border-slate-200 text-[#152e50] flex items-center justify-center transition-all shadow-sm">
                             <i class="fa-solid fa-gear text-sm"></i>
                             <span class="patch-badge-notice absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-600 rounded-full border-2 border-white animate-pulse"></span>
                         </button>
@@ -370,54 +370,73 @@
                 </div>
 
                 <!-- Centro: Logo e Descrição -->
-                <div class="text-center space-y-4 my-auto py-6">
-                    <div class="w-20 h-20 bg-[#152e50] text-[#fac043] rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-[#152e50]/20 text-3xl">
+                <div class="text-center space-y-5 my-auto py-8">
+                    <div class="w-24 h-24 bg-[#152e50] text-[#fac043] rounded-[26px] mx-auto flex items-center justify-center shadow-lg shadow-[#152e50]/20 text-4xl">
                         <i class="fa-solid fa-truck-fast"></i>
                     </div>
-                    <div class="space-y-1">
+                    <div class="space-y-1.5">
                         <h1 class="text-2xl font-black text-[#152e50] tracking-tight font-handel">LOGÍSTICA FIBRASOL</h1>
-                        <p class="text-xs text-slate-500 font-medium">Precisão e controle em cada entrega</p>
+                        <p class="text-sm text-slate-500 font-medium">Precisão e controle em cada entrega</p>
                     </div>
                 </div>
 
                 <!-- Rodapé do Card: Ações -->
                 <div class="space-y-3">
-                    <button onclick="mostrarTelaComAnimacao('screenUnifiedLogin')" class="w-full py-4 bg-[#152e50] hover:bg-[#0f223d] active:scale-[0.98] text-white font-bold rounded-2xl shadow-lg shadow-[#152e50]/25 transition-all text-sm flex items-center justify-center gap-2">
-                        <span>Entrar</span>
+                    <button id="btnEntrarInicial" onclick="handleEntrarInicial()" class="w-full py-4 bg-[#152e50] hover:bg-[#0f223d] active:scale-[0.98] text-white font-bold rounded-2xl shadow-lg shadow-[#152e50]/25 transition-all text-[15px] flex items-center justify-center gap-2">
+                        <i id="iconEntrarInicial" class="fa-solid fa-circle-notch fa-spin hidden text-sm"></i>
+                        <span id="labelEntrarInicial">Entrar</span>
                     </button>
                     
                     <!-- Botão de Suporte via WhatsApp -->
-                    <a href="https://wa.me/5573991800487?text=Preciso%20de%20ajuda%20com%20o%20sistema" target="_blank" class="w-full py-3.5 bg-white hover:bg-slate-50 active:scale-[0.98] border border-slate-200 text-slate-700 font-semibold rounded-2xl transition-all text-xs flex items-center justify-center gap-2 shadow-sm">
+                    <a href="https://wa.me/5573991800487?text=Preciso%20de%20ajuda%20com%20o%20sistema" target="_blank" class="w-full py-3.5 bg-[#f8faf8] hover:bg-slate-100 active:scale-[0.98] border border-[#152e50]/10 text-[#152e50] font-semibold rounded-2xl transition-all text-sm flex items-center justify-center gap-2">
                         <i class="fa-brands fa-whatsapp text-emerald-600 text-base"></i>
                         <span>Suporte via WhatsApp</span>
                     </a>
 
                     <!-- Versão dinâmica -->
                     <div class="text-center pt-1">
-                        <span class="text-[10px] text-slate-400 font-mono">gbsj17 <span class="app-version-text">v1.1.5</span></span>
+                        <span class="text-[11px] text-slate-400 font-mono tracking-wide">gbsj17 · <span class="app-version-text">v1.1.5</span></span>
                     </div>
                 </div>
             </div>
 
             <!-- Card PWA de Instalação Mobile -->
-            <div id="mobileInstallCard" class="block md:hidden fixed bottom-4 left-4 right-4 z-30 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-200/80">
+            <div id="mobileInstallCard" class="block md:hidden fixed left-4 right-4 z-30 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-200/80" style="bottom: calc(1rem + env(safe-area-inset-bottom));">
                 <div class="flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
                         <div class="w-10 h-10 rounded-xl bg-[#152e50] text-[#fac043] flex items-center justify-center text-lg shrink-0 shadow-md">
                             <i class="fa-solid fa-download"></i>
                         </div>
-                        <div>
+                        <div class="min-w-0">
                             <p class="text-xs font-bold text-slate-800">Instalar o aplicativo</p>
                             <p class="text-[11px] text-slate-500">Acesso rápido na tela inicial</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-1.5 shrink-0">
+                    <div class="flex items-center gap-1 shrink-0">
                         <button onclick="installPwa()" class="px-3.5 py-2 bg-[#152e50] text-white font-bold rounded-xl text-xs shadow hover:bg-[#0f223d]">Instalar</button>
                         <button onclick="abrirGuiaInstalacaoPwa()" class="p-2 text-slate-400 hover:text-slate-600" title="Ajuda"><i class="fa-solid fa-circle-question text-base"></i></button>
+                        <button onclick="document.getElementById('mobileInstallCard').style.display='none'" class="p-2 text-slate-300 hover:text-slate-500" title="Fechar"><i class="fa-solid fa-xmark text-base"></i></button>
                     </div>
                 </div>
             </div>
         </div>
+        <script>
+            function handleEntrarInicial(){
+                const btn = document.getElementById('btnEntrarInicial');
+                const icon = document.getElementById('iconEntrarInicial');
+                const label = document.getElementById('labelEntrarInicial');
+                if (!btn || !icon || !label) { mostrarTelaComAnimacao('screenUnifiedLogin'); return; }
+                icon.classList.remove('hidden');
+                label.textContent = 'Entrando...';
+                btn.classList.add('opacity-90');
+                setTimeout(() => {
+                    mostrarTelaComAnimacao('screenUnifiedLogin');
+                    icon.classList.add('hidden');
+                    label.textContent = 'Entrar';
+                    btn.classList.remove('opacity-90');
+                }, 350);
+            }
+        </script>
 
         <!-- TELA DE LOGIN UNIFICADA -->
         <div id="screenUnifiedLogin" class="hidden min-h-full flex flex-col items-center justify-center p-4 sm:p-6 bg-[#f8faf8] relative pb-28 screen-android-animate">
@@ -818,11 +837,11 @@
 <div id="dashboardRepresentative" class="hidden h-full flex flex-col bg-slate-100 overflow-hidden relative">
     
     <!-- Topo + Abas Desktop com Fundo Branco no Mobile e Roxo no PC -->
-    <div class="fixed top-0 left-0 right-0 z-30 bg-white sm:bg-purple-700 shadow-sm sm:shadow-md border-b border-slate-200 sm:border-purple-800">
+    <div class="fixed top-0 left-0 right-0 z-30 bg-white sm:bg-[#152e50] shadow-sm sm:shadow-md border-b border-slate-200 sm:border-[#0f223d]">
         <header class="p-4 flex items-center justify-between text-slate-800 sm:text-white">
             <div class="flex items-center gap-3">
-                <!-- Ícone Roxo no mobile, branco/translúcido no PC -->
-                <div class="w-9 h-9 rounded-xl bg-purple-700 sm:bg-white/10 flex items-center justify-center font-bold text-sm text-white transition-colors shadow-sm">
+                <!-- Ícone Azul-marinho no mobile, branco/translúcido no PC -->
+                <div class="w-9 h-9 rounded-xl bg-[#152e50] sm:bg-white/10 flex items-center justify-center font-bold text-sm text-[#fac043] sm:text-white transition-colors shadow-sm">
                     <i class="fa-solid fa-briefcase"></i>
                 </div>
                 <div>
@@ -831,12 +850,12 @@
                         <h2 id="repWelcomeName" class="font-bold text-base sm:text-sm text-slate-900 sm:text-white">Rep: Representante</h2>
                         <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block shadow-[0_0_6px_#34d399]" title="Status Online"></span>
                     </div>
-                    <!-- Subtítulo Cinza no mobile, Lilás no PC -->
-                    <p class="text-xs sm:text-[10px] text-slate-500 sm:text-purple-200">Acompanhamento de Múltiplas Cargas • v1.1.5</p>
+                    <!-- Subtítulo Cinza no mobile, Azul claro no PC -->
+                    <p class="text-xs sm:text-[10px] text-slate-500 sm:text-slate-300">Acompanhamento de Múltiplas Cargas • v1.1.5</p>
                 </div>
             </div>
             <!-- Botão de Engrenagem Cinza no mobile, Translúcido no PC -->
-            <button onclick="abrirModalConfig()" class="relative p-2.5 rounded-xl bg-slate-100 sm:bg-white/10 hover:bg-slate-200 sm:hover:bg-white/20 transition-colors text-purple-700 sm:text-white border border-slate-200 sm:border-white/20 flex items-center justify-center shadow-sm">
+            <button onclick="abrirModalConfig()" class="relative w-11 h-11 rounded-xl bg-slate-100 sm:bg-white/10 hover:bg-slate-200 sm:hover:bg-white/20 transition-colors text-[#152e50] sm:text-white border border-slate-200 sm:border-white/20 flex items-center justify-center shadow-sm">
                 <i class="fa-solid fa-gear text-lg"></i>
                 <span class="patch-badge-notice absolute -top-1 -right-1 w-3 h-3 bg-rose-600 rounded-full border-2 border-white animate-pulse"></span>
             </button>
@@ -864,21 +883,21 @@
             <!-- Métricas Principais -->
             <div class="grid grid-cols-3 gap-2">
                 <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm text-center">
-                    <div class="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-1 text-xs">
+                    <div class="w-7 h-7 rounded-lg bg-[#152e50]/10 text-[#152e50] flex items-center justify-center mx-auto mb-1 text-xs">
                         <i class="fa-solid fa-boxes-packing"></i>
                     </div>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ativas</p>
                     <p id="repMetricActive" class="text-xs font-extrabold text-slate-800 mt-0.5">0</p>
                 </div>
                 <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm text-center">
-                    <div class="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-1 text-xs">
+                    <div class="w-7 h-7 rounded-lg bg-[#152e50]/10 text-[#152e50] flex items-center justify-center mx-auto mb-1 text-xs">
                         <i class="fa-solid fa-map-location-dot"></i>
                     </div>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cidades</p>
                     <p id="repMetricCities" class="text-xs font-extrabold text-slate-800 mt-0.5">0</p>
                 </div>
                 <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm text-center">
-                    <div class="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-1 text-xs">
+                    <div class="w-7 h-7 rounded-lg bg-[#152e50]/10 text-[#152e50] flex items-center justify-center mx-auto mb-1 text-xs">
                         <i class="fa-solid fa-percent"></i>
                     </div>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Conclusão</p>
@@ -891,9 +910,9 @@
                 <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div>
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Em Andamento</p>
-                        <p id="repStatusAndamento" class="text-lg font-extrabold text-purple-700 mt-0.5">0</p>
+                        <p id="repStatusAndamento" class="text-lg font-extrabold text-[#152e50] mt-0.5">0</p>
                     </div>
-                    <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                    <div class="w-8 h-8 rounded-lg bg-[#152e50]/10 text-[#152e50] flex items-center justify-center">
                         <i class="fa-solid fa-truck-fast text-sm"></i>
                     </div>
                 </div>
@@ -911,7 +930,7 @@
             <!-- Resumo das Cargas na Tela Inicial -->
             <div class="space-y-3 pt-2">
                 <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                    <i class="fa-solid fa-truck-fast text-purple-600"></i> Cargas Acompanhadas Ativas
+                    <i class="fa-solid fa-truck-fast text-[#152e50]"></i> Cargas Acompanhadas Ativas
                 </h3>
                 <div id="repInicioActiveList" class="space-y-3"></div>
             </div>
@@ -924,7 +943,7 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Buscar Cargas Ativas</label>
                     <div class="relative">
-                        <input type="text" id="searchRepUnifiedActiveInput" oninput="filtrarCargasAtivasRep()" placeholder="Digite o Título, Nº da Carga ou Motorista..." class="w-full px-4 py-3 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-600 pl-10">
+                        <input type="text" id="searchRepUnifiedActiveInput" oninput="filtrarCargasAtivasRep()" placeholder="Digite o Título, Nº da Carga ou Motorista..." class="w-full px-4 py-3 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#152e50] pl-10">
                         <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
                     </div>
                 </div>
@@ -940,7 +959,7 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Buscar Cargas Concluídas (Inativas)</label>
                     <div class="relative">
-                        <input type="text" id="searchRepUnifiedArchivedInput" oninput="filtrarCargasConcluidasRep()" placeholder="Digite o Título, Nº da Carga ou Motorista..." class="w-full px-4 py-3 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-purple-600 pl-10">
+                        <input type="text" id="searchRepUnifiedArchivedInput" oninput="filtrarCargasConcluidasRep()" placeholder="Digite o Título, Nº da Carga ou Motorista..." class="w-full px-4 py-3 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#152e50] pl-10">
                         <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
                     </div>
                 </div>
@@ -951,7 +970,7 @@
 
         <!-- Estado Vazio -->
         <div id="repNoRoutes" class="hidden bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center space-y-3">
-            <div class="w-16 h-16 bg-purple-50 text-purple-400 rounded-full flex items-center justify-center mx-auto text-2xl">
+            <div class="w-16 h-16 bg-[#152e50]/10 text-[#152e50]/50 rounded-full flex items-center justify-center mx-auto text-2xl">
                 <i class="fa-solid fa-boxes-packing"></i>
             </div>
             <h3 class="font-bold text-slate-800 text-base">Nenhuma carga encontrada</h3>
@@ -962,7 +981,7 @@
 
     <!-- Navegação Flutuante Inferior para Mobile / App -->
     <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 flex items-center justify-around py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-        <button id="mobileRepTabInicio" onclick="alternarAbaRepresentante('inicio')" class="flex flex-col items-center gap-1.5 text-[11px] font-bold text-purple-600 bottom-nav-active">
+        <button id="mobileRepTabInicio" onclick="alternarAbaRepresentante('inicio')" class="flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#152e50] bottom-nav-active">
             <i class="fa-solid fa-chart-pie text-xl"></i>
             <span>Início</span>
         </button>
@@ -996,7 +1015,7 @@
         let db = null;
         let useFirebase = false;
         const appId = "pwa-logistica-v2";
-        const CURRENT_VERSION = "v1.1.5";
+        const CURRENT_VERSION = "v1.1.6";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAUCNdX_mMJ2IiMrDGYpMF6qs1USC5KJ0k",
@@ -1850,13 +1869,11 @@
 
             let proximasConclusao = 0;
             activeRoutes.forEach(r => {
-                if (r.stops && r.stops.length > 2) {
-                    const entregas = r.stops.slice(1, -1);
-                    const concluidas = entregas.filter(s => s.concluido).length;
-                    const pct = entregas.length > 0 ? (concluidas / entregas.length) : 0;
-                    if (pct >= 0.7 && concluidas < entregas.length) {
-                        proximasConclusao++;
-                    }
+                const entregas = window.obterParadasValidas(r.stops);
+                const concluidas = entregas.filter(s => s.concluido).length;
+                const pct = entregas.length > 0 ? (concluidas / entregas.length) : 0;
+                if (pct >= 0.7 && concluidas < entregas.length) {
+                    proximasConclusao++;
                 }
             });
             if (proximasElem) proximasElem.innerText = proximasConclusao;
@@ -1866,15 +1883,15 @@
 
             allRoutes.forEach(r => {
                 if (r.stops && r.stops.length > 0) {
-                    r.stops.forEach((stop, sIdx) => {
-                        let cityName = (stop.texto || stop.textoOriginal || '').trim();
-                        if (cityName) {
-                            cityName = cityName.replace(/ - (Iniciar|Finalizar) Rota/gi, '').trim();
-                            if (cityName) {
-                                cityCounts[cityName] = (cityCounts[cityName] || 0) + 1;
-                                if (sIdx > 0 && sIdx < r.stops.length - 1 && stop.concluido) {
-                                    totalCidadesAtendidas++;
-                                }
+                    const paradasValidas = window.obterParadasValidas(r.stops);
+                    paradasValidas.forEach((stop) => {
+                        let cityName = (stop.textoOriginal || stop.texto || '').trim();
+                        cityName = cityName.replace(/ - Iniciar Rota/gi, '').replace(/ - Finalizar Rota/gi, '').trim();
+                        
+                        if (cityName && cityName.toLowerCase() !== 'iniciar rota' && cityName.toLowerCase() !== 'finalizar rota') {
+                            cityCounts[cityName] = (cityCounts[cityName] || 0) + 1;
+                            if (stop.concluido) {
+                                totalCidadesAtendidas++;
                             }
                         }
                     });
@@ -2237,7 +2254,6 @@
             document.getElementById('modalMultiReps')?.classList.add('hidden');
         };
 
-
         // ----------------------------------------------------
         // TODO: BLOCO 7.3-5E: RENDERIZAÇÃO, ARQUIVAMENTO E VISUALIZAÇÃO DE ROTAS
         // ----------------------------------------------------
@@ -2270,7 +2286,7 @@
             }
 
             activeRoutes.forEach(route => {
-                const entregas = route.stops.slice(1, -1);
+                const entregas = window.obterParadasValidas(route.stops);
                 const totalCidades = entregas.length;
                 const concluidasCidades = entregas.filter(s => s.concluido).length;
                 const percent = totalCidades > 0 ? Math.round((concluidasCidades / totalCidades) * 100) : 0;
@@ -2395,7 +2411,7 @@
             }
 
             archivedRoutes.forEach(route => {
-                const entregas = route.stops.slice(1, -1);
+                const entregas = window.obterParadasValidas(route.stops);
                 const totalCidades = entregas.length;
 
                 const div = document.createElement('div');
@@ -2467,14 +2483,14 @@
             const route = allRoutes.find(r => r.id === routeId);
             if (!route) return;
 
-            const entregas = route.stops.slice(1, -1);
+            const entregas = window.obterParadasValidas(route.stops);
             const totalCidades = entregas.length;
             const concluidasCidades = entregas.filter(s => s.concluido).length;
             const percent = totalCidades > 0 ? Math.round((concluidasCidades / totalCidades) * 100) : 0;
 
             const isRep = (currentUserRole === 'representative');
-            const primaryColorClass = isRep ? 'bg-purple-600' : 'bg-[#152e50]';
-            const primaryTextClass = isRep ? 'text-purple-200' : 'text-slate-300';
+            const primaryColorClass = 'bg-[#152e50]';
+            const primaryTextClass = isRep ? 'text-slate-300' : 'text-slate-300';
 
             document.getElementById('modalRouteHeader').className = `${primaryColorClass} p-4 text-white flex items-center justify-between`;
             document.getElementById('modalRouteDriver').innerHTML = `<i class="fa-solid fa-truck ${primaryTextClass}"></i> ${route.driverName}`;
@@ -2487,12 +2503,12 @@
             const stopsList = document.getElementById('modalRouteStopsList');
             stopsList.innerHTML = '';
 
-            route.stops.forEach((stop, idx) => {
+            entregas.forEach((stop, idx) => {
                 const isFirst = (idx === 0);
-                const isLast = (idx === route.stops.length - 1);
-                const txt = stop.texto || formatarTextoParada(stop.textoOriginal || stop.texto, isFirst, isLast);
+                const isLast = (idx === entregas.length - 1);
+                const txt = stop.texto || stop.textoOriginal;
 
-                let badgeContent = isFirst ? '<i class="fa-solid fa-play text-[10px]"></i>' : isLast ? '<i class="fa-solid fa-flag-checkered text-[10px]"></i>' : idx;
+                let badgeContent = isFirst ? '<i class="fa-solid fa-play text-[10px]"></i>' : isLast ? '<i class="fa-solid fa-flag-checkered text-[10px]"></i>' : idx + 1;
 
                 const item = document.createElement('div');
                 item.className = `p-3.5 rounded-xl border flex items-center justify-between gap-3 text-xs ${stop.concluido ? 'bg-emerald-50/80 border-emerald-200' : 'bg-white border-slate-200 shadow-sm'}`;
@@ -2533,7 +2549,7 @@
                 renderAdminArchivedRoutesList();
                 renderAdminDashboard();
             });
-        };
+        };  
 
         // ==================================================================
         // TODO: BLOCO 7.4: LÓGICA DO MOTORISTA, REPRESENTANTE E SWIPE MOBILE
@@ -2599,10 +2615,9 @@
             alternarAbaRepresentante('inicio', 'none');
         }
 
-
-        // ---------------------------------------------------------------
-        // TODO: BLOCO 7.4-2: RENDERIZAÇÃO E GESTÃO DO PAINEL DO MOTORISTA
-        // ---------------------------------------------------------------
+        // --------------------------------------------------------------
+        // TODO: BLOCO 7.4-2: PAINEL DO MOTORISTA E CHECKLIST DE ENTREGAS
+        // --------------------------------------------------------------
         function renderDriverDashboard() {
             const currentDriver = allDrivers.find(d => d.id === currentDriverId);
             const myRoutes = allRoutes.filter(r => r.driverId === currentDriverId);
@@ -2638,10 +2653,11 @@
             const diffDays = Math.max(1, Math.ceil((Date.now() - startMs) / (1000 * 60 * 60 * 24)));
             document.getElementById('driverDaysSummary').innerText = `${diffDays} dia(s)`;
 
-            const totalStopsCount = activeRoute.stops ? activeRoute.stops.length : 0;
+            const entregas = window.obterParadasValidas(activeRoute.stops);
+            
+            const totalStopsCount = entregas.length;
             document.getElementById('driverKmSummary').innerText = totalStopsCount > 0 ? `~${totalStopsCount * 45} km` : "-- km";
 
-            const entregas = activeRoute.stops.slice(1, -1);
             const totalCidades = entregas.length;
             const concluidasCidades = entregas.filter(s => s.concluido).length;
             const percent = totalCidades > 0 ? Math.round((concluidasCidades / totalCidades) * 100) : 0;
@@ -2663,12 +2679,12 @@
             const list = document.getElementById('driverStopsList');
             list.innerHTML = '';
 
-            activeRoute.stops.forEach((stop, index) => {
+            entregas.forEach((stop, index) => {
                 const isFirst = (index === 0);
-                const isLast = (index === activeRoute.stops.length - 1);
-                const textoExibicao = stop.texto || formatarTextoParada(stop.textoOriginal || stop.texto, isFirst, isLast);
+                const isLast = (index === entregas.length - 1);
+                const textoExibicao = stop.texto || stop.textoOriginal;
                 
-                let badgeContent = isFirst ? '<i class="fa-solid fa-play text-xs"></i>' : isLast ? '<i class="fa-solid fa-flag-checkered text-xs"></i>' : index;
+                let badgeContent = isFirst ? '<i class="fa-solid fa-play text-xs"></i>' : isLast ? '<i class="fa-solid fa-flag-checkered text-xs"></i>' : index + 1;
 
                 const div = document.createElement('div');
                 div.className = `p-4 rounded-xl border transition-all flex items-center justify-between gap-3 ${stop.concluido ? 'bg-emerald-50/70 border-emerald-200' : 'bg-white border-slate-200 shadow-sm'}`;
@@ -2685,7 +2701,7 @@
                             </span>
                         </div>
                     </div>
-                    <button onclick="toggleStopStatus('${activeRoute.id}', ${index}, ${stop.concluido})" class="shrink-0 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${stop.concluido ? 'bg-emerald-600 text-white shadow-sm' : 'bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200'}">
+                    <button onclick="toggleStopStatus('${activeRoute.id}', ${stop.originalIndex}, ${stop.concluido})" class="shrink-0 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${stop.concluido ? 'bg-emerald-600 text-white shadow-sm' : 'bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200'}">
                         <i class="fa-solid ${stop.concluido ? 'fa-undo' : 'fa-check'} text-sm"></i>
                         <span>${stop.concluido ? 'Desfazer' : 'Concluir'}</span>
                     </button>
@@ -2703,7 +2719,7 @@
             const newStops = [...route.stops];
             newStops[stopIndex].concluido = !currentStatus;
 
-            const entregas = newStops.slice(1, -1);
+            const entregas = window.obterParadasValidas(newStops);
             const todasConcluidas = entregas.length > 0 && entregas.every(s => s.concluido);
             const nowTime = Date.now();
             const finishedAtTime = todasConcluidas ? nowTime : null;
@@ -2733,7 +2749,6 @@
                 enviarNotificacaoLocal("Parada Concluída!", `${route.driverName} concluiu: ${stopName}`);
             }
         };
-
 
         // ---------------------------------------------------------------------------------
         // TODO: BLOCO 7.4-3: ALTERNÂNCIA DE ABAS E GESTÃO DE ACOMPANHAMENTO (REPRESENTANTE)
@@ -2801,13 +2816,13 @@
 
             if (tab === 'inicio') {
                 if (btnDInicio) btnDInicio.className = "flex-1 min-w-[120px] py-4 px-4 text-center tab-active flex items-center justify-center gap-2 transition-all";
-                if (btnMInicio) btnMInicio.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-purple-600 bottom-nav-active";
+                if (btnMInicio) btnMInicio.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#152e50] bottom-nav-active";
             } else if (tab === 'ativas') {
                 if (btnDAtivas) btnDAtivas.className = "flex-1 min-w-[160px] py-4 px-4 text-center tab-active flex items-center justify-center gap-2 transition-all";
-                if (btnMAtivas) btnMAtivas.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-purple-600 bottom-nav-active";
+                if (btnMAtivas) btnMAtivas.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#152e50] bottom-nav-active";
             } else if (tab === 'concluidas') {
                 if (btnDConcluidas) btnDConcluidas.className = "flex-1 min-w-[160px] py-4 px-4 text-center tab-active flex items-center justify-center gap-2 transition-all";
-                if (btnMConcluidas) btnMConcluidas.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-purple-600 bottom-nav-active";
+                if (btnMConcluidas) btnMConcluidas.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#152e50] bottom-nav-active";
             }
 
             renderRepDashboard();
@@ -2841,7 +2856,6 @@
             renderRepDashboard();
         };
 
-
         // --------------------------------------------------------
         // TODO: BLOCO 7.4-4: DASHBOARD E MÉTRICAS DO REPRESENTANTE
         // --------------------------------------------------------
@@ -2865,17 +2879,15 @@
             let countProximasConclusao = 0;
 
             allMyTrackedActive.forEach(r => {
-                if (r.stops && r.stops.length > 2) {
-                    const entregas = r.stops.slice(1, -1);
-                    totalCidadesItinerario += entregas.length;
-                    const concluidas = entregas.filter(s => s.concluido).length;
-                    totalEntregasConcluidasRep += concluidas;
-                    totalEntregasGeralRep += entregas.length;
+                const entregas = window.obterParadasValidas(r.stops);
+                totalCidadesItinerario += entregas.length;
+                const concluidas = entregas.filter(s => s.concluido).length;
+                totalEntregasConcluidasRep += concluidas;
+                totalEntregasGeralRep += entregas.length;
 
-                    const pct = entregas.length > 0 ? (concluidas / entregas.length) : 0;
-                    if (pct >= 0.7 && concluidas < entregas.length) {
-                        countProximasConclusao++;
-                    }
+                const pct = entregas.length > 0 ? (concluidas / entregas.length) : 0;
+                if (pct >= 0.7 && concluidas < entregas.length) {
+                    countProximasConclusao++;
                 }
             });
 
@@ -2950,23 +2962,25 @@
             }
 
             if (noRoutesDiv) noRoutesDiv.classList.add('hidden');
-        }
-
+        } 
 
         // -----------------------------------------------------------------
         // TODO: BLOCO 7.4-5: CRIAÇÃO DE CARDS DE CARGA PARA O REPRESENTANTE
         // -----------------------------------------------------------------
         function criarCardCargaInicioRep(route) {
-            const stops = route.stops || [];
-            const entregas = stops.slice(1, -1);
+            const entregas = window.obterParadasValidas(route.stops);
             const totalCidades = entregas.length;
             const concluidasCidades = entregas.filter(s => s.concluido).length;
             const percent = totalCidades > 0 ? Math.round((concluidasCidades / totalCidades) * 100) : 0;
 
-            const completedStops = stops.filter(s => s.concluido);
-            const lastCompleted = completedStops.length > 0 ? (completedStops[completedStops.length - 1].texto || 'Início') : 'Nenhuma realizada';
-            
-            const pendingStops = stops.filter(s => !s.concluido);
+            const completedStops = entregas.filter(s => s.concluido);
+            const hasCompleted = completedStops.length > 0;
+            const lastCompleted = hasCompleted ? (completedStops[completedStops.length - 1].texto || 'Início') : 'Nenhuma realizada';
+            const lastCompletedIcon = hasCompleted
+                ? '<i class="fa-solid fa-check text-emerald-600 mr-1.5 text-[10px]"></i>'
+                : '<i class="fa-solid fa-circle-minus text-slate-300 mr-1.5 text-[10px]"></i>';
+
+            const pendingStops = entregas.filter(s => !s.concluido);
             const nextPending = pendingStops.length > 0 ? (pendingStops[0].texto || 'Destino') : 'Todas concluídas';
 
             const card = document.createElement('div');
@@ -2984,19 +2998,23 @@
                             </span>
                         </div>
                     </div>
-                    <span class="bg-purple-100 text-purple-800 text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0">
-                        ${concluidasCidades}/${totalCidades} (${percent}%)
-                    </span>
+                </div>
+
+                <div class="flex items-center gap-2.5">
+                    <div class="flex-1 h-2 bg-[#152e50]/10 rounded-full overflow-hidden">
+                        <div class="h-full bg-[#fac043] rounded-full transition-all duration-500" style="width: ${percent}%"></div>
+                    </div>
+                    <span class="text-[11px] font-bold text-[#152e50] whitespace-nowrap">${concluidasCidades}/${totalCidades} (${percent}%)</span>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-0.5">
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Última Realizada</span>
-                        <p class="font-semibold text-slate-700 truncate"><i class="fa-solid fa-check text-emerald-600 mr-1.5 text-[10px]"></i>${lastCompleted}</p>
+                        <p class="font-semibold text-slate-700 truncate">${lastCompletedIcon}${lastCompleted}</p>
                     </div>
                     <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-0.5">
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Próxima Parada</span>
-                        <p class="font-semibold text-purple-700 truncate"><i class="fa-solid fa-clock text-amber-500 mr-1.5 text-[10px]"></i>${nextPending}</p>
+                        <p class="font-semibold text-[#152e50] truncate"><i class="fa-solid fa-clock text-amber-500 mr-1.5 text-[10px]"></i>${nextPending}</p>
                     </div>
                 </div>
             `;
@@ -3004,7 +3022,7 @@
         }
 
         function criarCardCargaRep(route) {
-            const entregas = route.stops.slice(1, -1);
+            const entregas = window.obterParadasValidas(route.stops);
             const totalCidades = entregas.length;
             const concluidasCidades = entregas.filter(s => s.concluido).length;
 
@@ -3031,7 +3049,7 @@
                         <p class="text-xs text-slate-400">Início: ${formatarDataHora(route.startedAt || route.createdAt)}</p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="${route.status === 'archived' ? 'bg-emerald-100 text-emerald-800' : 'bg-purple-100 text-purple-800'} text-xs font-bold px-3 py-1.5 rounded-full shrink-0">
+                        <span class="${route.status === 'archived' ? 'bg-emerald-100 text-emerald-800' : 'bg-[#152e50]/10 text-[#152e50]'} text-xs font-bold px-3 py-1.5 rounded-full shrink-0">
                             ${route.status === 'archived' ? 'Concluída' : `Cidades: ${concluidasCidades}/${totalCidades}`}
                         </span>
                         <button onclick="deixarDeAcompanharRep('${route.id}')" class="text-slate-400 hover:text-rose-600 p-1.5" title="Deixar de acompanhar">
@@ -3041,7 +3059,7 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-2.5">
-                    <button onclick="visualizarRotaAdmin('${route.id}')" class="w-full py-3 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 border border-purple-200">
+                    <button onclick="visualizarRotaAdmin('${route.id}')" class="w-full py-3 bg-[#152e50]/10 hover:bg-[#152e50]/20 text-[#152e50] font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 border border-[#152e50]/20">
                         <i class="fa-solid fa-eye"></i> Visualizar Rota
                     </button>
                     <a href="${mapsHref}" target="_blank" class="w-full py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 border border-emerald-200">
@@ -3055,6 +3073,24 @@
         // =======================================================
         // TODO: BLOCO 7.5: UTILITÁRIOS, LISTENERS E INICIALIZAÇÃO
         // =======================================================
+        let globalLatestVersion = CURRENT_VERSION;
+
+        // FILTRO GLOBAL DE PARADAS: Oculta a parada se for Jequié e estiver nas extremidades
+        window.obterParadasValidas = (stops) => {
+            if (!stops || !Array.isArray(stops)) return [];
+            return stops.map((stop, index) => ({ ...stop, originalIndex: index }))
+                .filter(stop => {
+                    const isFirst = stop.originalIndex === 0;
+                    const isLast = stop.originalIndex === stops.length - 1;
+                    const textoLower = (stop.textoOriginal || stop.texto || '').toLowerCase();
+                    const ehJequie = textoLower.includes('jequié') || textoLower.includes('jequie');
+                    
+                    if (isFirst && ehJequie) return false;
+                    if (isLast && ehJequie && stops.length > 1) return false;
+                    
+                    return true;
+                });
+        };
 
         // 1. Função blindada para buscar e renderizar o patch-notes.json dinamicamente sem travar o app
         async function carregarPatchNotesDinamico() {
@@ -3066,10 +3102,54 @@
                 if (!response.ok) throw new Error("Erro ao carregar arquivo de notas");
                 
                 const data = await response.json();
-                let html = '';
+                const patchesList = data.patches || [];
+                globalLatestVersion = patchesList.length > 0 ? patchesList[0].version : CURRENT_VERSION;
 
-                (data.patches || []).forEach(patch => {
-                    const isNovo = patch.badge === 'Novo';
+                // Atualiza dinamicamente as classes de versão em todo o app
+                document.querySelectorAll('.app-version-text').forEach(el => {
+                    el.innerText = globalLatestVersion;
+                });
+                document.querySelectorAll('.app-version-title-text').forEach(el => {
+                    el.innerText = `Notas da Versão (${globalLatestVersion})`;
+                });
+                document.querySelectorAll('.app-history-title-text').forEach(el => {
+                    el.innerText = `Histórico de Versões (${globalLatestVersion})`;
+                });
+
+                // O AVISO SÓ SUMIRÁ QUANDO A VERSÃO DO APP (CURRENT_VERSION) FOR IGUAL À DO JSON
+                const hasNewVersion = typeof CURRENT_VERSION !== 'undefined' && CURRENT_VERSION !== globalLatestVersion;
+
+                // Gerencia o badge verde nas opções
+                document.querySelectorAll('.patch-badge-notice').forEach(b => {
+                    if (hasNewVersion) b.classList.remove('hidden');
+                    else b.classList.add('hidden');
+                });
+
+                // Gerencia o botão do topo para ficar amarelo se houver versão nova
+                const topSyncBtn = document.getElementById('btnPwaUpdateNotice');
+                const topSyncIcon = document.getElementById('iconPwaUpdate');
+                const topSyncText = document.getElementById('textPwaUpdate');
+
+                if (topSyncBtn) {
+                    if (hasNewVersion) {
+                        topSyncBtn.className = "bg-[#fac043] hover:brightness-95 active:scale-95 text-slate-900 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-[#fac043]/30 transition-all duration-300 animate-pulse";
+                        if (topSyncText) {
+                            topSyncText.classList.remove('hidden');
+                            topSyncText.innerText = `Nova Versão (${globalLatestVersion})`;
+                        }
+                        if (topSyncIcon) topSyncIcon.className = "fa-solid fa-arrow-up text-sm";
+                    } else {
+                        topSyncBtn.className = "w-10 h-10 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#152e50] flex items-center justify-center transition-all duration-300 active:scale-95 shadow-sm";
+                        if (topSyncText) topSyncText.classList.add('hidden');
+                        if (topSyncIcon) topSyncIcon.className = "fa-solid fa-rotate text-sm";
+                    }
+                }
+
+                let html = '';
+                const ultimasCinco = patchesList.slice(0, 5);
+
+                ultimasCinco.forEach((patch, index) => {
+                    const isNovo = index === 0 && hasNewVersion;
                     const iconClass = isNovo ? 'fa-box-open text-slate-400' : 'fa-box-archive text-slate-400';
                     const titleColor = isNovo ? 'text-[#152e50]' : 'text-slate-700';
 
@@ -3093,6 +3173,7 @@
                     `;
                 });
 
+                container.className = "max-h-[260px] overflow-y-auto pr-1 space-y-2";
                 container.innerHTML = html;
 
             } catch (error) {
@@ -3111,6 +3192,17 @@
                 if (iconEl) {
                     iconEl.classList.toggle('rotate-180');
                 }
+            }
+        };
+
+        // Sobrescreve o abrirModalConfig mantendo o aviso ativo até atualizar o código JS
+        window.abrirModalConfig = () => {
+            const modal = document.getElementById('modalConfig');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.remove('screen-android-animate');
+                void modal.offsetWidth;
+                modal.classList.add('screen-android-animate');
             }
         };
 
@@ -3255,11 +3347,6 @@
             // CHAMA A LEITURA AUTOMÁTICA DO JSON PARA O MODAL DE FORMA SEGURA
             carregarPatchNotesDinamico();
 
-            const lastRead = localStorage.getItem('app_last_read_version');
-            if (typeof CURRENT_VERSION !== 'undefined' && lastRead === CURRENT_VERSION) {
-                document.querySelectorAll('.patch-badge-notice').forEach(b => b.classList.add('hidden'));
-            }
-
             setTimeout(() => {
                 const splash = document.getElementById('splashScreen');
                 if (splash) {
@@ -3348,4 +3435,4 @@
         <span class="text-xs uppercase tracking-wider font-bold">Abrir no Google Maps</span>
     </a>
 </body>
-</html>  
+</html>
