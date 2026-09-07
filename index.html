@@ -100,10 +100,10 @@
             <p class="text-xs text-slate-300 font-medium tracking-widest uppercase">Sistema de Rotas & Entregas</p>
         </div>
         <div class="flex items-center gap-2.5 text-xs text-slate-300 bg-white/10 px-4 py-2 rounded-full border border-white/15 backdrop-blur-sm">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-            <span class="font-medium">Carregando versão <span class="app-version-text">v1.1.5</span>...</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="font-medium">Sincronizando <span class="app-version-text text-emerald-300 font-bold">...</span></span>
         </div>
-    </div>
+    </div>  
 
         <!-- ========================================== -->
         <!-- TODO: Bloco 2 Modais Globais               -->
@@ -1015,7 +1015,9 @@
         let db = null;
         let useFirebase = false;
         const appId = "pwa-logistica-v2";
-        const CURRENT_VERSION = "v1.1.6";
+        
+        // Obtém a versão instalada no dispositivo ou inicia vazia para ler da Web
+        let CURRENT_VERSION = localStorage.getItem('app_installed_version') || '';
 
         const firebaseConfig = {
             apiKey: "AIzaSyAUCNdX_mMJ2IiMrDGYpMF6qs1USC5KJ0k",
@@ -1178,7 +1180,7 @@
 
         window.fecharGuiaInstalacaoPwa = () => {
             document.getElementById('pwaInstallGuideModal')?.classList.add('hidden');
-        };   
+        };  
 
         // ==============================================
         // TODO: BLOCO 7.2: AUTENTICAÇÃO, MODAIS E SESSÃO
@@ -3073,7 +3075,7 @@
         // =======================================================
         // TODO: BLOCO 7.5: UTILITÁRIOS, LISTENERS E INICIALIZAÇÃO
         // =======================================================
-        let globalLatestVersion = CURRENT_VERSION;
+        let globalLatestVersion = 'v1.0.0';
 
         // FILTRO GLOBAL DE PARADAS: Oculta a parada se for Jequié e estiver nas extremidades
         window.obterParadasValidas = (stops) => {
@@ -3095,7 +3097,6 @@
         // 1. Função blindada para buscar e renderizar o patch-notes.json dinamicamente sem travar o app
         async function carregarPatchNotesDinamico() {
             const container = document.getElementById('patchNotesDynamicContainer');
-            if (!container) return;
 
             try {
                 const response = await fetch('patch-notes.json?v=' + Date.now());
@@ -3103,11 +3104,17 @@
                 
                 const data = await response.json();
                 const patchesList = data.patches || [];
-                globalLatestVersion = patchesList.length > 0 ? patchesList[0].version : CURRENT_VERSION;
+                globalLatestVersion = patchesList.length > 0 ? patchesList[0].version : 'v1.0.0';
+
+                // Se não houver versão registrada no dispositivo, inicializa com a da Web
+                if (!CURRENT_VERSION) {
+                    CURRENT_VERSION = globalLatestVersion;
+                    localStorage.setItem('app_installed_version', CURRENT_VERSION);
+                }
 
                 // Atualiza dinamicamente as classes de versão em todo o app
                 document.querySelectorAll('.app-version-text').forEach(el => {
-                    el.innerText = globalLatestVersion;
+                    el.innerText = CURRENT_VERSION;
                 });
                 document.querySelectorAll('.app-version-title-text').forEach(el => {
                     el.innerText = `Notas da Versão (${globalLatestVersion})`;
@@ -3116,10 +3123,12 @@
                     el.innerText = `Histórico de Versões (${globalLatestVersion})`;
                 });
 
-                // O AVISO SÓ SUMIRÁ QUANDO A VERSÃO DO APP (CURRENT_VERSION) FOR IGUAL À DO JSON
-                const hasNewVersion = typeof CURRENT_VERSION !== 'undefined' && CURRENT_VERSION !== globalLatestVersion;
+                // Comparação da versão instalada no aparelho x versão publicada na Web
+                const vAtual = String(CURRENT_VERSION || '').trim().toLowerCase();
+                const vNova = String(globalLatestVersion || '').trim().toLowerCase();
+                const hasNewVersion = (vAtual !== '' && vNova !== '' && vAtual !== vNova);
 
-                // Gerencia o badge verde nas opções
+                // Gerencia o badge verde/vermelho nas opções
                 document.querySelectorAll('.patch-badge-notice').forEach(b => {
                     if (hasNewVersion) b.classList.remove('hidden');
                     else b.classList.add('hidden');
@@ -3138,12 +3147,21 @@
                             topSyncText.innerText = `Nova Versão (${globalLatestVersion})`;
                         }
                         if (topSyncIcon) topSyncIcon.className = "fa-solid fa-arrow-up text-sm";
+
+                        // Ao clicar no botão amarelo, atualiza a versão no localStorage e recarrega a página
+                        topSyncBtn.onclick = () => {
+                            localStorage.setItem('app_installed_version', globalLatestVersion);
+                            window.location.reload(true);
+                        };
                     } else {
                         topSyncBtn.className = "w-10 h-10 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#152e50] flex items-center justify-center transition-all duration-300 active:scale-95 shadow-sm";
                         if (topSyncText) topSyncText.classList.add('hidden');
                         if (topSyncIcon) topSyncIcon.className = "fa-solid fa-rotate text-sm";
+                        topSyncBtn.onclick = () => window.location.reload(true);
                     }
                 }
+
+                if (!container) return;
 
                 let html = '';
                 const ultimasCinco = patchesList.slice(0, 5);
@@ -3178,7 +3196,9 @@
 
             } catch (error) {
                 console.error('Erro ao carregar Patch Notes:', error);
-                container.innerHTML = '<p class="text-xs text-rose-500 p-2 text-center">Erro ao carregar notas. Verifique se o arquivo patch-notes.json está na pasta do projeto.</p>';
+                if (container) {
+                    container.innerHTML = '<p class="text-xs text-rose-500 p-2 text-center">Erro ao carregar notas. Verifique se o arquivo patch-notes.json está na pasta do projeto.</p>';
+                }
             }
         }
 
@@ -3195,7 +3215,6 @@
             }
         };
 
-        // Sobrescreve o abrirModalConfig mantendo o aviso ativo até atualizar o código JS
         window.abrirModalConfig = () => {
             const modal = document.getElementById('modalConfig');
             if (modal) {
@@ -3328,7 +3347,7 @@
 
         // Atualiza dinamicamente o número da versão em todas as telas com a classe .app-version-text
         function atualizarTextosVersaoGerais() {
-            if (typeof CURRENT_VERSION !== 'undefined') {
+            if (CURRENT_VERSION) {
                 document.querySelectorAll('.app-version-text').forEach(el => {
                     el.innerText = CURRENT_VERSION;
                 });
@@ -3345,7 +3364,7 @@
             atualizarTextosVersaoGerais();
 
             // CHAMA A LEITURA AUTOMÁTICA DO JSON PARA O MODAL DE FORMA SEGURA
-            carregarPatchNotesDinamico();
+            await carregarPatchNotesDinamico();
 
             setTimeout(() => {
                 const splash = document.getElementById('splashScreen');

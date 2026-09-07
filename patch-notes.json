@@ -1,10 +1,23 @@
 {
-  "currentVersion": "v1.2.0",
+  "currentVersion": "v1.2.1",
   "patches": [
+    {
+      "id": "patch-121",
+      "version": "v1.2.1",
+      "badge": "Novo",
+      "title": "Filtragem Dinâmica de Paradas e Versionamento Automático PWA",
+      "details": [
+        "<strong>Filtragem Dinâmica de Origem/Destino:</strong> A cidade de Jequié passou a ser oculta dinamicamente apenas quando se encontra nas extremidades da rota (início ou fim), garantindo que origens e destinos de outras regiões sejam registrados, exibidos e contabilizados normalmente.",
+        "<strong>Recálculo Preciso de Métricas:</strong> Ajuste na contagem e exibição das cidades nos Painéis do Administrador, Motorista e Representante, refletindo com exatidão o progresso real das entregas.",
+        "<strong>Identificação Automática de Versão:</strong> Sincronização em tempo real do PWA com o arquivo de notas, comparando a versão instalada no dispositivo (<code>localStorage</code>) com a versão publicada na web sem necessidade de atualização manual no HTML.",
+        "<strong>Controle Aprimorado de Atualizações:</strong> Ajuste visual no botão de notificação do topo da tela inicial para manter o alerta de atualização ativo até a confirmação e recarregamento pelo usuário.",
+        "<strong>Otimização de Desempenho e PWA:</strong> Correção na leitura de cache em segundo plano para garantir o carregamento fluido das notas de versão em todas as plataformas."
+      ]
+    },
     {
       "id": "patch-120",
       "version": "v1.2.0",
-      "badge": "Novo",
+      "badge": "",
       "title": "Sessão Persistente, Suporte Direct WhatsApp e Badge Simplificado",
       "details": [
         "<strong>Sessão Persistente Indefinida:</strong> O usuário permanece logado no app após fechar a aba ou navegador, pulando o login no próximo acesso até que o logout seja solicitado manualmente.",
