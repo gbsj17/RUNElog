@@ -499,8 +499,8 @@
             <div class="fixed top-0 left-0 right-0 z-30 w-full bg-white sm:bg-[#152e50] shadow-sm sm:shadow-md border-b sm:border-slate-800">
                 <header class="p-4 flex items-center justify-between text-slate-800 sm:text-white w-full">
                     <div class="flex items-center gap-3">
-                        <div id="adminHeaderIconBg" class="w-9 h-9 rounded-xl bg-[#152e50] sm:bg-white/10 flex items-center justify-center font-bold text-sm text-white transition-colors">
-                            <i id="adminHeaderMobileIcon" class="fa-solid fa-route"></i>
+                        <div id="adminHeaderIconBg" class="w-9 h-9 rounded-xl bg-[#152e50] sm:bg-white/10 flex items-center justify-center font-bold text-sm transition-colors">
+                            <i id="adminHeaderMobileIcon" class="fa-solid fa-route" style="color: #fac043 !important;"></i>
                         </div>
                         <div>
                             <div class="flex items-center gap-2">
@@ -560,7 +560,7 @@
                                     <select id="selectRepForRoute" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#152e50] outline-none text-sm bg-white font-medium text-slate-800"></select>
                                 </div>
                             </div>
-                            <button onclick="gerarEAtribuirRota()" class="w-full py-3.5 mt-2 bg-[#152e50] hover:bg-[#0f223d] text-white font-bold rounded-xl shadow-md transition-all text-sm uppercase tracking-wider flex items-center justify-center gap-2">
+                            <button onclick="gerarEAtribuirRota()" class="w-full py-3.5 mt-2 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] font-bold rounded-xl shadow-md transition-all text-sm uppercase tracking-wider flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-paper-plane"></i> Criar e enviar rota
                             </button>
                         </div>
@@ -599,43 +599,44 @@
                     </div>
                 </div>
 
-                <div id="contentDashboard" class="hidden space-y-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div id="contentDashboard" class="hidden space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-[#152e50] text-white p-5 sm:p-6 rounded-2xl shadow-sm flex items-center justify-between">
                             <div>
-                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Cargas em Andamento</p>
-                                <p id="dashActiveCount" class="text-2xl font-extrabold text-[#152e50] mt-1">0</p>
+                                <p class="text-xs font-bold text-slate-300 uppercase tracking-wider">Cargas em andamento</p>
+                                <p id="dashActiveCount" class="text-3xl font-extrabold text-white mt-1">0</p>
                             </div>
-                            <div class="w-12 h-12 rounded-xl bg-slate-100 text-[#152e50] flex items-center justify-center text-xl">
+                            <div class="w-12 h-12 rounded-xl bg-white/10 text-[#fac043] flex items-center justify-center text-xl">
                                 <i class="fa-solid fa-truck-fast"></i>
                             </div>
                         </div>
                         <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
                             <div>
-                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Próximas da Conclusão</p>
-                                <p id="dashProximasConclusaoCount" class="text-2xl font-extrabold text-amber-600 mt-1">0</p>
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Próximas da conclusão</p>
+                                <p id="dashProximasConclusaoCount" class="text-3xl font-extrabold text-slate-800 mt-1">0</p>
                             </div>
                             <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
                                 <i class="fa-solid fa-hourglass-half"></i>
                             </div>
                         </div>
-                        <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Cidades Mais Atendidas</p>
-                                <p id="dashCitiesCount" class="text-2xl font-extrabold text-purple-600 mt-1">0</p>
-                            </div>
-                            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
-                                <i class="fa-solid fa-map-location-dot"></i>
-                            </div>
+                    </div>
+
+                    <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Cidades atendidas</p>
+                            <p id="dashCitiesCount" class="text-3xl font-extrabold text-slate-800 mt-1">0</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-map-location-dot"></i>
                         </div>
                     </div>
 
                     <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                         <div class="border-b border-slate-100 pb-3">
                             <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                                <i class="fa-solid fa-ranking-star text-purple-600"></i> Ranking de Cidades com Maior Demanda
+                                <i class="fa-solid fa-trophy text-[#152e50]"></i> Cidades com maior demanda
                             </h3>
-                            <p class="text-xs text-slate-500 mt-1">Frequência de aparição nas paradas das rotas</p>
+                            <p class="text-xs text-slate-500 mt-1">Frequência de aparição nas rotas</p>
                         </div>
                         <div id="dashCitiesRankingList" class="space-y-3 pt-1"></div>
                     </div>
@@ -643,7 +644,7 @@
                     <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                         <div class="border-b border-slate-100 pb-3">
                             <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                                <i class="fa-solid fa-trophy text-amber-500"></i> Desempenho de Motoristas (Cargas no Mês Atual)
+                                <i class="fa-solid fa-trophy text-amber-500"></i> Desempenho de Motoristas
                             </h3>
                             <p class="text-xs text-slate-500 mt-1">Quantidade de cargas carregadas/concluídas por motorista neste mês</p>
                         </div>
@@ -666,7 +667,7 @@
                                 <input type="text" id="newDriverPin" placeholder="Gerado automaticamente se vazio" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#152e50] outline-none text-sm font-mono">
                             </div>
                         </div>
-                        <button onclick="cadastrarMotorista()" class="w-full py-3.5 bg-[#152e50] text-white font-bold rounded-xl shadow-md hover:bg-[#0f223d] text-sm uppercase tracking-wider">Cadastrar Motorista</button>
+                        <button onclick="cadastrarMotorista()" class="w-full py-3.5 bg-[#152e50] text-[#fac043] font-bold rounded-xl shadow-md hover:bg-[#0f223d] text-sm uppercase tracking-wider">Cadastrar Motorista</button>
                     </div>
 
                     <div class="space-y-4 pt-2">
@@ -681,25 +682,25 @@
                 <div id="contentRepresentantes" class="hidden space-y-6">
                     <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
                         <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                            <i class="fa-solid fa-briefcase text-purple-600"></i> Cadastrar Novo Representante
+                            <i class="fa-solid fa-briefcase text-[#152e50]"></i> Cadastrar Novo Representante
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nome do Representante</label>
-                                <input type="text" id="newRepName" placeholder="Ex: Carlos Representações" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-purple-500 outline-none text-sm">
+                                <input type="text" id="newRepName" placeholder="Ex: Carlos Representações" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#152e50] outline-none text-sm">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">PIN / Senha (Opcional)</label>
-                                <input type="text" id="newRepPin" placeholder="Gerado automaticamente se vazio" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-purple-500 outline-none text-sm font-mono">
+                                <input type="text" id="newRepPin" placeholder="Gerado automaticamente se vazio" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#152e50] outline-none text-sm font-mono">
                             </div>
                         </div>
-                        <button onclick="cadastrarRepresentante()" class="w-full py-3.5 bg-purple-600 text-white font-bold rounded-xl shadow-md hover:bg-purple-700 text-sm uppercase tracking-wider">Cadastrar Representante</button>
+                        <button onclick="cadastrarRepresentante()" class="w-full py-3.5 bg-[#152e50] text-[#fac043] font-bold rounded-xl shadow-md hover:bg-[#0f223d] text-sm uppercase tracking-wider">Cadastrar Representante</button>
                     </div>
 
                     <div class="space-y-4 pt-2">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <h3 class="font-bold text-slate-800 text-base">Representantes Cadastrados</h3>
-                            <input type="text" id="searchRepsInput" oninput="renderAdminRepsList()" placeholder="Buscar representante..." class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <input type="text" id="searchRepsInput" oninput="renderAdminRepsList()" placeholder="Buscar representante..." class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-[#152e50]">
                         </div>
                         <div id="adminRepsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                     </div>
@@ -708,25 +709,25 @@
                 <div id="contentAdmins" class="hidden space-y-6">
                     <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
                         <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                            <i class="fa-solid fa-user-shield text-slate-700"></i> Cadastrar Novo Administrador
+                            <i class="fa-solid fa-user-shield text-[#152e50]"></i> Cadastrar Novo Administrador
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Usuário Admin</label>
-                                <input type="text" id="newAdminName" placeholder="Ex: admin2" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-slate-500 outline-none text-sm">
+                                <input type="text" id="newAdminName" placeholder="Ex: admin2" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#152e50] outline-none text-sm">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Senha (Opcional)</label>
-                                <input type="text" id="newAdminPin" placeholder="Gerado automaticamente se vazio" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-slate-500 outline-none text-sm font-mono">
+                                <input type="text" id="newAdminPin" placeholder="Gerado automaticamente se vazio" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#152e50] outline-none text-sm font-mono">
                             </div>
                         </div>
-                        <button onclick="cadastrarAdmin()" class="w-full py-3.5 bg-slate-800 text-white font-bold rounded-xl shadow-md hover:bg-slate-900 text-sm uppercase tracking-wider">Cadastrar Administrador</button>
+                        <button onclick="cadastrarAdmin()" class="w-full py-3.5 bg-[#152e50] text-[#fac043] font-bold rounded-xl shadow-md hover:bg-[#0f223d] text-sm uppercase tracking-wider">Cadastrar Administrador</button>
                     </div>
 
                     <div class="space-y-4 pt-2">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <h3 class="font-bold text-slate-800 text-base">Administradores Cadastrados</h3>
-                            <input type="text" id="searchAdminsInput" oninput="renderAdminAdminsList()" placeholder="Buscar admin..." class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-slate-500">
+                            <input type="text" id="searchAdminsInput" oninput="renderAdminAdminsList()" placeholder="Buscar admin..." class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-[#152e50]">
                         </div>
                         <div id="adminAdminsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                     </div>
@@ -746,7 +747,7 @@
                     <i class="fa-solid fa-users text-xl"></i>
                     <span>Equipe</span>
                 </button>
-                <button id="mobileTabRepresentantes" onclick="alternarAbaAdmin('representantes')" class="flex flex-col items-center gap-1.5 text-[11px] font-medium text-slate-400">
+                <button id="mobileTabRepresentantes" onclick="alternarAbaAdmin('representantes')" class="flex flex-col items-center gap-1.5 text-[11px] font-medium text-[#152e50]">
                     <i class="fa-solid fa-briefcase text-xl"></i>
                     <span>Reps</span>
                 </button>
@@ -768,7 +769,9 @@
                 </div>
                 <div>
                     <h2 id="driverWelcomeName" class="font-bold text-sm">Motorista</h2>
-                    <p class="text-[10px] text-emerald-200">Painel de Entregas</p>
+                    <p class="text-[10px] text-emerald-200 font-medium flex items-center gap-1">
+                        Painel de Entregas • <span class="app-version-text text-emerald-100 font-bold">...</span>
+                    </p>
                 </div>
             </div>
             <button onclick="abrirModalConfig()" class="relative p-2.5 rounded-xl bg-white hover:bg-slate-50 transition-colors text-emerald-600 border border-emerald-500 flex items-center justify-center shadow-sm">
@@ -831,6 +834,7 @@
             </div>
         </main>
     </div>
+
         <!-- ========================================== -->
         <!-- TODO: Bloco 6: Painel Representante        -->
         <!-- ========================================== -->
@@ -842,7 +846,7 @@
             <div class="flex items-center gap-3">
                 <!-- Ícone Azul-marinho no mobile, branco/translúcido no PC -->
                 <div class="w-9 h-9 rounded-xl bg-[#152e50] sm:bg-white/10 flex items-center justify-center font-bold text-sm text-[#fac043] sm:text-white transition-colors shadow-sm">
-                    <i class="fa-solid fa-briefcase"></i>
+                    <i class="fa-solid fa-briefcase text-[#fac043]"></i>
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
@@ -850,8 +854,10 @@
                         <h2 id="repWelcomeName" class="font-bold text-base sm:text-sm text-slate-900 sm:text-white">Rep: Representante</h2>
                         <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block shadow-[0_0_6px_#34d399]" title="Status Online"></span>
                     </div>
-                    <!-- Subtítulo Cinza no mobile, Azul claro no PC -->
-                    <p class="text-xs sm:text-[10px] text-slate-500 sm:text-slate-300">Acompanhamento de Múltiplas Cargas • v1.1.5</p>
+                    <!-- Subtítulo atualizado para exibir apenas o Painel e a versão dinâmica -->
+                    <p class="text-xs sm:text-[10px] text-slate-500 sm:text-slate-300 font-medium">
+                        Painel do Representante • <span class="app-version-text text-slate-700 sm:text-emerald-200 font-bold">...</span>
+                    </p>
                 </div>
             </div>
             <!-- Botão de Engrenagem Cinza no mobile, Translúcido no PC -->
@@ -994,7 +1000,7 @@
             <span>Concluídas</span>
         </button>
     </nav>
-</div>
+</div> 
 
         <!-- ====================================================== -->
         <!-- TODO: Bloco 7: Script JS Completo + Fechamento do HTML -->
@@ -1378,12 +1384,39 @@
             }
         };
 
-        window.realizarLoginUnificado = (e) => {
+        window.realizarLoginUnificado = async (e) => {
             e.preventDefault();
             const typedName = document.getElementById('unifiedUserInput').value.trim().toLowerCase();
             const typedPin = document.getElementById('unifiedPinInput').value.trim();
 
             if (!typedName || !typedPin) return showToast("Preencha usuário e senha.", "error");
+
+            // Localiza o botão de submit da tela de login unificado
+            const loginForm = e.target;
+            const btnSubmit = loginForm.querySelector('button[type="submit"]');
+            let textoOriginal = "Acessar Painel";
+
+            if (btnSubmit) {
+                textoOriginal = btnSubmit.innerHTML;
+                btnSubmit.disabled = true;
+                btnSubmit.className = "w-full py-4 bg-[#152e50]/90 text-white font-bold rounded-2xl shadow-md flex items-center justify-center gap-2.5 transition-all cursor-wait";
+                btnSubmit.innerHTML = `
+                    <i class="fa-solid fa-circle-notch fa-spin text-base"></i>
+                    <span class="text-sm font-semibold tracking-wide">Entrando...</span>
+                `;
+            }
+
+            // Simula o tempo de conexão/processamento (1.5 segundos)
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Função utilitária para restaurar o estado visual do botão
+            const restaurarBotao = () => {
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.className = "w-full py-4 bg-[#152e50] hover:bg-[#1b3a65] text-white font-bold rounded-2xl shadow-lg transition-all active:scale-95";
+                    btnSubmit.innerHTML = textoOriginal;
+                }
+            };
 
             // 1. Tenta identificar como Administrador
             const legacyAdmin = JSON.parse(localStorage.getItem('app_admin_settings') || '{"username": "gbsj17", "password": "1234"}');
@@ -1393,6 +1426,7 @@
                 salvarSessao();
                 iniciarPainelAdmin();
                 document.getElementById('unifiedPinInput').value = '';
+                setTimeout(restaurarBotao, 500);
                 return;
             }
 
@@ -1404,6 +1438,7 @@
                 salvarSessao();
                 iniciarPainelMotorista(foundDriver);
                 document.getElementById('unifiedPinInput').value = '';
+                setTimeout(restaurarBotao, 500);
                 return;
             }
 
@@ -1415,9 +1450,12 @@
                 salvarSessao();
                 iniciarPainelRepresentante(foundRep);
                 document.getElementById('unifiedPinInput').value = '';
+                setTimeout(restaurarBotao, 500);
                 return;
             }
 
+            // Se as credenciais estiverem incorretas, restaura o botão e exibe a mensagem
+            restaurarBotao();
             showToast("Usuário ou senha incorretos", "error");
         };
 
@@ -1526,7 +1564,7 @@
                 const mtActive = document.getElementById(currentTabObj.mobileId);
                 if (mtActive) {
                     if (tab === 'representantes') {
-                        mtActive.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-purple-600 bottom-nav-active";
+                        mtActive.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#152e50] bottom-nav-active";
                     } else {
                         mtActive.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#152e50] bottom-nav-active";
                     }
@@ -1589,7 +1627,7 @@
                 const iconBg = document.getElementById('adminHeaderIconBg');
                 if (iconBg) {
                     if (tab === 'representantes') {
-                        iconBg.className = "w-9 h-9 rounded-xl bg-purple-600 sm:bg-white/10 flex items-center justify-center font-bold text-sm text-white transition-colors";
+                        iconBg.className = "w-9 h-9 rounded-xl bg-[#152e50] sm:bg-white/10 flex items-center justify-center font-bold text-sm text-white transition-colors";
                     } else {
                         iconBg.className = "w-9 h-9 rounded-xl bg-[#152e50] sm:bg-white/10 flex items-center justify-center font-bold text-sm text-white transition-colors";
                     }
@@ -1916,11 +1954,11 @@
                         row.className = "space-y-1";
                         row.innerHTML = `
                             <div class="flex justify-between text-xs font-semibold">
-                                <span class="text-slate-700"><strong class="text-purple-700">${index + 1}º</strong> ${cityName}</span>
-                                <span class="text-purple-600 font-bold">${count} ocorrência(s)</span>
+                                <span class="text-[#152e50]"><strong class="text-[#fac043]">${index + 1}º</strong> ${cityName}</span>
+                                <span class="text-[#152e50] font-bold">${count} ocorrência(s)</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-1.5">
-                                <div class="bg-purple-600 h-1.5 rounded-full transition-all duration-500" style="width: ${pctBar}%"></div>
+                                <div class="bg-[#152e50] h-1.5 rounded-full transition-all duration-500" style="width: ${pctBar}%"></div>
                             </div>
                         `;
                         citiesRankingListElem.appendChild(row);
@@ -2157,9 +2195,9 @@
         };
 
 
-        // ----------------------------------------------------
+        // ---------------------------------------------------------
         // TODO: BLOCO 7.3-5D: GESTÃO DE VÍNCULOS COM REPRESENTANTES
-        // ----------------------------------------------------
+        // ---------------------------------------------------------
         window.abrirModalEnviarRep = (routeId) => {
             const container = document.getElementById('checkboxRepsContainer');
             const route = allRoutes.find(r => r.id === routeId);
@@ -2256,9 +2294,12 @@
             document.getElementById('modalMultiReps')?.classList.add('hidden');
         };
 
-        // ----------------------------------------------------
+        // ----------------------------------------------------------------------
         // TODO: BLOCO 7.3-5E: RENDERIZAÇÃO, ARQUIVAMENTO E VISUALIZAÇÃO DE ROTAS
-        // ----------------------------------------------------
+        // ----------------------------------------------------------------------
+        // ----------------------------------------------------------------------
+        // TODO: BLOCO 7.3-5E1: RENDERIZAÇÃO DE ROTAS ATIVAS
+        // ----------------------------------------------------------------------
         window.renderAdminRoutesList = () => {
             const list = document.getElementById('adminRoutesList');
             const summaryText = document.getElementById('adminActiveCountSummary');
@@ -2303,21 +2344,6 @@
                     }
                 }
 
-                const repsArr = route.representantes && route.representantes.length > 0 
-                    ? route.representantes 
-                    : (route.repName ? [{id: route.repId, name: route.repName}] : []);
-                
-                let repBadgeHtml = '';
-                if (repsArr.length > 0) {
-                    const nomesReps = repsArr.map(r => r.name).join(', ');
-                    repBadgeHtml = `
-                        <button onclick="abrirModalListaRepresentantes('${route.id}')" class="bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 text-xs px-3 py-1.5 rounded-lg font-bold transition-colors whitespace-nowrap inline-flex items-center gap-1.5 shadow-sm" title="Ver representantes">
-                            <i class="fa-solid fa-briefcase text-[11px] text-purple-700"></i>
-                            <span>Rep: ${nomesReps}</span>
-                        </button>
-                    `;
-                }
-
                 const div = document.createElement('div');
                 div.className = "bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3";
                 div.innerHTML = `
@@ -2326,7 +2352,6 @@
                             <div class="flex items-center gap-2 flex-wrap">
                                 <p class="font-bold text-slate-800 text-sm flex items-center gap-1.5"><i class="fa-solid fa-truck text-emerald-500"></i> ${route.driverName}</p>
                                 ${route.numeroCarga ? `<span class="bg-emerald-50 text-emerald-700 text-[11px] font-bold px-2.5 py-1 rounded-md border border-emerald-100 whitespace-nowrap inline-flex items-center gap-1"><i class="fa-solid fa-barcode text-[10px]"></i>Carga: ${route.numeroCarga}</span>` : ''}
-                                ${repBadgeHtml}
                             </div>
                             <p class="text-xs text-slate-500">Início: ${formatarDataHora(route.startedAt || route.createdAt)} • ${totalCidades} cidades</p>
                         </div>
@@ -2359,6 +2384,9 @@
             });
         };
 
+        // --------------------------------------------------------------------
+        // TODO: BLOCO 7.3-5E2: RENDERIZAÇÃO DE ROTAS ARQUIVADAS E RESUMO MENSAL
+        // --------------------------------------------------------------------
         window.renderAdminArchivedRoutesList = () => {
             const list = document.getElementById('adminArchivedRoutesList');
             const summaryContainer = document.getElementById('adminArchivedSummary');
@@ -2425,7 +2453,6 @@
                             <div class="flex items-center gap-2 flex-wrap">
                                 <p class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-truck text-emerald-600 mr-1"></i> ${route.driverName}</p>
                                 ${route.numeroCarga ? `<span class="bg-slate-100 text-slate-700 text-[11px] font-bold px-2 py-0.5 rounded border border-slate-200">Carga: ${route.numeroCarga}</span>` : ''}
-                                ${route.repName ? `<span class="bg-purple-50 text-purple-700 text-[11px] font-bold px-2 py-0.5 rounded border border-purple-100">Rep: ${route.repName}</span>` : ''}
                             </div>
                             <p class="text-xs text-slate-400">Finalizada em: ${formatarDataHora(route.finishedAt || route.createdAt)} • Total: ${totalCidades} cidades entregues</p>
                         </div>
@@ -2440,6 +2467,9 @@
             });
         };
 
+        // --------------------------------------------------------------------
+        // TODO: BLOCO 7.3-5E3: EXCLUSÃO DE CARGAS FINALIZADAS
+        // --------------------------------------------------------------------
         window.apagarCargasSelecionadasAdmin = async () => {
             const checkboxes = document.querySelectorAll('.checkbox-carga-finalizada:checked');
             if (checkboxes.length === 0) {
@@ -2481,6 +2511,9 @@
             });
         };
 
+        // --------------------------------------------------------------------
+        // TODO: BLOCO 7.3-5E4: VISUALIZAÇÃO E ENCERRAMENTO DE ROTAS
+        // --------------------------------------------------------------------
         window.visualizarRotaAdmin = (routeId) => {
             const route = allRoutes.find(r => r.id === routeId);
             if (!route) return;
@@ -2818,13 +2851,13 @@
 
             if (tab === 'inicio') {
                 if (btnDInicio) btnDInicio.className = "flex-1 min-w-[120px] py-4 px-4 text-center tab-active flex items-center justify-center gap-2 transition-all";
-                if (btnMInicio) btnMInicio.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#152e50] bottom-nav-active";
+                if (btnMInicio) btnMInicio.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#fac043] bottom-nav-active";
             } else if (tab === 'ativas') {
                 if (btnDAtivas) btnDAtivas.className = "flex-1 min-w-[160px] py-4 px-4 text-center tab-active flex items-center justify-center gap-2 transition-all";
-                if (btnMAtivas) btnMAtivas.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#152e50] bottom-nav-active";
+                if (btnMAtivas) btnMAtivas.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#fac043] bottom-nav-active";
             } else if (tab === 'concluidas') {
                 if (btnDConcluidas) btnDConcluidas.className = "flex-1 min-w-[160px] py-4 px-4 text-center tab-active flex items-center justify-center gap-2 transition-all";
-                if (btnMConcluidas) btnMConcluidas.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#152e50] bottom-nav-active";
+                if (btnMConcluidas) btnMConcluidas.className = "flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#fac043] bottom-nav-active";
             }
 
             renderRepDashboard();
