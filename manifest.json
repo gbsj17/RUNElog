@@ -1,13 +1,13 @@
 {
-  "name": "Logística Fibrasol",
-  "short_name": "Fibrasol",
+  "name": "RUNElog",
+  "short_name": "RUNElog",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#152e50",
   "theme_color": "#152e50",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "assets/images/icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
