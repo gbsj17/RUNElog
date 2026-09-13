@@ -21,7 +21,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
 
     <meta name="theme-color" content="#090d16">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -579,49 +579,71 @@
     <!-- ========================================== -->
     <!-- TODO: Bloco 4: Painel logistrador          -->
     <!-- ========================================== -->
+
     <div id="dashboardAdmin" class="hidden h-screen flex overflow-hidden bg-slate-100 relative">
 
-        <!-- MENU LATERAL (SIDEBAR DESKTOP) -->
-        <aside class="hidden md:flex flex-col w-72 bg-[#152e50] text-white border-r border-[#0f223d] shrink-0">
-            <div class="p-5 flex items-center gap-3 border-b border-white/10">
-                <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-[#fac043] font-bold">
-                    <i class="fa-solid fa-truck-fast"></i>
-                </div>
-                <div>
-                    <h1 class="font-extrabold text-sm tracking-wide text-[#fac043]">FIBRASOL</h1>
-                    <p class="text-[10px] text-slate-300 uppercase tracking-wider font-semibold">Painel Administrador</p>
+        <!-- ========================================== -->
+        <!-- TODO 4-A: Menu Lateral Desktop (Sidebar)   -->
+        <!-- ========================================== -->
+        <aside id="mainAdminSidebar" class="hidden md:flex flex-col w-72 bg-[#152e50] text-white border-r border-[#0f223d] shrink-0 transition-all duration-300 relative">
+            
+            <!-- Botão Flutuante de Toggle (Setinha > e < na borda) -->
+            <button onclick="alternarModoSidebar()" class="absolute -right-3 top-[17px] w-7 h-7 bg-[#fac043] hover:bg-[#e0ab3b] text-[#152e50] rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 z-30 cursor-pointer border-2 border-[#152e50]" title="Recolher/Expandir Menu">
+                <i id="sidebarToggleIcon" class="fa-solid fa-chevron-left text-xs font-bold"></i>
+            </button>
+
+            <!-- Topo: Marca e Logo Alinhados -->
+            <div class="p-4 flex items-center border-b border-white/10 h-16 min-h-[64px]">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#fac043] font-bold shrink-0 text-lg shadow-sm">
+                        <i class="fa-solid fa-truck-fast"></i>
+                    </div>
+                    <div class="sidebar-text-element transition-opacity duration-200">
+                        <h1 class="font-extrabold text-sm tracking-wide text-[#fac043] leading-none">RUNElog</h1>
+                        <p class="text-[10px] text-slate-300 uppercase tracking-wider font-semibold mt-1">Painel Administrador</p>
+                    </div>
                 </div>
             </div>
 
-            <nav class="flex-1 p-4 space-y-1.5 text-xs font-semibold">
-                <button onclick="alternarAbalog('rotas')" id="nav-rotas" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/15 text-[#fac043] transition-all cursor-pointer">
-                    <i class="fa-solid fa-route w-5 text-center"></i> Gestão de Rotas
+            <!-- Links de Navegação Principal -->
+            <nav class="flex-1 p-3 space-y-2 text-xs font-semibold overflow-x-hidden">
+                <button onclick="alternarAbalog('rotas')" id="nav-rotas" title="Gestão de Rotas" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl bg-white/15 text-[#fac043] transition-all cursor-pointer">
+                    <i class="fa-solid fa-route text-lg w-6 text-center shrink-0"></i>
+                    <span class="sidebar-text-element whitespace-nowrap">Gestão de Rotas</span>
                 </button>
-                <button onclick="alternarAbalog('fretes')" id="nav-fretes" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
-                    <i class="fa-solid fa-calculator w-5 text-center"></i> Cotação de Frete & OC
+                <button onclick="alternarAbalog('fretes')" id="nav-fretes" title="Gestão de Fretes Terceirizados" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
+                    <i class="fa-solid fa-calculator text-lg w-6 text-center shrink-0"></i>
+                    <span class="sidebar-text-element whitespace-nowrap">Gestão de Fretes Terceirizados</span>
                 </button>
-                <button onclick="alternarAbalog('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
-                    <i class="fa-solid fa-chart-pie w-5 text-center"></i> Visão Geral & Métricas
+                <button onclick="alternarAbalog('dashboard')" id="nav-dashboard" title="Visão Geral & Métricas" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
+                    <i class="fa-solid fa-chart-pie text-lg w-6 text-center shrink-0"></i>
+                    <span class="sidebar-text-element whitespace-nowrap">Visão Geral & Métricas</span>
                 </button>
-                <button onclick="alternarAbalog('frota')" id="nav-frota" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
-                    <i class="fa-solid fa-truck-front w-5 text-center"></i> Gestão de Frota e Motoristas
+                <button onclick="alternarAbalog('frota')" id="nav-frota" title="Gestão de Frota e Funcionários" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
+                    <i class="fa-solid fa-truck-front text-lg w-6 text-center shrink-0"></i>
+                    <span class="sidebar-text-element whitespace-nowrap">Gestão de Frota e Funcionários</span>
                 </button>
-                <button onclick="alternarAbalog('reps')" id="nav-reps" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
-                    <i class="fa-solid fa-user-tie w-5 text-center"></i> Gestão de Representantes & Logística
+                <button onclick="alternarAbalog('rotas-produtos')" id="nav-rotas-produtos" title="Gestão de Rotas e Produtos" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
+                    <i class="fa-solid fa-boxes-stacked text-lg w-6 text-center shrink-0"></i>
+                    <span class="sidebar-text-element whitespace-nowrap">Gestão de Rotas e Produtos</span>
                 </button>
             </nav>
 
-            <div class="p-4 border-t border-white/10">
-                <button onclick="abrirModalConfig()" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/5 text-xs font-bold transition-all mb-1 cursor-pointer">
-                    <i class="fa-solid fa-gear w-5 text-center"></i> Configurações
+            <!-- Rodapé: Configurações -->
+            <div class="p-3 border-t border-white/10">
+                <button onclick="abrirModalConfig()" title="Opções do Sistema" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 text-xs font-bold transition-all cursor-pointer">
+                    <i class="fa-solid fa-gear text-lg w-6 text-center shrink-0"></i>
+                    <span class="sidebar-text-element whitespace-nowrap">Configurações</span>
                 </button>
             </div>
         </aside>
 
-        <!-- CONTEÚDO PRINCIPAL -->
+        <!-- ========================================== -->
+        <!-- TODO 4-B: Cabeçalho do Painel Admin        -->
+        <!-- ========================================== -->
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
             
-            <!-- CABEÇALHO DO PAINEL -->
+            <!-- CABEÇALHO DO PAINEL (Botão duplicado de engrenagem removido) -->
             <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm z-20">
                 <div class="flex items-center gap-3">
                     <div id="logHeaderIconBg" class="w-9 h-9 rounded-xl bg-[#152e50] flex items-center justify-center font-bold text-sm">
@@ -635,257 +657,325 @@
                         <p id="logHeaderSubtitle" class="text-xs sm:text-[10px] text-slate-500">Cargas em andamento e novas rotas</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <button onclick="abrirModalConfig()" class="relative p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors text-[#152e50] border border-slate-200 flex items-center justify-center shadow-sm cursor-pointer">
-                        <i class="fa-solid fa-gear text-lg"></i>
-                        <span class="patch-badge-notice absolute -top-1 -right-1 w-3 h-3 bg-rose-600 rounded-full border-2 border-white animate-pulse"></span>
-                    </button>
-                </div>
             </header>
 
-            <!-- ÁREA DINÂMICA DE CONTEÚDO COM ROLAGEM -->
-            <main class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 pb-24 sm:pb-6">
+            <!-- ========================================== -->
+            <!-- TODO 4-C: Área Dinâmica de Conteúdo Main   -->
+            <!-- ========================================== -->
+             
+            <main class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-[2px] pb-16 sm:pb-4">
+                <div class="max-w-7xl mx-auto w-full space-y-[2px]">
                 
-                <!-- SEÇÃO 1: GESTÃO DE ROTAS -->
-                <div id="contentRotas" class="space-y-6">
-                    <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
-                        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                            <i class="fa-solid fa-plus-circle text-[#152e50]"></i> Iniciar uma Nova Rota
-                        </h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Link do Google Maps ou Lista de Paradas</label>
-                                <textarea id="urlInput" rows="3" placeholder="Cole o link do Google Maps compartilhado ou os endereços linha por linha..." class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#152e50] outline-none text-sm"></textarea>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nº Carga / Manifest</label>
-                                    <input type="text" id="cargoNumberInput" placeholder="Ex: CG-8849" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#152e50] outline-none text-sm">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Atribuir Motorista *</label>
-                                    <select id="selectDriverForRoute" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#152e50] outline-none text-sm bg-white font-medium text-slate-800"></select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Atribuir Representante</label>
-                                    <select id="selectRepForRoute" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#152e50] outline-none text-sm bg-white font-medium text-slate-800"></select>
-                                </div>
-                            </div>
-                            <button onclick="gerarEAtribuirRota()" class="w-full py-3.5 mt-2 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] font-bold rounded-xl shadow-md transition-all text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer">
-                                <i class="fa-solid fa-paper-plane"></i> Criar e enviar rota
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                                    <i class="fa-solid fa-truck-fast text-[#152e50]"></i> Rotas Ativas em Andamento
-                                </h3>
-                                <p id="logActiveCountSummary" class="text-xs text-slate-500 mt-1">Calculando cargas ativas...</p>
-                            </div>
-                            <input type="text" id="searchRoutesInput" oninput="renderlogRoutesList()" placeholder="Buscar rota, motorista ou carga..." class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#152e50] w-full sm:w-auto">
-                        </div>
-                        <div id="logRoutesList" class="space-y-4"></div>
-                    </div>
-
-                    <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                                    <i class="fa-solid fa-clipboard-check text-emerald-600"></i> Rotas Finalizadas por Mês
-                                </h3>
-                                <p class="text-xs text-slate-500 mt-1">Histórico consolidado de cargas entregues</p>
-                            </div>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <input type="text" id="searchArchivedRoutesInput" oninput="renderlogArchivedRoutesList()" placeholder="Buscar finalizadas..." class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#152e50]">
-                                <button onclick="apagarCargasSelecionadaslog()" class="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer">
-                                    <i class="fa-solid fa-trash-can"></i> Apagar Selecionadas
-                                </button>
-                            </div>
-                        </div>
-                        <div id="logArchivedSummary" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
-                        <div id="logArchivedRoutesList" class="space-y-3 pt-2"></div>
-                    </div>
-                </div>
-
-                <!-- SEÇÃO 2: COTAÇÃO DE FRETE & OC -->
-                <div id="contentFretes" class="hidden space-y-6">
-                    <div id="logSectionContentFretes"></div>
-                </div>
-
-                <!-- SEÇÃO 3: DASHBOARD & MÉTRICAS -->
-                <div id="contentDashboard" class="hidden space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-[#152e50] text-white p-5 sm:p-6 rounded-2xl shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold text-slate-300 uppercase tracking-wider">Cargas em andamento</p>
-                                <p id="dashActiveCount" class="text-3xl font-extrabold text-white mt-1">0</p>
-                            </div>
-                            <div class="w-12 h-12 rounded-xl bg-white/10 text-[#fac043] flex items-center justify-center text-xl">
-                                <i class="fa-solid fa-truck-fast"></i>
-                            </div>
-                        </div>
-                        <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Próximas da conclusão</p>
-                                <p id="dashProximasConclusaoCount" class="text-3xl font-extrabold text-slate-800 mt-1">0</p>
-                            </div>
-                            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
-                                <i class="fa-solid fa-hourglass-half"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Cidades atendidas</p>
-                            <p id="dashCitiesCount" class="text-3xl font-extrabold text-slate-800 mt-1">0</p>
-                        </div>
-                        <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 flex items-center justify-center text-lg">
-                            <i class="fa-solid fa-map-location-dot"></i>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                        <div class="border-b border-slate-100 pb-3">
-                            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                                <i class="fa-solid fa-trophy text-[#152e50]"></i> Cidades com maior demanda
+                    <!-- ========================================== -->
+                    <!-- TODO 4-C1: Seção Gestão de Rotas            -->
+                    <!-- ========================================== -->
+                    <div id="contentRotas" class="space-y-4">
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-plus-circle text-[#152e50]"></i> Iniciar uma Nova Rota
                             </h3>
-                            <p class="text-xs text-slate-500 mt-1">Frequência de aparição nas rotas</p>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Link do Google Maps ou Lista de Paradas</label>
+                                    <textarea id="urlInput" rows="2" placeholder="Cole o link do Google Maps compartilhado ou os endereços linha por linha..." class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#152e50] outline-none text-xs"></textarea>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nº Carga / Manifest</label>
+                                        <input type="text" id="cargoNumberInput" placeholder="Ex: CG-8849" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#152e50] outline-none text-xs">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Atribuir Motorista *</label>
+                                        <select id="selectDriverForRoute" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#152e50] outline-none text-xs bg-white font-medium text-slate-800"></select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Atribuir Representante</label>
+                                        <select id="selectRepForRoute" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#152e50] outline-none text-xs bg-white font-medium text-slate-800"></select>
+                                    </div>
+                                </div>
+                                <button onclick="gerarEAtribuirRota()" class="w-full py-2.5 mt-1 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] font-bold rounded-xl shadow-md transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer">
+                                    <i class="fa-solid fa-paper-plane"></i> Criar e enviar rota
+                                </button>
+                            </div>
                         </div>
-                        <div id="dashCitiesRankingList" class="space-y-3 pt-1"></div>
+
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                        <i class="fa-solid fa-truck-fast text-[#152e50]"></i> Rotas Ativas em Andamento
+                                    </h3>
+                                    <p id="logActiveCountSummary" class="text-[11px] text-slate-500 mt-0.5">Calculando cargas ativas...</p>
+                                </div>
+                                <input type="text" id="searchRoutesInput" oninput="renderlogRoutesList()" placeholder="Buscar rota, motorista ou carga..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#152e50] w-full sm:w-auto">
+                            </div>
+                            <div id="logRoutesList" class="space-y-3"></div>
+                        </div>
+
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                        <i class="fa-solid fa-clipboard-check text-emerald-600"></i> Rotas Finalizadas por Mês
+                                    </h3>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">Histórico consolidado de cargas entregues</p>
+                                </div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <input type="text" id="searchArchivedRoutesInput" oninput="renderlogArchivedRoutesList()" placeholder="Buscar finalizadas..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#152e50]">
+                                    <button onclick="apagarCargasSelecionadaslog()" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer">
+                                        <i class="fa-solid fa-trash-can"></i> Apagar Selecionadas
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="logArchivedSummary" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+                            <div id="logArchivedRoutesList" class="space-y-2 pt-1"></div>
+                        </div>
                     </div>
 
-                    <div class="bg-[#152e50]/5 p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                        <div class="border-b border-slate-200/60 pb-3">
-                            <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
-                                <i class="fa-solid fa-trophy text-amber-500"></i> Desempenho de Motoristas
-                            </h3>
-                            <p class="text-xs text-slate-500 mt-1">Quantidade de cargas carregadas/concluídas por motorista neste mês</p>
+                    <!-- ========================================== -->
+                    <!-- TODO 4-C2: Seção Cotação de Frete & OC     -->
+                    <!-- ========================================== -->
+                    <div id="contentFretes" class="hidden space-y-4">
+                        <div class="sticky top-0 z-25 pb-2 pt-1">
+                            <div class="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex gap-2">
+                                <button onclick="mudarSubAbaFretes('cotacao')" id="tabFreteCotacao" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-calculator"></i> Painel de Cotação & Form
+                                </button>
+                                <button onclick="mudarSubAbaFretes('metricas')" id="tabFreteMetricas" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-chart-line"></i> Métricas & Projeções
+                                </button>
+                                <button onclick="mudarSubAbaFretes('lancamentos')" id="tabFreteLancamentos" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-database"></i> Lançamentos & Cargas Faturadas
+                                </button>
+                            </div>
                         </div>
-                        <div id="dashDriversMonthlyList" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1"></div>
+
+                        <!-- Sub-aba 1: Cotação -->
+                        <div id="subFretesCotacao" class="space-y-4">
+                            <div id="logSectionContentFretes"></div>
+                        </div>
+
+                        <!-- Sub-aba 2: Métricas -->
+                        <div id="subFretesMetricas" class="hidden space-y-4"></div>
+
+                        <!-- Sub-aba 3: Lançamentos & Cargas Faturadas -->
+                        <div id="subFretesLancamentos" class="hidden space-y-4">
+                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                                    <div>
+                                        <h3 class="font-bold text-slate-800 text-sm">Histórico de Cargas Lançadas & Faturadas</h3>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">Dados transferidos automaticamente após a cotação</p>
+                                    </div>
+                                    <input type="text" id="searchFretesLancamentosInput" placeholder="Buscar por motorista, carga ou rota..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#152e50] w-full sm:w-72">
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left border-collapse text-xs">
+                                        <thead>
+                                            <tr class="text-slate-400 uppercase border-b border-slate-100 text-[10px]">
+                                                <th class="pb-3 font-bold">Data</th>
+                                                <th class="pb-3 font-bold">Nº Carga</th>
+                                                <th class="pb-3 font-bold">Motorista</th>
+                                                <th class="pb-3 font-bold">Rota</th>
+                                                <th class="pb-3 font-bold">Peso (Kg)</th>
+                                                <th class="pb-3 font-bold">Frete Bruto</th>
+                                                <th class="pb-3 font-bold">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="logFretesLancamentosTableBody" class="divide-y divide-slate-100 text-slate-700">
+                                            <tr>
+                                                <td class="py-3 font-medium">10/09/2026</td>
+                                                <td class="py-3 font-bold text-slate-900">CG-8849</td>
+                                                <td class="py-3 uppercase font-medium">GILMAR J. ALVES JR</td>
+                                                <td class="py-3 uppercase font-medium">TERESINA-PI</td>
+                                                <td class="py-3 font-mono">4.703 KG</td>
+                                                <td class="py-3 font-mono font-bold text-rose-600">R$ 6.900,00</td>
+                                                <td class="py-3"><span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full font-bold text-[10px] border border-emerald-200">Faturado</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- ========================================== -->
+                    <!-- TODO 4-C3: Seção Dashboard & Métricas      -->
+                    <!-- ========================================== -->
+                    <div id="contentDashboard" class="hidden space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-[#152e50] text-white p-4 sm:p-5 rounded-2xl shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Cargas em andamento</p>
+                                    <p id="dashActiveCount" class="text-2xl font-extrabold text-white mt-0.5">0</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-xl bg-white/10 text-[#fac043] flex items-center justify-center text-lg">
+                                    <i class="fa-solid fa-truck-fast"></i>
+                                </div>
+                            </div>
+                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Próximas da conclusão</p>
+                                    <p id="dashProximasConclusaoCount" class="text-2xl font-extrabold text-slate-800 mt-0.5">0</p>
+                                </div>
+                                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+                                    <i class="fa-solid fa-hourglass-half"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cidades atendidas</p>
+                                <p id="dashCitiesCount" class="text-2xl font-extrabold text-slate-800 mt-0.5">0</p>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 text-slate-600 flex items-center justify-center text-base">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                            <div class="border-b border-slate-100 pb-2">
+                                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-trophy text-[#152e50]"></i> Cidades com maior demanda
+                                </h3>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Frequência de aparição nas rotas</p>
+                            </div>
+                            <div id="dashCitiesRankingList" class="space-y-2 pt-1"></div>
+                        </div>
+
+                        <div class="bg-[#152e50]/5 p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                            <div class="border-b border-slate-200/60 pb-2">
+                                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-trophy text-amber-500"></i> Desempenho de Motoristas
+                                </h3>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Quantidade de cargas carregadas/concluídas por motorista neste mês</p>
+                            </div>
+                            <div id="dashDriversMonthlyList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1"></div>
+                        </div>
+                    </div>
+
+                    <!-- ========================================== -->
+                    <!-- TODO 4-C4: Seção Gestão de Frota e Motoristas-->
+                    <!-- ========================================== -->
+                    <div id="contentFrota" class="hidden space-y-4">
+                        <div class="sticky top-0 z-20 pb-2 pt-1">
+                            <div class="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex gap-2">
+                                <button onclick="mudarSubAbaFrota('motoristas')" id="tabSubMotoristas" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-id-card"></i> Cadastro de Motoristas
+                                </button>
+                                <button onclick="mudarSubAbaFrota('veiculos')" id="tabSubVeiculos" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-truck"></i> Frota, Veículos, Reboques & Dolly
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SUB-ABA 1: MOTORISTAS -->
+                        <div id="subAbaMotoristasContent" class="space-y-4">
+                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-sm">Motoristas Cadastrados</h3>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">Gerenciamento de motoristas, CPF, telefone e senhas de acesso</p>
+                                </div>
+                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    <input type="text" id="searchDriversInput" oninput="renderlogDriversList()" placeholder="Buscar por CPF ou Nome..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
+                                    <button onclick="abrirModalNovoMotorista()" class="px-3 py-2 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer">
+                                        <i class="fa-solid fa-user-plus"></i> Novo Motorista
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="logDriversList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                        </div>
+
+                        <!-- SUB-ABA 2: VEÍCULOS & FROTA -->
+                        <div id="subAbaVeiculosContent" class="space-y-4 hidden">
+                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-sm">Frota & Especificações Técnicas</h3>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">Placas, carrocerias, eixos, reboques e sistema Dolly vinculados aos motoristas</p>
+                                </div>
+                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    <input type="text" id="searchVehiclesInput" oninput="renderlogVehiclesList()" placeholder="Buscar por placa ou motorista..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
+                                    <button onclick="abrirModalNovoVeiculo()" class="px-3 py-2 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer">
+                                        <i class="fa-solid fa-truck-front"></i> Novo Veículo
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="logVehiclesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                        </div>
+                    </div>
+
+                    <!-- ========================================== -->
+                    <!-- TODO 4-C5: Seção Representantes & Logística-->
+                    <!-- ========================================== -->
+                    <div id="contentReps" class="hidden space-y-4">
+                        <div class="sticky top-0 z-20 pb-2 pt-1">
+                            <div class="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex gap-2">
+                                <button onclick="mudarSubAbaRepsLog('reps')" id="tabSubReps" class="flex-1 py-2 px-2 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-user-tie"></i> Representantes Comerciais
+                                </button>
+                                <button onclick="mudarSubAbaRepsLog('cobertura')" id="tabSubCobertura" class="flex-1 py-2 px-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-map-location-dot"></i> Cobertura & Rotas
+                                </button>
+                                <button onclick="mudarSubAbaRepsLog('logusers')" id="tabSubLogUsers" class="flex-1 py-2 px-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-users-gear"></i> Usuários da Logística
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SUB-ABA 1: REPRESENTANTES COMERCIAIS -->
+                        <div id="subAbaRepsContent" class="space-y-4">
+                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-sm">Representantes Comerciais</h3>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">Gestão de representantes, CPF, telefone e senhas de acesso</p>
+                                </div>
+                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    <input type="text" id="searchRepsInput" oninput="renderlogRepsList()" placeholder="Buscar por CPF ou Nome..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
+                                    <button onclick="abrirModalNovoRep()" class="px-3 py-2 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer">
+                                        <i class="fa-solid fa-user-plus"></i> Novo Representante
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="logRepsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                        </div>
+
+                        <!-- SUB-ABA 2: COBERTURA & ROTAS -->
+                        <div id="subAbaCoberturaContent" class="space-y-4 hidden">
+                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-sm">Mapeamento de Cobertura & Rotas</h3>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">Vínculo de cidades e praças atendidas aos representantes</p>
+                                </div>
+                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    <input type="text" id="searchRoutesInput" oninput="renderlogRoutesList()" placeholder="Buscar cidade ou rota..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
+                                    <button onclick="abrirModalNovaRota()" class="px-3 py-2 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer">
+                                        <i class="fa-solid fa-route"></i> Cadastrar Rota
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="logRoutesList" class="space-y-3"></div>
+                        </div>
+
+                        <!-- SUB-ABA 3: USUÁRIOS DA LOGÍSTICA -->
+                        <div id="subAbaLogUsersContent" class="space-y-4 hidden">
+                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-sm">Usuários da Logística & Operações</h3>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">Controle de contas internas com acesso ao painel logístico</p>
+                                </div>
+                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    <input type="text" id="searchLogUsersInput" oninput="renderlogUsersList()" placeholder="Buscar usuário..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
+                                    <button onclick="abrirModalNovoLogUser()" class="px-3 py-2 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer">
+                                        <i class="fa-solid fa-user-shield"></i> Novo Usuário
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="logUsersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                        </div>
+                    </div>
+                
                 </div>
-
-                <!-- SEÇÃO 4: GESTÃO DE FROTA E MOTORISTAS -->
-                <div id="contentFrota" class="hidden space-y-6">
-                    <!-- Abas superiores estilo pílula -->
-                    <div class="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex gap-2">
-                        <button onclick="mudarSubAbaFrota('motoristas')" id="tabSubMotoristas" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-id-card"></i> Cadastro de Motoristas
-                        </button>
-                        <button onclick="mudarSubAbaFrota('veiculos')" id="tabSubVeiculos" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-truck"></i> Frota, Veículos, Reboques & Dolly
-                        </button>
-                    </div>
-
-                    <!-- SUB-ABA 1: MOTORISTAS -->
-                    <div id="subAbaMotoristasContent" class="space-y-4">
-                        <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-base">Motoristas Cadastrados</h3>
-                                <p class="text-xs text-slate-500 mt-0.5">Gerenciamento de motoristas, CPF, telefone e senhas de acesso</p>
-                            </div>
-                            <div class="flex items-center gap-3 w-full sm:w-auto">
-                                <input type="text" id="searchDriversInput" oninput="renderlogDriversList()" placeholder="Buscar por CPF ou Nome..." class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
-                                <button onclick="abrirModalNovoMotorista()" class="px-4 py-2.5 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 shrink-0 cursor-pointer">
-                                    <i class="fa-solid fa-user-plus"></i> Novo Motorista
-                                </button>
-                            </div>
-                        </div>
-                        <div id="logDriversList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-                    </div>
-
-                    <!-- SUB-ABA 2: VEÍCULOS & FROTA -->
-                    <div id="subAbaVeiculosContent" class="space-y-4 hidden">
-                        <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-base">Frota & Especificações Técnicas</h3>
-                                <p class="text-xs text-slate-500 mt-0.5">Placas, carrocerias, eixos, reboques e sistema Dolly vinculados aos motoristas</p>
-                            </div>
-                            <div class="flex items-center gap-3 w-full sm:w-auto">
-                                <input type="text" id="searchVehiclesInput" oninput="renderlogVehiclesList()" placeholder="Buscar por placa ou motorista..." class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
-                                <button onclick="abrirModalNovoVeiculo()" class="px-4 py-2.5 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 shrink-0 cursor-pointer">
-                                    <i class="fa-solid fa-truck-front"></i> Novo Veículo
-                                </button>
-                            </div>
-                        </div>
-                        <div id="logVehiclesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-                    </div>
-                </div>
-
-                <!-- SEÇÃO 5: GESTÃO DE REPRESENTANTES & LOGÍSTICA -->
-                <div id="contentReps" class="hidden space-y-6">
-                    <!-- Abas superiores estilo pílula (3 abas) -->
-                    <div class="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex gap-2">
-                        <button onclick="mudarSubAbaRepsLog('reps')" id="tabSubReps" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-user-tie"></i> Representantes Comerciais
-                        </button>
-                        <button onclick="mudarSubAbaRepsLog('cobertura')" id="tabSubCobertura" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-map-location-dot"></i> Cobertura & Rotas
-                        </button>
-                        <button onclick="mudarSubAbaRepsLog('logusers')" id="tabSubLogUsers" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-users-gear"></i> Usuários da Logística
-                        </button>
-                    </div>
-
-                    <!-- SUB-ABA 1: REPRESENTANTES COMERCIAIS -->
-                    <div id="subAbaRepsContent" class="space-y-4">
-                        <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-base">Representantes Comerciais</h3>
-                                <p class="text-xs text-slate-500 mt-0.5">Gestão de representantes, CPF, telefone e senhas de acesso</p>
-                            </div>
-                            <div class="flex items-center gap-3 w-full sm:w-auto">
-                                <input type="text" id="searchRepsInput" oninput="renderlogRepsList()" placeholder="Buscar por CPF ou Nome..." class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
-                                <button onclick="abrirModalNovoRep()" class="px-4 py-2.5 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 shrink-0 cursor-pointer">
-                                    <i class="fa-solid fa-user-plus"></i> Novo Representante
-                                </button>
-                            </div>
-                        </div>
-                        <div id="logRepsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-                    </div>
-
-                    <!-- SUB-ABA 2: COBERTURA & ROTAS -->
-                    <div id="subAbaCoberturaContent" class="space-y-4 hidden">
-                        <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-base">Mapeamento de Cobertura & Rotas</h3>
-                                <p class="text-xs text-slate-500 mt-0.5">Vínculo de cidades e praças atendidas aos representantes</p>
-                            </div>
-                            <div class="flex items-center gap-3 w-full sm:w-auto">
-                                <input type="text" id="searchRoutesInput" oninput="renderlogRoutesList()" placeholder="Buscar cidade ou rota..." class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
-                                <button onclick="abrirModalNovaRota()" class="px-4 py-2.5 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 shrink-0 cursor-pointer">
-                                    <i class="fa-solid fa-route"></i> Cadastrar Rota
-                                </button>
-                            </div>
-                        </div>
-                        <div id="logRoutesList" class="space-y-4"></div>
-                    </div>
-
-                    <!-- SUB-ABA 3: USUÁRIOS DA LOGÍSTICA -->
-                    <div id="subAbaLogUsersContent" class="space-y-4 hidden">
-                        <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-base">Usuários da Logística & Operações</h3>
-                                <p class="text-xs text-slate-500 mt-0.5">Controle de contas internas com acesso ao painel logístico</p>
-                            </div>
-                            <div class="flex items-center gap-3 w-full sm:w-auto">
-                                <input type="text" id="searchLogUsersInput" oninput="renderlogUsersList()" placeholder="Buscar usuário..." class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
-                                <button onclick="abrirModalNovoLogUser()" class="px-4 py-2.5 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-sm font-bold transition-all shadow-md flex items-center gap-2 shrink-0 cursor-pointer">
-                                    <i class="fa-solid fa-user-shield"></i> Novo Usuário
-                                </button>
-                            </div>
-                        </div>
-                        <div id="logUsersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-                    </div>
-                </div>
-
             </main>
-        </div>
-    </div>
 
     <!-- ========================================== -->
     <!-- TODO: Bloco 5: Painel Motorista            -->
@@ -967,7 +1057,8 @@
     <!-- ========================================== -->
     <!-- TODO: Bloco 6: Painel Representante        -->
     <!-- ========================================== -->
-    <div id="dashboardRepresentative" class="hidden h-full flex flex-col bg-slate-100 overflow-hidden relative">
+     
+    <div id="contentRotasProdutos" class="hidden h-full flex flex-col bg-slate-100 overflow-hidden relative">
         <div class="fixed top-0 left-0 right-0 z-30 bg-white sm:bg-[#152e50] shadow-sm sm:shadow-md border-b border-slate-200 sm:border-[#0f223d]">
             <header class="p-4 flex items-center justify-between text-slate-800 sm:text-white">
                 <div class="flex items-center gap-3">
@@ -1110,16 +1201,27 @@
     </div>
     
     <!-- CARREGAMENTO DOS SCRIPTS MODULARES -->
-<script type="module" src="js/firebase-config.js"></script>
-<script type="module" src="js/auth.js"></script>
+    
+    <!-- Configurações e Segurança -->
+    <script type="module" src="js/config/firebase-config.js"></script>
+    <script type="module" src="js/auth/auth.js"></script>
 
-<!-- Módulos da Aplicação de Logística -->
-<script type="module" src="js/log/log-core.js"></script>
-<script type="module" src="js/log/log-rotas.js"></script>
-<script type="module" src="js/log/log-fretes.js"></script>
+    <!-- Módulos da Aplicação de Logística -->
+    <script type="module" src="js/modules/log/log-core.js"></script>
+    <script type="module" src="js/modules/log/log-rotas.js"></script>
+    <script type="module" src="js/modules/log/log-fretes.js"></script>
 
-<script type="module" src="js/motorista.js"></script>
-<script type="module" src="js/representante.js"></script>
-<script type="module" src="js/app.js"></script>
+    <!-- Painéis Administrativos e Perfis -->
+    <script type="module" src="js/modules/admin/admin-dashboard.js"></script>
+    <script type="module" src="js/modules/admin/admin-tenants.js"></script>
+    <script type="module" src="js/modules/admin/admin-planos.js"></script>
+    <script type="module" src="js/modules/empresa/gestao-equipe.js"></script>
+
+    <!-- Atores do Sistema -->
+    <script type="module" src="js/modules/motoristas/motorista.js"></script>
+    <script type="module" src="js/modules/representantes/representante.js"></script>
+
+    <!-- Orquestrador Principal -->
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>
