@@ -1,0 +1,63 @@
+@font-face {
+    font-family: 'Handel Gothic D';
+    src: url('../fonts/Handel Gothic D Bold.otf') format('opentype');
+    font-weight: bold;
+    font-style: normal;
+}
+html, body {
+    height: 100%;
+    overflow-x: hidden;
+}
+body {
+    font-family: 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+.font-handel {
+    font-family: 'Handel Gothic D', 'Inter', sans-serif;
+    font-style: italic;
+}
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.tab-active {
+    color: #152e50;
+    border-bottom: 3px solid #152e50;
+    font-weight: 700;
+    background-color: #f8fafc;
+}
+.bottom-nav-active {
+    color: #152e50;
+    font-weight: 700;
+}
+@keyframes nativeAndroidSlide {
+    0% {
+        opacity: 0;
+        transform: translateY(12px) scale(0.99);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+@keyframes androidFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+.screen-android-animate {
+    animation: nativeAndroidSlide 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.splash-fade-out {
+    animation: androidFadeOut 0.4s ease-out forwards;
+}
+.tab-pane-transition {
+    transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease-in-out;
+}
+.dotted-line {
+    border-bottom: 2px dotted #94a3b8;
+    margin-bottom: 2px;
+}

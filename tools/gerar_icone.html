@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerador de Ícone PNG</title>
+</head>
+<body style="background:#0b1728; color:white; font-family:sans-serif; text-align:center; padding-top:50px;">
+    <h2>Gerando seu ícone PNG...</h2>
+    <canvas id="canvas" width="512" height="512" style="display:none;"></canvas>
+    <a id="downloadBtn" style="display:inline-block; background:#FAC043; color:#152E50; padding:12px 24px; font-weight:bold; border-radius:8px; text-decoration:none; margin-top:20px;">Baixar Ícone PNG Manualmente</a>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Fundo arredondado (App Icon style)
+        ctx.fillStyle = "#152E50";
+        ctx.beginPath();
+        ctx.roundRect(0, 0, 512, 512, 112);
+        ctx.fill();
+
+        // Anel externo sutil
+        ctx.strokeStyle = "rgba(255,255,255,0.12)";
+        ctx.lineWidth = 20;
+        ctx.beginPath();
+        ctx.arc(256, 256, 194, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Anel tracejado central (#FAC043)
+        ctx.strokeStyle = "#FAC043";
+        ctx.lineWidth = 13;
+        ctx.setLineDash([25, 15]);
+        ctx.beginPath();
+        ctx.arc(256, 256, 153, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]); // Limpa o tracejado
+
+        // Runa Central
+        ctx.strokeStyle = "#FAC043";
+        ctx.lineWidth = 18;
+        ctx.lineCap = "round";
+        
+        // Linha vertical
+        ctx.beginPath();
+        ctx.moveTo(256, 112); ctx.lineTo(256, 400);
+        ctx.stroke();
+
+        // Diagonais da runa
+        ctx.beginPath();
+        ctx.moveTo(174, 194); ctx.lineTo(338, 317);
+        ctx.moveTo(174, 317); ctx.lineTo(338, 194);
+        ctx.stroke();
+
+        // Círculo central interno
+        ctx.fillStyle = "#152E50";
+        ctx.strokeStyle = "#FAC043";
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.arc(256, 256, 25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Configura o link e dispara o download automático
+        const link = document.getElementById('downloadBtn');
+        link.href = canvas.toDataURL('image/png');
+        link.download = 'icone.png';
+        link.click();
+        
+        document.querySelector('h2').innerText = "Ícone gerado e baixado com sucesso!";
+    </script>
+</body>
+</html>
