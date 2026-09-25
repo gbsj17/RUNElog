@@ -136,11 +136,11 @@ window.toggleStopStatus = async (routeId, stopIndex, currentStatus) => {
     const finishedAtTime = todasConcluidas ? nowTime : null;
 
     if (useFirebase) {
-        await updateDoc(doc(db, `artifacts/${appId}/public/data/routes`, routeId), { 
+        await db.from('routes').update({
             stops: newStops,
             finishedAt: finishedAtTime,
             startedAt: route.startedAt || route.createdAt
-        });
+        }).eq('id', routeId);
     } else {
         const routes = LocalDb.get('routes');
         const idx = routes.findIndex(r => r.id === routeId);

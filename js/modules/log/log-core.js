@@ -1,10 +1,3 @@
-import { 
-    doc, 
-    addDoc, 
-    updateDoc, 
-    deleteDoc, 
-    collection 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // -----------------------------------------------------
 // TODO: BLOCO 7.3-1: INICIALIZAÇÃO, ABAS E SWIPE MOBILE
@@ -101,7 +94,7 @@ window.alternarAbalog = (tab, direction = 'none') => {
         'fretes': document.getElementById('contentFretes'),
         'dashboard': document.getElementById('contentDashboard'),
         'frota': document.getElementById('contentFrota'),
-        'rotas-produtos': document.getElementById('dashboardRepresentative')
+        'rotas-produtos': document.getElementById('contentRotasProdutos')
     };
 
     Object.keys(secoesLog).forEach(key => {
@@ -142,7 +135,11 @@ window.alternarAbalog = (tab, direction = 'none') => {
         if (window.renderlogDriversList) window.renderlogDriversList();
         if (window.renderlogVehiclesList) window.renderlogVehiclesList();
     } else if (tab === 'rotas-produtos') {
-        if (window.renderizarTabelaProdutos) window.renderizarTabelaProdutos();
+        if (window.alternarAbaRotasProdutos) {
+            window.alternarAbaRotasProdutos('produtos');
+        } else if (window.renderizarTabelaProdutos) {
+            window.renderizarTabelaProdutos();
+        }
     }
 };
 
@@ -215,10 +212,10 @@ window.fecharModalPersistente = function() {
     if (modal) modal.classList.add('hidden');
 };
 
-window.executarSalvarComSplash = function() {
+window.executarSalvarComSplash = async function() {
     if (window.currentSaveCallback) {
-        const dadosValidos = window.currentSaveCallback();
-        if (dadosValidos === false) return; 
+        const dadosValidos = await window.currentSaveCallback();
+        if (dadosValidos === false) return;
     }
 
     fecharModalPersistente();
@@ -286,7 +283,7 @@ window.abrirModalNovoMotorista = function() {
         </div>
     `;
 
-    window.abrirModalPersistente("Cadastrar Novo Motorista", html, () => {
+    window.abrirModalPersistente("Cadastrar Novo Motorista", html, async () => {
         const name = document.getElementById('modalDrvName')?.value.trim();
         const cpf = document.getElementById('modalDrvCpf')?.value.trim();
         const phone = document.getElementById('modalDrvPhone')?.value.trim();
@@ -297,9 +294,21 @@ window.abrirModalNovoMotorista = function() {
             return false;
         }
 
-        if (!window.allDrivers) window.allDrivers = [];
-        window.allDrivers.push({ id: 'drv_' + Date.now(), name, cpf, phone, pin, createdAt: Date.now() });
-        
+        const novoDriver = { name, cpf, phone, pin, createdAt: Date.now() };
+
+        if (window.useFirebase) {
+            const { error } = await window.db.from('drivers').insert(novoDriver);
+            if (error) {
+                if (window.showToast) window.showToast("Erro ao salvar motorista: " + error.message, "error");
+                return false;
+            }
+        } else {
+            novoDriver.id = 'drv_' + Date.now();
+            const drivers = window.LocalDb.get('drivers');
+            drivers.push(novoDriver);
+            window.LocalDb.set('drivers', drivers);
+        }
+
         if (window.renderlogDriversList) window.renderlogDriversList();
         return true;
     });
@@ -507,7 +516,7 @@ window.abrirModalNovoRep = function() {
         </div>
     `;
 
-    window.abrirModalPersistente("Cadastrar Representante Comercial", html, () => {
+    window.abrirModalPersistente("Cadastrar Representante Comercial", html, async () => {
         const name = document.getElementById('modalRepName')?.value.trim();
         const cpf = document.getElementById('modalRepCpf')?.value.trim();
         const phone = document.getElementById('modalRepPhone')?.value.trim();
@@ -518,8 +527,20 @@ window.abrirModalNovoRep = function() {
             return false;
         }
 
-        if (!window.allReps) window.allReps = [];
-        window.allReps.push({ id: 'rep_' + Date.now(), name, cpf, phone, pin });
+        const novoRep = { name, cpf, phone, pin, createdAt: Date.now() };
+
+        if (window.useFirebase) {
+            const { error } = await window.db.from('representatives').insert(novoRep);
+            if (error) {
+                if (window.showToast) window.showToast("Erro ao salvar representante: " + error.message, "error");
+                return false;
+            }
+        } else {
+            novoRep.id = 'rep_' + Date.now();
+            const reps = window.LocalDb.get('representatives');
+            reps.push(novoRep);
+            window.LocalDb.set('representatives', reps);
+        }
 
         if (window.renderlogRepsList) window.renderlogRepsList();
         return true;
@@ -776,7 +797,7 @@ window.removerAdmin = async (id) => {
     if (window.pedirConfirmacao) {
         window.pedirConfirmacao("Remover Administrador", "Deseja realmente remover este usuário?", async () => {
             if (window.useFirebase) {
-                await deleteDoc(doc(window.db, `artifacts/${window.appId}/public/data/admins`, id));
+                await window.db.from('admins').delete().eq('id', id);
             } else {
                 let list = LocalDb.get('admins').filter(item => item.id !== id);
                 LocalDb.set('admins', list);

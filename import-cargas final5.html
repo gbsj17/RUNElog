@@ -1,0 +1,3293 @@
+<!-- ========================================== -->
+<!-- TODO 01: ESTRUTURA HTML E IMPORTAÇÃO DE LIBS -->
+<!-- ========================================== -->
+
+<!DOCTYPE html>
+<html lang="pt-BR" class="bg-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importador de Cargas WinThor - RUNElog</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Integrar biblioteca SheetJS para leitura XLSX no browser -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- Leaflet CSS & JS para Mapa Interativo -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Regras para Animações Suaves, Transições e Fontes -->
+    <style>
+        /* Importação da fonte Handel Gothic D Bold no caminho OTF */
+        @font-face {
+            font-family: 'HandelGothicDBold';
+            src: url('assets/fonts/Handel Gothic D Bold.otf') format('opentype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        /* Classe utilitária para aplicar no HTML */
+        .font-handel {
+            font-family: 'HandelGothicDBold', sans-serif;
+        }
+
+        .painel-transicao {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .painel-oculto {
+            opacity: 0;
+            transform: translateY(8px);
+            pointer-events: none;
+        }
+        .painel-visivel {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .accordion-conteudo {
+            transition: max-height 0.35s ease-in-out, opacity 0.25s ease-in-out;
+            overflow: hidden;
+        }
+
+        /* Estilos do Menu Estilo Pílula (Tabs) */
+        .active-pilula {
+            background-color: #152e50 !important;
+            color: #fac043 !important;
+            box-shadow: 0 2px 6px rgba(21, 46, 80, 0.2);
+        }
+
+        .active-pilula .badge-pilula {
+            background-color: #fac043 !important;
+            color: #152e50 !important;
+        }
+
+        /* Correção de sobreposição do mapa Leaflet com menus e modais */
+        .leaflet-pane {
+            z-index: 10 !important;
+        }
+        .leaflet-top,
+        .leaflet-bottom {
+            z-index: 20 !important;
+        }
+    </style>
+</head>
+<body class="text-slate-800 p-4 sm:p-6 pb-24">
+
+    <!-- ========================================================= -->
+    <!-- TODO 02: CABEÇALHO DA INTERFACE E BUSCA TRAVADOS (STICKY) -->
+    <!-- ========================================================= -->
+
+    <div class="sticky top-0 z-50 bg-slate-100/95 backdrop-blur-md pt-3 pb-2 mb-4">
+        <div class="max-w-7xl mx-auto space-y-3">
+            
+            <!-- CABEÇALHO AZUL FIXO -->
+            <header class="flex items-center justify-between bg-[#152e50] p-4 rounded-2xl shadow-md text-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#fac043]">
+                        <i class="fa-solid fa-truck-ramp-box text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-handel text-lg leading-tight text-[#fac043] italic tracking-wider">FIBRASOL</h1>
+                        <p class="text-xs text-slate-300 font-semibold uppercase">Gestor de Cargas & Relatórios WinThor</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button id="btnVoltarGrid" onclick="mostrarGridCargas()" class="hidden px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-lg text-xs transition flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Voltar pras Cargas
+                    </button>
+
+                    <label class="px-4 py-2 bg-[#fac043] text-[#152e50] font-bold rounded-lg text-xs shadow-sm hover:brightness-105 transition cursor-pointer flex items-center gap-2">
+                        <i class="fa-solid fa-file-excel"></i>
+                        <span>Importar Planilha XLSX</span>
+                        <input type="file" id="inputXlsx" accept=".xlsx, .xls" class="hidden" onchange="processarArquivoXlsx(event)">
+                    </label>
+                </div>
+            </header>
+
+            <!-- CARD BRANCO DE BUSCA E O MENUZÃO DE ABAS (OCULTADO NA VISUALIZAÇÃO DA CARGA) -->
+            <div id="cardBuscaGrid" class="flex flex-col space-y-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm transition-all duration-300">
+                
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h2 class="text-sm font-bold text-[#152e50] uppercase tracking-wider">Cargas Encontradas no Relatório</h2>
+                        <p class="text-xs text-slate-400">Selecione uma carga abaixo para visualizar os clientes e pedidos agrupados</p>
+                    </div>
+
+                    <!-- Campo de Pesquisa -->
+                    <div class="relative w-full md:w-96">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </div>
+                        <input type="text" id="inputBuscaFiltro" oninput="renderizarGridCargas()" placeholder="Buscar por Carga, Pedido, Cliente, CNPJ..." class="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#152e50] focus:bg-white transition shadow-inner">
+                        <button onclick="limparBusca()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                            <i class="fa-solid fa-circle-xmark text-xs"></i>
+                        </button>
+                    </div>
+
+                    <span id="badgeQtdCargas" class="bg-[#152e50] text-[#fac043] font-bold px-3 py-1 rounded-lg text-xs whitespace-nowrap">0 Cargas</span>
+                </div>
+
+                <!-- MENUZÃO LARGÃO DE ABAS (3 COLUNAS) -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 bg-slate-100 p-1.5 rounded-2xl gap-2 border border-slate-200/80 shadow-inner">
+                    <!-- Aba 01: Aguardando Montagem -->
+                    <button id="btnAbaAguardando" onclick="filtrarAba('aguardando')" 
+                        class="aba-pilula active-pilula flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl text-xs font-bold transition-all duration-200">
+                        <i class="fa-solid fa-clock text-sm"></i>
+                        <span class="tracking-wide">Aguardando Montagem</span>
+                        <span id="badgeAguardando" class="badge-pilula bg-[#152e50] text-[#fac043] text-[11px] px-2.5 py-0.5 rounded-md font-extrabold shadow-sm">0</span>
+                    </button>
+
+                    <!-- Aba 02: Cargas Montadas -->
+                    <button id="btnAbaMontadas" onclick="filtrarAba('montadas')" 
+                        class="aba-pilula flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl text-xs font-bold text-slate-600 hover:text-[#152e50] transition-all duration-200">
+                        <i class="fa-solid fa-circle-check text-sm"></i>
+                        <span class="tracking-wide">Cargas Montadas</span>
+                        <span id="badgeMontadas" class="badge-pilula bg-slate-200 text-slate-700 text-[11px] px-2.5 py-0.5 rounded-md font-extrabold shadow-sm">0</span>
+                    </button>
+
+                    <!-- Aba 03: Cargas de Jequié -->
+                    <button id="btnAbaJequie" onclick="filtrarAba('jequie')" 
+                        class="aba-pilula flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl text-xs font-bold text-slate-600 hover:text-[#152e50] transition-all duration-200">
+                        <i class="fa-solid fa-location-dot text-sm"></i>
+                        <span class="tracking-wide">Cargas de Jequié</span>
+                        <span id="badgeJequie" class="badge-pilula bg-slate-200 text-slate-700 text-[11px] px-2.5 py-0.5 rounded-md font-extrabold shadow-sm">0</span>
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto">   
+        
+        <!-- =========================================== -->
+        <!-- TODO 03: PAINEL PRINCIPAL (VISÃO DE CARGAS) -->
+        <!-- =========================================== -->
+        <!-- =========================================== -->
+        <!-- TODO 03: PAINEL PRINCIPAL (VISÃO DE CARGAS) -->
+        <!-- =========================================== -->
+
+    <section id="secaoGridCargas" class="space-y-4 painel-transicao painel-visivel">
+        <div id="containerGridCargas" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 text-xs italic">
+                <i class="fa-solid fa-folder-open text-4xl mb-3 text-slate-300 block"></i>
+                Nenhuma planilha importada no momento.<br>Clique no botão <strong>"Importar Planilha XLSX"</strong> acima para carregar as cargas.
+            </div>
+        </div>
+    </section>
+
+    <!-- MODAL: SELEÇÃO DE CARGAS AGUARDANDO MONTAGEM -->
+    <div id="modalMontarCarga" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+            
+            <!-- Topo do Modal -->
+            <div class="bg-[#152e50] text-white p-4 px-6 flex justify-between items-center border-b-4 border-[#fac043]">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-[#fac043] text-[#152e50] flex items-center justify-center shadow-xs">
+                        <i class="fa-solid fa-boxes-packing text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-sm tracking-wide text-white uppercase">Cargas Aguardando Montagem</h3>
+                        <p class="text-[11px] text-slate-300">Localize o carregamento para iniciar a montagem</p>
+                    </div>
+                </div>
+                <button type="button" onclick="fecharModalMontarCarga()" class="text-slate-400 hover:text-white transition p-1.5 rounded-lg hover:bg-white/10 cursor-pointer">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Campo de Busca Filtrado -->
+            <div class="p-4 bg-slate-50 border-b border-slate-200">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 text-xs"></i>
+                    <input 
+                        type="text" 
+                        id="buscaModalMontarCarga" 
+                        oninput="filtrarCargasAguardandoModal(this.value)" 
+                        placeholder="Buscar por número do carregamento ou cidade..." 
+                        class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-[#152e50] focus:border-transparent outline-none transition"
+                    />
+                    <button type="button" onclick="limparBuscaModalMontar()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista de Carregamentos com Scroll -->
+            <div id="listaCargasAguardandoCorpo" class="p-4 overflow-y-auto space-y-2.5 flex-1 divide-y divide-slate-100">
+                <!-- Renderizado dinamicamente via JS -->
+            </div>
+
+            <!-- Rodapé com Contador e Fechamento -->
+            <div class="bg-slate-50 p-3 px-6 border-t border-slate-200 flex justify-between items-center text-xs font-semibold text-slate-500">
+                <span id="contadorModalMontar">0 carregamento(s) disponível(is)</span>
+                <button type="button" onclick="fecharModalMontarCarga()" class="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition cursor-pointer">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL DE MONTAGEM E GESTÃO DE ROTAS (70% MAPA / 30% LATERAL)          -->
+    <!-- ===================================================================== -->
+    <div id="modalMontagemRota" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-7xl h-[92vh] flex flex-col overflow-hidden">
+            
+            <!-- CABEÇALHO DO MODAL -->
+            <div class="bg-[#152e50] p-3 px-5 text-white flex justify-between items-center border-b-4 border-[#fac043] shrink-0">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-route text-[#fac043] text-lg"></i>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-black text-sm tracking-wide uppercase">Roteirização da Carga</h3>
+                            <span id="lblCargaRota" class="text-xs font-mono font-bold text-[#fac043]">#---</span>
+                            <span id="badgeStatusMontagemRota" class="text-[10px] px-2 py-0.5 rounded font-black uppercase">Aguardando</span>
+                        </div>
+                        <p id="lblResumoTotaisRota" class="text-[11px] text-slate-300 font-semibold">0 Cidades, 0 Entregas</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="habilitarEdicaoRota()" title="Habilitar Edição" class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-pen-to-square text-amber-400 text-xs"></i>
+                        <span class="hidden sm:inline">Editar</span>
+                    </button>
+                    
+                    <button onclick="salvarConclusaoRota()" title="Concluir e Salvar Rota" class="px-3 py-1.5 bg-[#fac043] hover:brightness-105 text-[#152e50] rounded-lg text-xs font-black transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Concluir Rota</span>
+                    </button>
+
+                    <!-- BOTÃO: ABRIR ROTEIRIZAÇÃO EM JANELA SEPARADA -->
+                    <button onclick="destacarJanelaRota()" title="Abrir em Janela Separada (Mover para outro monitor)" class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-[#fac043] rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        <span class="hidden sm:inline">Nova Janela</span>
+                    </button>
+
+                    <button onclick="tentarFecharModalRota()" title="Fechar" class="text-slate-300 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/10 transition cursor-pointer ml-1">
+                        <i class="fa-solid fa-xmark text-base"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- CORPO DIVIDIDO: 30% LATERAL / 70% MAPA -->
+            <div class="flex flex-1 overflow-hidden">
+                
+                <!-- COLUNA LATERAL (30%): PARADAS E PEDIDOS -->
+                <div class="w-full md:w-[32%] lg:w-[28%] bg-slate-50 border-r border-slate-200 flex flex-col overflow-hidden shrink-0">
+                    <div class="p-3 bg-white border-b border-slate-200 flex justify-between items-center shrink-0">
+                        <span class="text-xs font-black text-[#152e50] uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-list-ol text-amber-500"></i> Ordem das Paradas
+                        </span>
+                        <span id="badgeTotalCidadesRota" class="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">0 Cidades</span>
+                    </div>
+
+                    <!-- Lista com rolagem independente -->
+                    <div id="listaCidadesRotaCorpo" class="p-2.5 overflow-y-auto flex-1 space-y-2">
+                        <!-- Injetado via JS -->
+                    </div>
+
+                    <!-- Detalhe dos pedidos da parada selecionada -->
+                    <div class="p-3 bg-white border-t border-slate-200 max-h-[38vh] overflow-y-auto shrink-0 shadow-inner">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 id="lblCidadeSelecionadaRota" class="text-xs font-black text-[#152e50] uppercase">SELECIONE UMA PRAÇA</h4>
+                            <span id="lblSubinfoCidadeRota" class="text-[10px] font-semibold text-slate-500"></span>
+                        </div>
+                        <div id="detalhesCidadeRotaCorpo" class="space-y-2">
+                            <!-- Injetado via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PAINEL PRINCIPAL (70%): MAPA INTERATIVO LEAFLET -->
+                <div class="flex-1 bg-slate-200 relative overflow-hidden">
+                    <div id="mapaRota" class="w-full h-full min-h-[400px]"></div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- =================================================== -->
+    <!-- TODO 04: PAINEL DE DETALHAMENTO (VISÃO DE CLIENTES) -->
+    <!-- =================================================== -->
+
+    <section id="secaoDetalheCarga" class="space-y-4 hidden painel-transicao painel-oculto">
+        <!-- BANNER DE RESUMO FIXO NO TOPO LOGO ABAIXO DO CABEÇALHO AZUL -->
+        <div class="sticky top-[84px] z-40 bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden transition-all">
+            <div class="bg-[#152e50] p-4 border-b-4 border-[#fac043] flex flex-wrap justify-between items-center text-white gap-4">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-[#fac043]">DETALHAMENTO DO CARREGAMENTO</span>
+                    <h2 id="detalheCargaNum" class="text-2xl font-black">Carga: -</h2>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] uppercase font-bold text-slate-300">VALOR TOTAL DA CARGA (SEM ST)</span>
+                    <p id="detalheCargaValor" class="text-xl font-black text-[#fac043]">R$ 0,00</p>
+                </div>
+            </div>
+            
+            <div class="p-3.5 bg-slate-50 flex flex-wrap justify-between items-center text-xs font-bold text-slate-700 border-t border-slate-100 gap-3 px-6">
+                <!-- CONTADORES RESUMO -->
+                <div class="flex flex-wrap items-center gap-6">
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-users text-[#152e50]"></i> Entregas/Clientes: <strong id="detalheCargaEntregas" class="text-[#152e50]">0</strong></span>
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-city text-[#152e50]"></i> Cidades/Praças: <strong id="detalheCargaCidades" class="text-[#152e50]">0</strong></span>
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-receipt text-[#152e50]"></i> Total de Pedidos: <strong id="detalheCargaPedidos" class="text-[#152e50]">0</strong></span>
+                </div>
+
+                <!-- BARRA DE AÇÕES (3 BOTÕES DE OPERAÇÃO + EXPANDIR/RECOLHER) -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- Botão 01: Montar / Editar Rota -->
+                    <button id="btnMontarRota" onclick="abrirTelaMontagemRota()" title="Montar, visualizar e editar sequência da rota" class="px-3 py-1.5 bg-white hover:bg-[#152e50] text-[#152e50] hover:text-[#fac043] font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs border border-slate-200 cursor-pointer">
+                        <i class="fa-solid fa-route text-amber-500"></i>
+                        <span>Montar / Editar Rota</span>
+                    </button>
+
+                    <!-- Botão 02: Itens por Rota -->
+                    <button id="btnItensPorRota" onclick="abrirModalItensPorRota()" title="Visualizar itens organizados pela sequência de entrega" class="px-3 py-1.5 bg-white hover:bg-[#152e50] text-[#152e50] hover:text-[#fac043] font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs border border-slate-200 cursor-pointer">
+                        <i class="fa-solid fa-map-location-dot text-amber-500"></i>
+                        <span>Itens por Rota</span>
+                    </button>
+
+                    <!-- Botão 03: Itens Agrupados -->
+                    <button id="btnItensAgrupados" onclick="abrirModalItensAgrupados()" title="Visualizar consolidação total de produtos por código" class="px-3 py-1.5 bg-white hover:bg-[#152e50] text-[#152e50] hover:text-[#fac043] font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs border border-slate-200 cursor-pointer">
+                        <i class="fa-solid fa-boxes-stacked text-amber-500"></i>
+                        <span>Itens Agrupados</span>
+                    </button>
+
+                    <!-- BOTÃO MESTRE DE EXPANDIR / RECOLHER TODOS -->
+                    <button id="btnToggleTodosPedidos" onclick="toggleTodosPedidos()" class="px-3.5 py-1.5 bg-[#152e50] hover:bg-[#1f3f6d] text-[#fac043] font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs cursor-pointer border border-[#152e50]">
+                        <i id="iconeToggleTodos" class="fa-solid fa-up-right-and-down-left-from-center text-[11px]"></i>
+                        <span id="textoToggleTodos">Expandir Todos</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTAINER ONDE OS CARDS DE CLIENTES E PEDIDOS SERÃO INJETADOS -->
+        <div id="containerClientesCarga" class="space-y-4 pt-2">
+            <!-- Injetado via JS -->
+        </div>
+    </section>
+
+    <!-- MODAL DE CONSULTA DE CNPJ -->
+    <div id="modalCnpj" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden transition-all transform">
+            <!-- Cabeçalho do Modal -->
+            <div class="bg-[#152e50] p-4 text-white flex justify-between items-center border-b-4 border-[#fac043]">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-building-circle-check text-lg text-[#fac043]"></i>
+                    <h3 class="font-black text-sm tracking-wide uppercase">Consulta Cadastral CNPJ</h3>
+                </div>
+                <button onclick="fecharModalCnpj()" class="text-slate-300 hover:text-white text-lg font-bold cursor-pointer">&times;</button>
+            </div>
+
+            <!-- Corpo onde os dados do CNPJ serão injetados -->
+            <div id="conteudoModalCnpj" class="p-6">
+                <!-- Injetado dinamicamente via JavaScript -->
+            </div>
+
+            <!-- Rodapé do Modal -->
+            <div class="bg-slate-50 p-3 px-6 border-t border-slate-100 flex justify-end">
+                <button onclick="fecharModalCnpj()" class="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CARREGAMENTO DA PLANILHA (IMPORTAÇÃO) -->
+    <div id="modalLoadingImportacao" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 transition-all duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-sm w-full p-6 text-center space-y-4 transform transition-all">
+            
+            <!-- Ícone Animado -->
+            <div class="relative w-16 h-16 mx-auto flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full border-4 border-slate-100 border-t-[#152e50] animate-spin"></div>
+                <div class="w-10 h-10 bg-amber-50 text-[#fac043] rounded-full flex items-center justify-center shadow-inner">
+                    <i class="fa-solid fa-file-excel text-xl"></i>
+                </div>
+            </div>
+
+            <!-- Textos de Status -->
+            <div>
+                <h3 class="text-base font-black text-[#152e50]">Lendo Planilha WinThor</h3>
+                <p id="txtStatusLoading" class="text-xs text-slate-500 font-medium mt-1">Extraindo dados e mapeando carregamentos...</p>
+            </div>
+
+            <!-- Barra de Progresso Animada -->
+            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/60">
+                <div id="barraProgressoImportacao" class="bg-gradient-to-r from-[#152e50] to-[#fac043] h-full w-0 transition-all duration-300 rounded-full"></div>
+            </div>
+
+            <span id="txtQtdProcessadaLoading" class="inline-block text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-50 px-3 py-1 rounded-full border border-slate-200/60">
+                Aguardando arquivo...
+            </span>
+        </div>
+    </div>
+
+    <!-- MODAL DE RESUMO DE ITENS (PADRÃO / JANELA FLUTUANTE) -->
+    <div id="backdropModalItens" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div id="janelaModalItens" class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+            
+            <!-- CABEÇALHO ARRASTÁVEL -->
+            <div id="cabecalhoModalItens" class="bg-[#152e50] p-3.5 px-5 text-white flex justify-between items-center border-b-4 border-[#fac043] select-none cursor-default">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-boxes-stacked text-[#fac043] text-base"></i>
+                    <h3 class="font-black text-sm tracking-wide uppercase">Resumo de Itens da Carga</h3>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <!-- Botão Alternar Modo Janela Flutuante -->
+                    <button id="btnToggleModoJanela" onclick="alternarModoJanela()" title="Destacar em Janela Flutuante" class="text-slate-300 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition cursor-pointer">
+                        <i id="iconeModoJanela" class="fa-solid fa-up-right-from-square text-xs"></i>
+                    </button>
+                    <!-- Botão Fechar -->
+                    <button onclick="fecharModalItens()" title="Fechar" class="text-slate-300 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/10 transition cursor-pointer">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- BARRA DE CONTROLE: ABAS PÍLULAS E TOTAIS -->
+            <div class="bg-slate-50 p-3 px-5 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3">
+                <div class="flex items-center bg-slate-200/70 p-1 rounded-xl gap-1">
+                    <button id="btnAbaItensRota" onclick="alternarAbaItens('rota')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-[#152e50] text-[#fac043] shadow-xs cursor-pointer">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                        <span>Itens por Rota</span>
+                    </button>
+                    <button id="btnAbaItensAgrupados" onclick="alternarAbaItens('agrupados')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer">
+                        <i class="fa-solid fa-layer-group"></i>
+                        <span>Itens Agrupados (Total)</span>
+                    </button>
+                </div>
+
+                <div id="totaisResumoItens" class="text-xs font-bold text-slate-600">
+                    <!-- Injetado dinamicamente: Total de volumes -->
+                </div>
+            </div>
+
+            <!-- CORPO COM ROLAGEM INDEPENDENTE -->
+            <div id="conteudoItensCorpo" class="p-5 overflow-y-auto flex-1 space-y-4">
+                <!-- Tabela de Itens injetada via JS -->
+            </div>
+
+            <!-- RODAPÉ DO MODAL -->
+            <div class="bg-slate-50 p-3 px-5 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500 font-semibold">
+                <span id="dicaJanelaFlutuante" class="hidden text-[11px] text-amber-600">
+                    <i class="fa-solid fa-arrows-up-down-left-right mr-1"></i> Arraste pelo cabeçalho azul
+                </span>
+                <div class="ml-auto">
+                    <button onclick="fecharModalItens()" class="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST POPUP FLUTUANTE DO SISTEMA -->
+    <div id="toastNotificacao" class="fixed bottom-6 right-6 z-[9999] pointer-events-none transition-all duration-300 transform translate-y-8 opacity-0">
+        <div class="bg-[#152e50] text-white border-2 border-[#fac043] rounded-2xl shadow-2xl p-4 flex items-center gap-3.5 min-w-[280px] max-w-md">
+            <div id="toastIconeWrapper" class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#fac043] shrink-0">
+                <i id="toastIcone" class="fa-solid fa-check text-base"></i>
+            </div>
+            <div class="flex-1">
+                <h4 id="toastTitulo" class="font-black text-xs text-[#fac043] uppercase tracking-wider">Aviso</h4>
+                <p id="toastMensagem" class="text-xs font-bold text-slate-100 mt-0.5 leading-snug"></p>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script>
+
+        // =================================================
+        // TODO 05: INICIALIZAÇÃO E LEITURA DO ARQUIVO XLSX
+        // =================================================
+
+        let bancoCargasGlobal = {};
+        window.bancoCargasGlobal = bancoCargasGlobal;
+
+        // ---------------------------------------------------------------------
+        // RESTAURAÇÃO AUTOMÁTICA DO BANCO DE DADOS LOCAL (CACHE LOCALSTORAGE)
+        // ---------------------------------------------------------------------
+        function carregarBancoDoLocalStorage() {
+            try {
+                const dadosSalvos = localStorage.getItem('fibrasol_banco_cargas');
+                if (!dadosSalvos) return false;
+
+                const objetoRecuperado = JSON.parse(dadosSalvos);
+                if (!objetoRecuperado || typeof objetoRecuperado !== 'object') return false;
+
+                // Restaura o banco reconstruindo as Cidades como instâncias de Set
+                Object.keys(objetoRecuperado).forEach(id => {
+                    const carga = objetoRecuperado[id];
+                    bancoCargasGlobal[id] = {
+                        ...carga,
+                        cidades: new Set(carga.cidades || [])
+                    };
+                });
+
+                window.bancoCargasGlobal = bancoCargasGlobal;
+                console.log(`Banco restaurado do LocalStorage: ${Object.keys(bancoCargasGlobal).length} carga(s) carregada(s).`);
+                return true;
+            } catch (err) {
+                console.error('Erro ao ler dados do LocalStorage:', err);
+                return false;
+            }
+        }
+        window.carregarBancoDoLocalStorage = carregarBancoDoLocalStorage;
+
+        function processarArquivoXlsx(event) {
+            const file = event.target ? event.target.files[0] : (event.files ? event.files[0] : null);
+            if (!file) return;
+
+            // Elementos do Modal de Carregamento
+            const modalLoading = document.getElementById('modalLoadingImportacao');
+            const barraProgresso = document.getElementById('barraProgressoImportacao');
+            const txtStatus = document.getElementById('txtStatusLoading');
+            const txtQtd = document.getElementById('txtQtdProcessadaLoading');
+
+            // Exibe modal e reseta barra
+            if (modalLoading) modalLoading.classList.remove('hidden');
+            if (barraProgresso) barraProgresso.style.width = '20%';
+            if (txtStatus) txtStatus.innerText = 'Lendo arquivo Excel...';
+            if (txtQtd) txtQtd.innerText = 'Processando...';
+
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                if (barraProgresso) barraProgresso.style.width = '50%';
+                if (txtStatus) txtStatus.innerText = 'Extraindo matriz e aplicando regras WinThor...';
+
+                setTimeout(() => {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    const matrizExcel = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    if (barraProgresso) barraProgresso.style.width = '80%';
+                    if (txtStatus) txtStatus.innerText = 'Agrupando cargas e rendendo interface...';
+
+                    extrairDadosWinthor(matrizExcel);
+
+                    const totalCargas = Object.keys(bancoCargasGlobal).length;
+                    if (barraProgresso) barraProgresso.style.width = '100%';
+                    if (txtQtd) txtQtd.innerText = `${totalCargas} Carga(s) Processada(s)!`;
+
+                    setTimeout(() => {
+                        if (modalLoading) modalLoading.classList.add('hidden');
+                        if (barraProgresso) barraProgresso.style.width = '0%';
+                    }, 2200);
+
+                }, 750);
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        window.processarArquivoXlsx = processarArquivoXlsx;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const elInput = document.getElementById('inputXlsx');
+            if (elInput) {
+                elInput.addEventListener('change', processarArquivoXlsx);
+            }
+
+            // Inicialização imediata ao abrir o site: restaura o cache e exibe o grid
+            const temDadosNoCache = carregarBancoDoLocalStorage();
+            if (temDadosNoCache && typeof renderizarGridCargas === 'function') {
+                renderizarGridCargas();
+            }
+        });
+
+        function converterNumero(val) {
+            if (val === null || val === undefined) return 0;
+            if (typeof val === 'number') return val;
+            let str = String(val).trim();
+            if (!str) return 0;
+            if (str.includes(',')) {
+                str = str.replace(/\./g, '').replace(',', '.');
+            }
+            return parseFloat(str) || 0;
+        }
+
+        function formatarCnpjCpf(valor) {
+             return valor ? String(valor).trim() : '';
+        }
+
+        function extrairDadosWinthor(matriz) {
+            // OBS: A linha 'bancoCargasGlobal = {}' foi removida intencionalmente
+            // para que as cargas montadas no cache não sejam deletadas ao importar uma planilha nova.
+            let blocoAtual = null;
+            let blocos = [];
+
+            // ==========================================
+            // TODO 06: LOOP DE VARREDURA DAS LINHAS DA PLANILHA
+            // ==========================================
+            for (let l = 0; l < matriz.length; l++) {
+                const linha = matriz[l] || [];
+                const linhaTexto = [];
+                for (let c = 0; c < linha.length; c++) {
+                    const val = linha[c];
+                    linhaTexto.push(val !== null && val !== undefined ? String(val).trim() : '');
+                }
+                const linhaCompletaStr = linhaTexto.join(' ');
+
+                // ==========================================
+                // TODO 07: INÍCIO DE NOVO BLOCO/PÁGINA (PEDIDO / CLIENTE)
+                // ==========================================
+                const temNovoPedido = linhaCompletaStr.toUpperCase().includes('PEDIDO:') || linhaCompletaStr.toUpperCase().includes('PEDIDO :');
+                const temNovoCliente = linhaCompletaStr.toUpperCase().includes('CLIENTE:') || linhaCompletaStr.toUpperCase().includes('FILIAL:');
+
+                if (temNovoPedido || temNovoCliente) {
+                    if (blocoAtual && (blocoAtual.itens.length > 0 || blocoAtual.numeroPedido)) {
+                        blocos.push(blocoAtual);
+                    }
+
+                    const clienteAnterior = blocoAtual ? {
+                        codigoCliente: blocoAtual.codigoCliente,
+                        nomeCliente: blocoAtual.nomeCliente,
+                        cnpj: blocoAtual.cnpj,
+                        cidade: blocoAtual.cidade,
+                        uf: blocoAtual.uf,
+                        telefone: blocoAtual.telefone,
+                        endereco: blocoAtual.endereco,
+                        bairro: blocoAtual.bairro,
+                        numeroCarga: blocoAtual.numeroCarga
+                    } : {};
+
+                    blocoAtual = {
+                        codigoCliente: clienteAnterior.codigoCliente || '',
+                        nomeCliente: clienteAnterior.nomeCliente || '',
+                        cnpj: clienteAnterior.cnpj || '',
+                        cidade: clienteAnterior.cidade || '',
+                        uf: clienteAnterior.uf || '',
+                        telefone: clienteAnterior.telefone || '',
+                        endereco: clienteAnterior.endereco || '',
+                        bairro: clienteAnterior.bairro || '',
+                        numeroPedido: '',
+                        numeroCarga: clienteAnterior.numeroCarga || '',
+                        obs01: '',
+                        obs02: '',
+                        obs03: '',
+                        obsEntrega: [],
+                        itens: [],
+                        emTabelaProdutos: false
+                    };
+                }
+
+                if (!blocoAtual) continue;
+
+                // ===================================================================
+                // TODO 08: REGRA 1 - IDENTIFICAÇÃO DO CLIENTE E DADOS (COLUNAS C E D)
+                // ===================================================================
+
+                const colCStr = String(linha[2] || linhaTexto[2] || '').trim().toUpperCase();
+                const colDVal = String(linha[3] || linhaTexto[3] || '').trim();
+
+                if (colCStr.includes('CÓDIGO:') || colCStr.includes('CODIGO:')) {
+                    if (colDVal) blocoAtual.codigoCliente = colDVal.replace('-', '').trim();
+                }
+
+                if (colCStr.includes('RAZÃO:') || colCStr.includes('RAZAO:')) {
+                    if (colDVal) blocoAtual.nomeCliente = colDVal;
+                }
+
+                if (colCStr.includes('FONE:')) {
+                    if (colDVal) blocoAtual.telefone = colDVal;
+                }
+
+                if (colCStr.includes('END:') || colCStr.includes('ENDEREÇO:') || colCStr.includes('ENDERECO:')) {
+                    if (colDVal) blocoAtual.endereco = colDVal;
+                }
+
+                if (colCStr.includes('BAIRRO:')) {
+                    if (colDVal) blocoAtual.bairro = colDVal;
+                }
+
+                // Captura do CPF / CNPJ (Coluna O [14] para rótulo "CNPJ/CPF:", Coluna P [15] para o valor)
+                if (String(linha[14] || linhaTexto[14] || '').toUpperCase().includes('CNPJ/CPF:')) {
+                    const rawCnpjP = String(linha[15] || linhaTexto[15] || '').trim();
+                    if (rawCnpjP) blocoAtual.cnpj = formatarCnpjCpf(rawCnpjP);
+                } else if (colCStr.includes('CGC:') || colCStr.includes('CNPJ:')) {
+                    if (colDVal) blocoAtual.cnpj = formatarCnpjCpf(colDVal);
+                } else if (linhaCompletaStr.toUpperCase().includes('CGC:')) {
+                    const idxCgc = linhaTexto.findIndex(x => String(x || '').toUpperCase().includes('CGC:'));
+                    if (idxCgc !== -1 && linhaTexto[idxCgc + 1]) blocoAtual.cnpj = formatarCnpjCpf(linhaTexto[idxCgc + 1]);
+                }
+
+                if (colCStr.includes('CIDADE:')) {
+                    if (colDVal) blocoAtual.cidade = colDVal;
+                } else if (linhaCompletaStr.toUpperCase().includes('CIDADE:')) {
+                    const idxCidade = linhaTexto.findIndex(x => String(x || '').toUpperCase().includes('CIDADE:'));
+                    if (idxCidade !== -1 && linhaTexto[idxCidade + 1]) {
+                        blocoAtual.cidade = String(linhaTexto[idxCidade + 1]).trim();
+                    }
+                }
+
+                const idxUf = linhaTexto.findIndex(x => String(x || '').toUpperCase().includes('UF :') || String(x || '').toUpperCase().includes('UF:'));
+                if (idxUf !== -1 && linhaTexto[idxUf + 1]) {
+                    blocoAtual.uf = String(linhaTexto[idxUf + 1]).trim();
+                }
+
+                // =============================================================
+                // TODO 09: REGRA 3 - LEITURA DA CARGA (COLUNAS G E H) E PEDIDO
+                // =============================================================
+                
+                // --- CAPTURA DE NÚMERO DO PEDIDO ---
+                if (linhaCompletaStr.toUpperCase().includes('PEDIDO:') || linhaCompletaStr.toUpperCase().includes('PEDIDO :')) {
+                    let numPedEncontrado = String(linhaTexto[2] || linhaTexto[3] || linhaTexto[4] || '').replace(/\D/g, '');
+                    
+                    if (numPedEncontrado && numPedEncontrado.length >= 4) {
+                        blocoAtual.numeroPedido = numPedEncontrado;
+                    } else {
+                        const idxPed = linhaTexto.findIndex(x => String(x || '').toUpperCase().includes('PEDIDO'));
+                        if (idxPed !== -1 && linhaTexto[idxPed + 1]) {
+                            blocoAtual.numeroPedido = String(linhaTexto[idxPed + 1]).replace(/\D/g, '').trim();
+                        }
+                    }
+                }
+
+                // --- CAPTURA DE NÚMERO DA CARGA ---
+                const colGStrCarga = String(linha[6] || linhaTexto[6] || '').trim().toUpperCase();
+                const colHValCarga = String(linha[7] || linhaTexto[7] || '').trim();
+
+                if (colGStrCarga.includes('CARREGAMENTO:') || colGStrCarga.includes('CARREG:') || colGStrCarga.includes('CARREG')) {
+                    if (colHValCarga && /^\d+$/.test(colHValCarga)) {
+                        blocoAtual.numeroCarga = colHValCarga;
+                    }
+                } else if (/^\d{5,}$/.test(colHValCarga) && (colGStrCarga.includes('CARG') || colGStrCarga.includes('CARR'))) {
+                    blocoAtual.numeroCarga = colHValCarga;
+                } else if (linhaCompletaStr.toUpperCase().includes('CARREGAMENTO:') || linhaCompletaStr.toUpperCase().includes('CARREG :')) {
+                    const idxCarr = linhaTexto.findIndex(x => {
+                        const txt = String(x || '').toUpperCase();
+                        return txt.includes('CARREGAMENTO:') || txt.includes('CARREG :') || txt.includes('CARREG:');
+                    });
+                    if (idxCarr !== -1 && linhaTexto[idxCarr + 1]) {
+                        const valCarreg = String(linhaTexto[idxCarr + 1]).replace(/\D/g, '').trim();
+                        if (valCarreg) blocoAtual.numeroCarga = valCarreg;
+                    }
+                }
+
+                if (linhaCompletaStr.toUpperCase().includes('OBS2') && !blocoAtual.numeroCarga) {
+                    const idx = linhaTexto.findIndex(x => String(x || '').toUpperCase().includes('OBS2'));
+                    if (idx !== -1 && linhaTexto[idx + 1]) {
+                        blocoAtual.obs02 = String(linhaTexto[idx + 1]).trim();
+                        const match = blocoAtual.obs02.match(/CARREGAMENTO\s*[:]?\s*(\d+)/i);
+                        if (match) blocoAtual.numeroCarga = match[1];
+                    }
+                }
+
+                // --- CAPTURA: PLANO DE PAGAMENTO (TEXTO DESCRITIVO: BONIFICAÇÃO, CHEQUE, TROCA, ETC.) ---
+                const colGTexto = String(linha[6] || linhaTexto[6] || '').trim().toUpperCase();
+                if (colGTexto.includes('PLANO DE PAGAMENTO') || colGTexto.includes('PLANO DE PAGTO') || colGTexto.includes('PLANO PAGTO')) {
+                    let textoPlano = String(linha[7] || linhaTexto[7] || '').trim();
+                    
+                    // Se não estiver direto na H, busca a primeira coluna preenchida à direita
+                    if (!textoPlano) {
+                        for (let c = 7; c < linha.length; c++) {
+                            const val = String(linha[c] || '').trim();
+                            if (val) {
+                                textoPlano = val;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Remove prefixos de código numérico (ex: "10 - BONIFICACAO" vira "BONIFICACAO")
+                    textoPlano = textoPlano.replace(/^\d+[\s\-\/]+/, '').trim();
+                    if (textoPlano) blocoAtual.planoPagamento = textoPlano;
+                } else if (linhaCompletaStr.toUpperCase().includes('PLANO DE PAGAMENTO')) {
+                    const idxPlano = linhaTexto.findIndex(x => String(x || '').toUpperCase().includes('PLANO DE PAGAMENTO'));
+                    if (idxPlano !== -1 && linhaTexto[idxPlano + 1]) {
+                        let valExtraido = String(linhaTexto[idxPlano + 1]).trim();
+                        valExtraido = valExtraido.replace(/^\d+[\s\-\/]+/, '').trim();
+                        if (valExtraido) blocoAtual.planoPagamento = valExtraido;
+                    }
+                }
+
+                // --- CAPTURA: RCA (COLUNA C -> VALOR EM D) ---
+                const colCTexto = String(linha[2] || linhaTexto[2] || '').trim().toUpperCase();
+                if (colCTexto.includes('RCA:') || colCTexto === 'RCA') {
+                    const valRca = String(linha[3] || linhaTexto[3] || '').trim();
+                    if (valRca) blocoAtual.rca = valRca;
+                } else if (linhaCompletaStr.toUpperCase().includes('RCA:')) {
+                    const idxRca = linhaTexto.findIndex(x => String(x || '').toUpperCase().includes('RCA:'));
+                    if (idxRca !== -1 && linhaTexto[idxRca + 1]) {
+                        blocoAtual.rca = String(linhaTexto[idxRca + 1]).trim();
+                    }
+                }
+
+                // --- CAPTURA: LANÇADO / DATA DE DIGITAÇÃO (COLUNA C -> DATA AO LADO EM D) ---
+                if (colCTexto.includes('LANÇADO:') || colCTexto.includes('LANCADO:') || colCTexto.includes('LANÇADO') || colCTexto.includes('LANCADO')) {
+                    let valData = linha[3] !== undefined ? linha[3] : linhaTexto[3];
+                    
+                    if (valData) {
+                        if (typeof valData === 'number') {
+                            const dataJs = new Date(Math.round((valData - 25569) * 86400 * 1000));
+                            const dia = String(dataJs.getUTCDate()).padStart(2, '0');
+                            const mes = String(dataJs.getUTCMonth() + 1).padStart(2, '0');
+                            const ano = dataJs.getUTCFullYear();
+                            blocoAtual.dataDigitacao = `${dia}/${mes}/${ano}`;
+                        } else {
+                            const strData = String(valData).trim();
+                            const matchData = strData.match(/\d{2}\/\d{2}\/\d{4}/);
+                            if (matchData) {
+                                blocoAtual.dataDigitacao = matchData[0];
+                            } else {
+                                blocoAtual.dataDigitacao = strData;
+                            }
+                        }
+                    }
+                }
+
+                // ====================================================
+                // TODO 10: CAPTURA DE OBSERVAÇÕES E ITENS DO PEDIDO
+                // ====================================================
+                
+                const i = matriz.indexOf(linha); // Resolve o erro "i is not defined"
+                
+                // 1. CAPTURA DE OBSERVAÇÕES DE ENTREGA (Coluna C: "Impressão:" + 3 linhas abaixo em C)
+                if (String(linha[2] || linhaTexto[2] || '').toUpperCase().includes('IMPRESSÃO:')) {
+                    if (!blocoAtual.obsEntrega) blocoAtual.obsEntrega = [];
+                    for (let offset = 1; offset <= 3; offset++) {
+                        const proximaLinha = matriz[i + offset];
+                        if (proximaLinha) {
+                            const textoObs = String(proximaLinha[2] || '').trim();
+                            if (textoObs && !textoObs.toUpperCase().includes('PRODUTO') && !textoObs.toUpperCase().includes('TOTAL')) {
+                                blocoAtual.obsEntrega.push(textoObs);
+                            }
+                        }
+                    }
+                }
+
+                // 2. CAPTURA DE OBSERVAÇÕES GERAIS (Coluna L: "[ Obs. Gerais ]" -> Conteúdo na Coluna K: mesma linha + 2 abaixo)
+                if (String(linha[11] || linhaTexto[11] || '').toUpperCase().includes('[ OBS. GERAIS ]')) {
+                    if (!blocoAtual.obsGerais) blocoAtual.obsGerais = [];
+                    for (let offset = 0; offset <= 2; offset++) {
+                        const linhaAlvo = matriz[i + offset];
+                        if (linhaAlvo) {
+                            const textoGeral = String(linhaAlvo[10] || '').trim();
+                            if (textoGeral && !textoGeral.toUpperCase().includes('CÓDIGO') && !textoGeral.toUpperCase().includes('DESCRIÇÃO')) {
+                                blocoAtual.obsGerais.push(textoGeral);
+                            }
+                        }
+                    }
+                }
+
+                if (linhaCompletaStr.toUpperCase().includes('OBS1')) {
+                    const idx = linhaTexto.findIndex(x => String(x || '').toUpperCase().includes('OBS1'));
+                    if (idx !== -1 && linhaTexto[idx + 1]) blocoAtual.obs01 = String(linhaTexto[idx + 1]).trim();
+                }
+                if (linhaCompletaStr.toUpperCase().includes('OBS3')) {
+                    const idx = linhaTexto.findIndex(x => String(x || '').toUpperCase().includes('OBS3'));
+                    if (idx !== -1 && linhaTexto[idx + 1]) blocoAtual.obs03 = String(linhaTexto[idx + 1]).trim();
+                }
+
+                // Captura do código (B ou C)
+                const rawCodB = linha[1] !== undefined && linha[1] !== null ? linha[1] : (linhaTexto[1] || '');
+                const rawCodC = linha[2] !== undefined && linha[2] !== null ? linha[2] : (linhaTexto[2] || '');
+                const codProd = String(rawCodB || rawCodC).replace(/\D/g, '').trim();
+
+                // Quantidade na Coluna N (13) e Preço Unitário na Coluna O (14)
+                let qtd = converterNumero(linha[13]) || converterNumero(linhaTexto[13]);
+                let precoUnitario = converterNumero(linha[14]) || converterNumero(linhaTexto[14]);
+
+                // Captura o produto se houver um código numérico e quantidade/preço válidos
+                if (codProd && (qtd > 0 || precoUnitario > 0) && !linhaCompletaStr.toUpperCase().includes('TOTAL')) {
+                    let descricao = String(linha[2] !== undefined && linha[2] !== null ? linha[2] : (linhaTexto[2] || '')).trim();
+                    
+                    if (!descricao || descricao === codProd) {
+                        descricao = String(linha[3] || linhaTexto[3] || 'PRODUTO WINTHOR').trim();
+                    }
+
+                    let valorTotalSemSt = (qtd || 1) * precoUnitario;
+
+                    blocoAtual.itens.push({
+                        codigo: codProd,
+                        descricao: descricao,
+                        quantidade: qtd || 1,
+                        precoUnitario: precoUnitario,
+                        valorTotalSemSt: valorTotalSemSt
+                    });
+                }
+            }
+
+            if (blocoAtual && (blocoAtual.itens.length > 0 || blocoAtual.numeroPedido)) {
+                blocos.push(blocoAtual);
+            }
+
+            // =========================================================================
+            // TODO 11: REGRAS 2 E 3 - FILTRO DE RETIRA, AGRUPAMENTO E VALIDAÇÃO (CACHE)
+            // =========================================================================
+            
+            // Rastreador: Usado para limpar cargas NÃO MONTADAS apenas na primeira vez
+            // que passam pelo loop, evitando que importar a mesma planilha duplique os itens.
+            const cargasProcessadasNestaImportacao = new Set();
+
+            blocos.forEach(bloco => {
+                const numCarga = (bloco.numeroCarga || '').trim();
+
+                if (!numCarga || numCarga === '' || numCarga === '0') {
+                    return; 
+                }
+
+                salvarPedidoEmCarga({
+                    numeroCarga: numCarga,
+                    numeroPedido: bloco.numeroPedido || 'PEDIDO_SEM_NUMERO',
+                    codigoCliente: bloco.codigoCliente || 'SEM_CODIGO',
+                    nomeCliente: bloco.nomeCliente || 'CLIENTE NÃO IDENTIFICADO',
+                    cnpj: bloco.cnpj,
+                    cidade: bloco.cidade,
+                    uf: bloco.uf,
+                    telefone: bloco.telefone,
+                    endereco: bloco.endereco,
+                    bairro: bloco.bairro,
+                    dataDigitacao: bloco.dataDigitacao || '',
+                    rca: bloco.rca || '',
+                    planoPagamento: bloco.planoPagamento || '',
+                    obs01: bloco.obs01,
+                    obs02: bloco.obs02,
+                    obs03: bloco.obs03,
+                    obsEntrega: bloco.obsEntrega || [],
+                    obsGerais: bloco.obsGerais || [],
+                    itens: bloco.itens
+                }, cargasProcessadasNestaImportacao);
+            });
+
+            sincronizarComLocalStorage(); // 1. Salva tudo no cache local imediatamente
+            renderizarGridCargas();       // 2. Atualiza a tela
+        }
+
+        window.extrairDadosWinthor = extrairDadosWinthor;
+
+        function salvarPedidoEmCarga(pedido, trackerImportacao) {
+            const idCarga = pedido.numeroCarga;
+            const codCli = pedido.codigoCliente;
+            
+            // REGRA DE PROTEÇÃO: Se a carga já existe na memória e está MONTADA, a planilha é ignorada para ela.
+            if (window.bancoCargasGlobal[idCarga] && window.bancoCargasGlobal[idCarga].montada === true) {
+                return;
+            }
+
+            // Se for a primeira vez que o loop passa por essa carga, reseta os dados.
+            // Isso garante que alterações recentes da planilha substituam as antigas perfeitamente.
+            if (!trackerImportacao.has(idCarga)) {
+                window.bancoCargasGlobal[idCarga] = {
+                    numeroCarga: idCarga,
+                    valorTotalSemSt: 0,
+                    clientes: {},
+                    cidades: new Set(),
+                    totalPedidosCount: 0,
+                    montada: false, // Status padrão
+                    rotaMontada: [] // Preparando o terreno para salvar as rotas depois
+                };
+                trackerImportacao.add(idCarga);
+            }
+
+            const carga = window.bancoCargasGlobal[idCarga];
+            if (pedido.cidade) carga.cidades.add(pedido.cidade);
+
+            const valorPedido = pedido.itens.reduce((acc, item) => acc + item.valorTotalSemSt, 0);
+            carga.valorTotalSemSt += valorPedido;
+            carga.totalPedidosCount += 1;
+
+            if (!carga.clientes[codCli]) {
+                carga.clientes[codCli] = {
+                    codigo: codCli,
+                    nome: pedido.nomeCliente || 'CLIENTE NÃO IDENTIFICADO',
+                    cnpj: pedido.cnpj || '',
+                    cidade: pedido.cidade || '',
+                    uf: pedido.uf || '',
+                    telefone: pedido.telefone || '',
+                    endereco: pedido.endereco || '',
+                    bairro: pedido.bairro || '',
+                    valorTotalCliente: 0,
+                    pedidos: []
+                };
+            }
+
+            // Atualiza os dados de contato caso existam nesta linha da planilha
+            if (pedido.telefone) carga.clientes[codCli].telefone = pedido.telefone;
+            if (pedido.endereco) carga.clientes[codCli].endereco = pedido.endereco;
+            if (pedido.bairro) carga.clientes[codCli].bairro = pedido.bairro;
+
+            carga.clientes[codCli].valorTotalCliente += valorPedido;
+            carga.clientes[codCli].pedidos.push(pedido);
+        }
+
+        // =========================================================================
+        // GERENCIADOR DO LOCALSTORAGE (BANCO DE DADOS LOCAL EM CACHE)
+        // =========================================================================
+        function sincronizarComLocalStorage() {
+            const bancoCache = {};
+            
+            Object.keys(window.bancoCargasGlobal).forEach(id => {
+                const carga = window.bancoCargasGlobal[id];
+                bancoCache[id] = {
+                    ...carga,
+                    cidades: Array.from(carga.cidades) // O JSON não aceita objetos do tipo 'Set', então convertemos para Array
+                };
+            });
+            
+            localStorage.setItem('fibrasol_banco_cargas', JSON.stringify(bancoCache));
+            console.log('Banco de dados sincronizado com o LocalStorage.');
+        }
+        window.sincronizarComLocalStorage = sincronizarComLocalStorage;
+
+        // ============================================================================
+        // TODO 12: RENDERIZAÇÃO DO GRID DE CARGAS COM BUSCA MULTIFILTRO, ABAS E BADGES
+        // ============================================================================
+        
+    let abaAtivaGlobal = 'aguardando';
+
+    // ----------------------------------------------------------------------------
+    // TODO 12.1: CONTROLE DE ABAS E BUSCA
+    // ----------------------------------------------------------------------------
+
+    function filtrarAba(aba) {
+        abaAtivaGlobal = aba;
+
+        document.querySelectorAll('.aba-pilula').forEach(btn => {
+            btn.classList.remove('active-pilula');
+            btn.classList.add('text-slate-600');
+        });
+
+        if (aba === 'aguardando') {
+            document.getElementById('btnAbaAguardando')?.classList.add('active-pilula');
+        } else if (aba === 'montadas') {
+            document.getElementById('btnAbaMontadas')?.classList.add('active-pilula');
+        } else if (aba === 'jequie') {
+            document.getElementById('btnAbaJequie')?.classList.add('active-pilula');
+        }
+
+        renderizarGridCargas();
+    }
+    window.filtrarAba = filtrarAba;
+
+    function limparBusca() {
+        const input = document.getElementById('inputBuscaFiltro');
+        if (input) {
+            input.value = '';
+            renderizarGridCargas();
+        }
+    }
+    window.limparBusca = limparBusca;
+
+    // ----------------------------------------------------------------------------
+    // TODO 12.2: RENDERIZAÇÃO PRINCIPAL DO GRID DE CARGAS E CONTAGENS (BADGES)
+    // ----------------------------------------------------------------------------
+    function renderizarGridCargas() {
+        mostrarGridCargas();
+        const container = document.getElementById('containerGridCargas');
+        const termoBusca = (document.getElementById('inputBuscaFiltro')?.value || '').trim().toLowerCase();
+        
+        const ehApenasJequie = (carga) => {
+            const cidadesArray = Array.from(carga.cidades || []).map(c => String(c).toUpperCase().trim());
+            if (cidadesArray.length === 0) return false;
+            return cidadesArray.every(c => c.includes('JEQUIE'));
+        };
+
+        let countAguardando = 0;
+        let countMontadas = 0;
+        let countJequie = 0;
+
+        Object.values(bancoCargasGlobal).forEach(carga => {
+            const ehMontada = !!carga.montada;
+            const somenteJequie = ehApenasJequie(carga);
+            const temJequieGeral = Array.from(carga.cidades || []).some(c => String(c).toUpperCase().includes('JEQUIE'));
+
+            if (!ehMontada && !somenteJequie) countAguardando++;
+            if (ehMontada) countMontadas++;
+            if (temJequieGeral) countJequie++;
+        });
+
+        if (document.getElementById('badgeAguardando')) document.getElementById('badgeAguardando').innerText = countAguardando;
+        if (document.getElementById('badgeMontadas')) document.getElementById('badgeMontadas').innerText = countMontadas;
+        if (document.getElementById('badgeJequie')) document.getElementById('badgeJequie').innerText = countJequie;
+
+        let chavesCargas = Object.keys(bancoCargasGlobal).sort((a, b) => {
+            const numA = parseFloat(a) || 0;
+            const numB = parseFloat(b) || 0;
+            if (numA !== numB) return numA - numB;
+            return a.localeCompare(b);
+        });
+
+        // ----------------------------------------------------------------------------
+        // TODO 12.3: APLICAÇÃO DOS FILTROS (ABAS E BUSCA TEXTUAL)
+        // ----------------------------------------------------------------------------
+        chavesCargas = chavesCargas.filter(idCarga => {
+            const carga = bancoCargasGlobal[idCarga];
+            const ehMontada = !!carga.montada;
+            const somenteJequie = ehApenasJequie(carga);
+            const temJequieGeral = Array.from(carga.cidades || []).some(c => String(c).toUpperCase().includes('JEQUIE'));
+
+            if (abaAtivaGlobal === 'aguardando') return !ehMontada && !somenteJequie;
+            if (abaAtivaGlobal === 'montadas') return ehMontada;
+            if (abaAtivaGlobal === 'jequie') return temJequieGeral;
+
+            return true;
+        });
+
+        if (termoBusca) {
+            chavesCargas = chavesCargas.filter(idCarga => {
+                const carga = bancoCargasGlobal[idCarga];
+                
+                if (String(carga.numeroCarga).toLowerCase().includes(termoBusca)) return true;
+
+                return Object.values(carga.clientes).some(cliente => {
+                    const matchCodCliente = String(cliente.codigo).toLowerCase().includes(termoBusca);
+                    const matchNomeCliente = String(cliente.nome).toLowerCase().includes(termoBusca);
+                    const matchCnpjCliente = String(cliente.cnpj || '').toLowerCase().includes(termoBusca);
+                    const matchCidadeCliente = String(cliente.cidade || cliente.praca || '').toLowerCase().includes(termoBusca);
+
+                    const matchPedido = (cliente.pedidos || []).some(ped => 
+                        String(ped.numeroPedido).toLowerCase().includes(termoBusca)
+                    );
+
+                    return matchCodCliente || matchNomeCliente || matchCnpjCliente || matchCidadeCliente || matchPedido;
+                });
+            });
+        }
+
+        document.getElementById('badgeQtdCargas').innerText = `${chavesCargas.length} Carga(s)`;
+
+        let html = '';
+
+        // ----------------------------------------------------------------------------
+        // TODO 12.4: RENDERIZAÇÃO DO HTML DOS CARDS (AÇÃO RÁPIDA E CARGAS ENCONTRADAS)
+        // ----------------------------------------------------------------------------
+        
+        // CARD "MONTAR CARGA" (EXCLUSIVO NA ABA CARGAS MONTADAS)
+        if (abaAtivaGlobal === 'montadas') {
+            html += `
+                <div onclick="abrirModalMontarCarga()" class="bg-gradient-to-br from-[#152e50] to-[#1e3a61] rounded-2xl p-5 border border-slate-700/50 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between cursor-pointer group min-h-[190px]">
+                    <div class="flex justify-between items-start">
+                        <span class="text-[9px] font-black tracking-wider text-slate-300 uppercase">AÇÃO RÁPIDA</span>
+                        <span class="inline-flex items-center gap-1 bg-[#fac043] text-[#152e50] text-[10px] font-black px-2 py-0.5 rounded-md">
+                            <i class="fa-solid fa-plus text-[9px]"></i> NOVA ROTA
+                        </span>
+                    </div>
+
+                    <div class="my-3 flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-[#fac043] group-hover:bg-[#fac043] group-hover:text-[#152e50] transition-colors shadow-inner">
+                            <i class="fa-solid fa-truck-ramp-box text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-white font-black text-base leading-tight group-hover:text-[#fac043] transition-colors">Montar Carga</h3>
+                            <p class="text-slate-300 text-xs mt-0.5">Selecione uma carga pendente</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-white/10 flex items-center justify-between">
+                        <span class="text-xs font-bold text-amber-300">${countAguardando} aguardando</span>
+                        <span class="text-xs font-bold text-[#fac043] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                            Selecionar <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // SE NÃO HOUVER CARGAS RETORNADAS NA ABA
+        if (chavesCargas.length === 0) {
+            if (abaAtivaGlobal === 'montadas') {
+                container.innerHTML = html;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 text-xs italic">
+                    <i class="fa-solid fa-magnifying-glass-slash text-3xl mb-2 block text-slate-300"></i>
+                    ${termoBusca ? `Nenhum resultado encontrado para "<strong>${termoBusca}</strong>".` : 'Nenhuma carga encontrada nesta aba.'}
+                </div>
+            `;
+            return;
+        }
+
+        chavesCargas.forEach(idCarga => {
+            const carga = bancoCargasGlobal[idCarga];
+            const qtdClientes = Object.keys(carga.clientes).length;
+            const qtdCidades = carga.cidades.size;
+            const ehMontada = !!carga.montada;
+
+            const textoStatus = ehMontada ? 'Montado' : 'Aguardando';
+            const iconeStatus = ehMontada ? 'fa-circle-check' : 'fa-clock';
+
+            let temObsEntrega = false;
+            let temObsGeral = false;
+
+            Object.values(carga.clientes || {}).forEach(cli => {
+                (cli.pedidos || []).forEach(ped => {
+                    if (ped.obsEntrega && ped.obsEntrega.length > 0) temObsEntrega = true;
+                    if (ped.obsGerais && ped.obsGerais.length > 0) temObsGeral = true;
+                });
+            });
+
+            html += `
+                <div onclick="visualizarCarga('${idCarga}')" class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden group flex flex-col justify-between">
+                    <div>
+                        <!-- CABEÇALHO DO CARD DA CARGA -->
+                        <div class="bg-[#152e50] p-4 text-white flex justify-between items-center group-hover:bg-[#1a3860] transition">
+                            <div>
+                                <span class="text-[9px] font-bold text-[#fac043] uppercase tracking-wider block">CARREGAMENTO</span>
+                                <h3 class="text-xl font-black">${carga.numeroCarga}</h3>
+                            </div>
+                            <span class="bg-[#fac043] text-[#152e50] text-[10px] font-bold px-2 py-1 rounded-md uppercase flex items-center gap-1">
+                                <i class="fa-solid ${iconeStatus}"></i> ${textoStatus}
+                            </span>
+                        </div>
+
+                        <!-- MÉTRICAS DE CLIENTES E CIDADES -->
+                        <div class="p-4 space-y-3">
+                            <div class="grid grid-cols-2 gap-2 text-xs font-semibold text-slate-600">
+                                <div class="bg-slate-50 p-2 rounded-lg border border-slate-100 text-center">
+                                    <span class="block text-[9px] text-slate-400 uppercase font-bold">Clientes</span>
+                                    <span class="text-sm font-bold text-[#152e50]"><i class="fa-solid fa-users text-amber-500 mr-1"></i> ${qtdClientes}</span>
+                                </div>
+                                <div class="bg-slate-50 p-2 rounded-lg border border-slate-100 text-center">
+                                    <span class="block text-[9px] text-slate-400 uppercase font-bold">Cidades</span>
+                                    <span class="text-sm font-bold text-[#152e50]"><i class="fa-solid fa-city text-amber-500 mr-1"></i> ${qtdCidades}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RODAPÉ DO CARD COM TOTAL E BADGES DE OBSERVAÇÃO -->
+                    <div class="p-4 pt-2 border-t border-slate-100 flex justify-between items-end gap-2">
+                        <div>
+                            <span class="block text-[9px] text-slate-400 uppercase font-bold">Total sem ST</span>
+                            <span class="text-base font-extrabold text-emerald-600">${formatarMoeda(carga.valorTotalSemSt)}</span>
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            ${temObsEntrega ? `
+                                <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200/80 px-2 py-1 rounded-lg text-[10px] font-extrabold uppercase" title="Possui Observação de Entrega">
+                                    <i class="fa-solid fa-truck-fast text-rose-500"></i>
+                                    <span class="hidden sm:inline">OBS. ENTREGA</span>
+                                </span>
+                            ` : ''}
+
+                            ${temObsGeral ? `
+                                <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2 py-1 rounded-lg text-[10px] font-extrabold uppercase" title="Possui Observação Geral">
+                                    <i class="fa-solid fa-circle-info text-emerald-500"></i>
+                                    <span class="hidden sm:inline">OBS. GERAL</span>
+                                </span>
+                            ` : ''}
+
+                            <span class="text-xs font-bold text-[#152e50] group-hover:translate-x-1 transition-transform flex items-center gap-1 ml-1">
+                                Abrir <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+    window.renderizarGridCargas = renderizarGridCargas;
+
+    // ----------------------------------------------------------------------------
+    // TODO 12.5: FUNÇÕES DO MODAL: MONTAR CARGA (CORRIGIDO)
+    // ----------------------------------------------------------------------------
+
+    function abrirModalMontarCarga() {
+        const modal = document.getElementById('modalMontarCarga');
+        const inputBusca = document.getElementById('buscaModalMontarCarga');
+        if (!modal) return;
+
+        if (inputBusca) inputBusca.value = '';
+        modal.classList.remove('hidden');
+
+        filtrarCargasAguardandoModal('');
+    }
+    window.abrirModalMontarCarga = abrirModalMontarCarga;
+
+    function fecharModalMontarCarga() {
+        const modal = document.getElementById('modalMontarCarga');
+        if (modal) modal.classList.add('hidden');
+    }
+    window.fecharModalMontarCarga = fecharModalMontarCarga;
+
+    function limparBuscaModalMontar() {
+        const inputBusca = document.getElementById('buscaModalMontarCarga');
+        if (inputBusca) {
+            inputBusca.value = '';
+            filtrarCargasAguardandoModal('');
+        }
+    }
+    window.limparBuscaModalMontar = limparBuscaModalMontar;
+
+    function filtrarCargasAguardandoModal(termoBusca) {
+        const container = document.getElementById('listaCargasAguardandoCorpo');
+        const contador = document.getElementById('contadorModalMontar');
+        if (!container || !window.bancoCargasGlobal) return;
+
+        const termo = (termoBusca || '').toLowerCase().trim();
+
+        const cargasAguardando = Object.values(window.bancoCargasGlobal).filter(carga => {
+            const isAguardando = !carga.montada;
+            if (!isAguardando) return false;
+
+            if (!termo) return true;
+
+            const numCarga = String(carga.numeroCarga || '').toLowerCase();
+            const cidades = Array.from(carga.cidades || []).join(' ').toLowerCase();
+
+            return numCarga.includes(termo) || cidades.includes(termo);
+        });
+
+        if (contador) {
+            contador.innerText = `${cargasAguardando.length} carregamento(s) disponível(is)`;
+        }
+
+        if (cargasAguardando.length === 0) {
+            container.innerHTML = `
+                <div class="py-12 text-center text-slate-400">
+                    <i class="fa-solid fa-box-open text-3xl mb-2 text-slate-300 block"></i>
+                    <p class="text-xs font-semibold">Nenhuma carga aguardando montagem encontrada.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        cargasAguardando.forEach(carga => {
+            const totalClientes = Object.keys(carga.clientes || {}).length;
+            const totalCidades = carga.cidades ? (carga.cidades.size || carga.cidades.length || 0) : 0;
+            const valorFormatado = typeof formatarMoeda === 'function' ? formatarMoeda(carga.valorTotalSemSt || 0) : `R$ ${carga.valorTotalSemSt || 0}`;
+
+            html += `
+                <div class="p-3 bg-white hover:bg-amber-50/40 rounded-xl border border-slate-200 flex items-center justify-between gap-4 transition group">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-[#152e50] text-[#fac043] font-black text-xs px-2.5 py-1.5 rounded-lg">
+                            ${carga.numeroCarga}
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-800">Carregamento #${carga.numeroCarga}</span>
+                                <span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-black tracking-wider uppercase">Aguardando</span>
+                            </div>
+                            <div class="flex items-center gap-3 mt-1 text-[11px] text-slate-500 font-medium">
+                                <span><i class="fa-solid fa-users text-slate-400 mr-1"></i>${totalClientes} cliente(s)</span>
+                                <span><i class="fa-solid fa-city text-slate-400 mr-1"></i>${totalCidades} cidade(s)</span>
+                                <span class="font-bold text-emerald-700">${valorFormatado}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="fecharModalMontarCarga(); abrirTelaMontagemRota('${carga.numeroCarga}')" class="px-3.5 py-2 bg-[#152e50] hover:bg-slate-800 text-[#fac043] text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+                        <span>Montar</span>
+                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    </button>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+    window.filtrarCargasAguardandoModal = filtrarCargasAguardandoModal;
+
+        // ==========================================
+        // TODO 13: RENDERIZAÇÃO DO DETALHAMENTO DA CARGA
+        // ==========================================
+
+        window.todosExpandidosState = false;
+        window.cargaAtivaId = null;
+
+        // ---------------------------------------------------------------------
+        // TODO 13.1 CONTROLES DE INTERFACE (EXPANDIR/RECOLHER & VISIBILIDADE)
+        // ---------------------------------------------------------------------
+
+        function toggleTodosPedidos() {
+            window.todosExpandidosState = !window.todosExpandidosState;
+            const expandir = window.todosExpandidosState;
+
+            const btnTexto = document.getElementById('textoToggleTodos');
+            const btnIcone = document.getElementById('iconeToggleTodos');
+
+            if (btnTexto) btnTexto.innerText = expandir ? 'Recolher Todos' : 'Expandir Todos';
+            if (btnIcone) btnIcone.className = expandir 
+                ? 'fa-solid fa-down-left-and-up-right-to-center text-[11px]' 
+                : 'fa-solid fa-up-right-and-down-left-from-center text-[11px]';
+
+            const conteudos = document.querySelectorAll('.accordion-conteudo');
+            conteudos.forEach(el => {
+                const codCliente = el.id.replace('pedidos-cliente-', '');
+                const icone = document.getElementById(`icone-toggle-${codCliente}`);
+                const textoBtn = document.getElementById(`texto-toggle-${codCliente}`);
+
+                if (expandir) {
+                    el.classList.remove('hidden');
+                    if (icone) icone.className = 'fa-solid fa-chevron-up text-xs transition-transform';
+                    if (textoBtn) textoBtn.innerText = 'Recolher Pedidos';
+                } else {
+                    el.classList.add('hidden');
+                    if (icone) icone.className = 'fa-solid fa-chevron-down text-xs transition-transform';
+                    if (textoBtn) textoBtn.innerText = 'Expandir Pedidos';
+                }
+            });
+        }
+        window.toggleTodosPedidos = toggleTodosPedidos;
+
+        function visualizarCarga(idCarga) {
+            const carga = bancoCargasGlobal[idCarga];
+            if (!carga) return;
+
+            window.cargaAtivaId = idCarga; // Vincula a carga ativa para todas as rotas e modais
+
+            const secaoGrid = document.getElementById('secaoGridCargas');
+            const secaoDetalhe = document.getElementById('secaoDetalheCarga');
+            const cardBusca = document.getElementById('cardBuscaGrid');
+            const btnVoltar = document.getElementById('btnVoltarGrid');
+
+            if (cardBusca) cardBusca.classList.add('hidden');
+            if (btnVoltar) btnVoltar.classList.remove('hidden');
+
+            window.todosExpandidosState = false;
+            const btnTexto = document.getElementById('textoToggleTodos');
+            const btnIcone = document.getElementById('iconeToggleTodos');
+            if (btnTexto) btnTexto.innerText = 'Expandir Todos';
+            if (btnIcone) btnIcone.className = 'fa-solid fa-up-right-and-down-left-from-center text-[11px]';
+
+            secaoGrid.classList.add('painel-oculto');
+            setTimeout(() => {
+                secaoGrid.classList.add('hidden');
+                secaoDetalhe.classList.remove('hidden');
+                
+                document.getElementById('detalheCargaNum').innerText = `${carga.numeroCarga}`;
+                document.getElementById('detalheCargaValor').innerText = formatarMoeda(carga.valorTotalSemSt);
+                document.getElementById('detalheCargaEntregas').innerText = Object.keys(carga.clientes).length;
+                document.getElementById('detalheCargaCidades').innerText = carga.cidades.size;
+                document.getElementById('detalheCargaPedidos').innerText = carga.totalPedidosCount;
+
+                renderizarClientesDaCarga(carga);
+
+                setTimeout(() => {
+                    secaoDetalhe.classList.remove('painel-oculto');
+                    secaoDetalhe.classList.add('painel-visivel');
+                }, 50);
+            }, 300);
+        }
+        window.visualizarCarga = visualizarCarga;
+
+        function mostrarGridCargas() {
+            window.cargaAtivaId = null;
+            const secaoGrid = document.getElementById('secaoGridCargas');
+            const secaoDetalhe = document.getElementById('secaoDetalheCarga');
+            const cardBusca = document.getElementById('cardBuscaGrid');
+            const btnVoltar = document.getElementById('btnVoltarGrid');
+
+            secaoDetalhe.classList.add('painel-oculto');
+            setTimeout(() => {
+                secaoDetalhe.classList.add('hidden');
+                secaoGrid.classList.remove('hidden');
+                
+                if (cardBusca) cardBusca.classList.remove('hidden');
+                if (btnVoltar) btnVoltar.classList.add('hidden');
+
+                setTimeout(() => {
+                    secaoGrid.classList.remove('painel-oculto');
+                    secaoGrid.classList.add('painel-visivel');
+                }, 50);
+            }, 300);
+        }
+        window.mostrarGridCargas = mostrarGridCargas;
+
+        function togglePedidosCliente(codCliente) {
+            const container = document.getElementById(`pedidos-cliente-${codCliente}`);
+            const icone = document.getElementById(`icone-toggle-${codCliente}`);
+            const textoBtn = document.getElementById(`texto-toggle-${codCliente}`);
+
+            if (!container) return;
+
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                if (icone) icone.className = 'fa-solid fa-chevron-up text-xs transition-transform';
+                if (textoBtn) textoBtn.innerText = 'Recolher Pedidos';
+            } else {
+                container.classList.add('hidden');
+                if (icone) icone.className = 'fa-solid fa-chevron-down text-xs transition-transform';
+                if (textoBtn) textoBtn.innerText = 'Expandir Pedidos';
+            }
+        }
+        window.togglePedidosCliente = togglePedidosCliente;
+
+        // Disparador inicial da rota
+        function abrirModalRota() {
+            if (!window.cargaAtivaId) return;
+            alert(`Módulo de Montagem de Rotas da carga ${window.cargaAtivaId} será carregado em breve!`);
+        }
+        window.abrirModalRota = abrirModalRota;
+
+        // ==========================================
+        // EDIÇÃO DINÂMICA DA PRAÇA DE ENTREGA DO PEDIDO
+        // ==========================================
+        function editarPracaEntregaPedido(numeroPedido) {
+            const idCarga = window.cargaAtivaId;
+            const carga = bancoCargasGlobal[idCarga];
+            if (!carga || !carga.clientes) return;
+
+            let pedidoAlvo = null;
+            let clienteDono = null;
+
+            for (const cli of Object.values(carga.clientes)) {
+                const ped = (cli.pedidos || []).find(p => String(p.numeroPedido) === String(numeroPedido));
+                if (ped) {
+                    pedidoAlvo = ped;
+                    clienteDono = cli;
+                    break;
+                }
+            }
+
+            if (!pedidoAlvo) return;
+
+            const pracaAtual = pedidoAlvo.pracaEntrega || [clienteDono.cidade, clienteDono.uf].filter(Boolean).join(' - ');
+            const novaPraca = prompt(`Editar praça de entrega para o Pedido ${numeroPedido}:\n(Deixe em branco para restaurar a cidade padrão do cliente)`, pracaAtual);
+
+            if (novaPraca === null) return;
+
+            if (novaPraca.trim() === '') {
+                delete pedidoAlvo.pracaEntrega;
+            } else {
+                pedidoAlvo.pracaEntrega = novaPraca.trim().toUpperCase();
+            }
+
+            renderizarClientesDaCarga(carga);
+        }
+        window.editarPracaEntregaPedido = editarPracaEntregaPedido;
+
+        // ---------------------------------------------------------------
+        // TODO 13.2 RENDERIZAÇÃO DOS CLIENTES E PEDIDOS (LAYOUT ALINHADO)
+        // ---------------------------------------------------------------
+        
+        function renderizarClientesDaCarga(carga) {
+            const container = document.getElementById('containerClientesCarga');
+            let htmlClientes = '';
+
+            Object.values(carga.clientes).forEach(cliente => {
+                let htmlPedidosDoCliente = '';
+                let valorTotalClienteSemSt = 0;
+                
+                let clienteTemObsEntrega = false;
+                let clienteTemObsGeral = false;
+
+                const cidadePadraoCliente = [cliente.cidade, cliente.uf].filter(Boolean).join(' - ') || 'CIDADE NÃO INFORMADA';
+
+                cliente.pedidos.forEach(pedido => {
+                    let htmlItens = '';
+                    let totalPedidoSemSt = 0;
+
+                    pedido.itens.forEach(item => {
+                        totalPedidoSemSt += item.valorTotalSemSt;
+                        htmlItens += `
+                            <tr class="border-b border-slate-200 hover:bg-slate-50 transition">
+                                <td class="py-2 px-3 font-bold text-slate-600 text-[11px] align-middle">${item.codigo}</td>
+                                <td class="py-2 px-3 text-slate-800 font-medium text-xs align-middle">${item.descricao}</td>
+                                <td class="py-2 px-3 text-center font-bold text-[#152e50] text-xs align-middle">${item.quantidade}</td>
+                                <td class="py-2 px-3 text-right text-slate-600 text-[11px] align-middle">${formatarMoeda(item.precoUnitario)}</td>
+                                <td class="py-2 px-3 text-right font-black text-[#152e50] text-[11px] align-middle">${formatarMoeda(item.valorTotalSemSt)}</td>
+                            </tr>
+                        `;
+                    });
+
+                    valorTotalClienteSemSt += totalPedidoSemSt;
+                    
+                    let htmlObs = '';
+                    const temObsInterna = pedido.obs01 || pedido.obs02 || pedido.obs03;
+                    const temObsEntrega = pedido.obsEntrega && pedido.obsEntrega.length > 0;
+                    const temObsGerais = pedido.obsGerais && pedido.obsGerais.length > 0;
+
+                    if (temObsEntrega) clienteTemObsEntrega = true;
+                    if (temObsGerais) clienteTemObsGeral = true;
+
+                    if (temObsInterna || temObsEntrega || temObsGerais) {
+                        htmlObs = `<div class="mt-4 pt-3 border-t border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4">`;
+                        
+                        if (temObsInterna) {
+                            htmlObs += `<div>
+                                <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-1">Observações Internas</h4>
+                                <ul class="text-[11px] text-slate-700 space-y-1">
+                                    ${pedido.obs01 ? `<li><strong class="text-slate-500 mr-1">OBS01:</strong>${pedido.obs01}</li>` : ''}
+                                    ${pedido.obs02 ? `<li><strong class="text-slate-500 mr-1">OBS02:</strong>${pedido.obs02}</li>` : ''}
+                                    ${pedido.obs03 ? `<li><strong class="text-slate-500 mr-1">OBS03:</strong>${pedido.obs03}</li>` : ''}
+                                </ul>
+                            </div>`;
+                        }
+
+                        if (temObsEntrega) {
+                            htmlObs += `<div>
+                                <h4 class="text-[10px] font-bold text-rose-600 uppercase mb-1 flex items-center gap-1"><i class="fa-solid fa-truck-fast"></i> Observações de Entrega</h4>
+                                <ul class="text-[11px] text-slate-700 font-medium space-y-0.5 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                                    ${pedido.obsEntrega.map(obs => `<li>${obs}</li>`).join('')}
+                                </ul>
+                            </div>`;
+                        }
+
+                        if (temObsGerais) {
+                            htmlObs += `<div class="md:col-span-2">
+                                <h4 class="text-[10px] font-bold text-emerald-600 uppercase mb-1 flex items-center gap-1"><i class="fa-solid fa-circle-info"></i> Observações Gerais</h4>
+                                <ul class="text-[11px] text-slate-800 font-semibold space-y-0.5 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
+                                    ${pedido.obsGerais.map(obs => `<li>${obs}</li>`).join('')}
+                                </ul>
+                            </div>`;
+                        }
+                        
+                        htmlObs += `</div>`;
+                    }
+
+                    // --- PRAÇA DE ENTREGA DO PEDIDO (EDITÁVEL) ---
+                    const pracaEfetiva = pedido.pracaEntrega || cidadePadraoCliente;
+                    const foiAlterada = pedido.pracaEntrega && pedido.pracaEntrega.trim().toUpperCase() !== cidadePadraoCliente.trim().toUpperCase();
+
+                    const badgePracaEntrega = foiAlterada ? `
+                        <div class="inline-flex items-center gap-1.5 bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded-md text-[11px] font-black uppercase animate-pulse shadow-xs" title="Praça alterada manualmente para este pedido!">
+                            <i class="fa-solid fa-truck-ramp-box text-rose-600 text-[10px]"></i>
+                            <span>ENTREGA: ${pracaEfetiva}</span>
+                            <button onclick="editarPracaEntregaPedido('${pedido.numeroPedido}')" title="Editar praça de entrega" class="ml-1 hover:text-rose-950 p-0.5 rounded cursor-pointer">
+                                <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                            </button>
+                        </div>
+                    ` : `
+                        <div class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-md text-[11px] font-bold uppercase" title="Praça de entrega padrão (mesma do cliente)">
+                            <i class="fa-solid fa-location-dot text-amber-600 text-[10px]"></i>
+                            <span>ENTREGA: ${pracaEfetiva}</span>
+                            <button onclick="editarPracaEntregaPedido('${pedido.numeroPedido}')" title="Alterar local de entrega deste pedido" class="ml-1 text-slate-400 hover:text-[#152e50] p-0.5 rounded cursor-pointer">
+                                <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                            </button>
+                        </div>
+                    `;
+
+                    // --- BADGES DO CABEÇALHO DO PEDIDO ---
+                    const badgeData = pedido.dataDigitacao ? `
+                        <div class="inline-flex items-center gap-1 bg-white text-slate-600 px-2 py-0.5 rounded-md border border-slate-200 text-[11px] font-semibold" title="Data de Digitação / Lançamento">
+                            <i class="fa-regular fa-calendar text-slate-400 text-[10px]"></i>
+                            <span>${pedido.dataDigitacao}</span>
+                        </div>
+                    ` : '';
+
+                    const badgeRca = pedido.rca ? `
+                        <div class="inline-flex items-center gap-1 bg-white text-slate-700 px-2 py-0.5 rounded-md border border-slate-200 text-[11px] font-bold" title="Representante Comercial">
+                            <i class="fa-solid fa-user-tie text-slate-400 text-[10px]"></i>
+                            <span>RCA: <strong class="text-[#152e50]">${pedido.rca}</strong></span>
+                        </div>
+                    ` : '';
+
+                    const badgePlano = pedido.planoPagamento ? `
+                        <div class="inline-flex items-center gap-1 bg-amber-50 text-amber-900 px-2 py-0.5 rounded-md border border-amber-200 text-[11px] font-bold" title="Plano de Pagamento">
+                            <i class="fa-solid fa-file-invoice-dollar text-amber-600 text-[10px]"></i>
+                            <span>${pedido.planoPagamento}</span>
+                        </div>
+                    ` : '';
+
+                    htmlPedidosDoCliente += `
+                        <div class="mt-4 border-2 border-slate-200 rounded-xl overflow-hidden bg-white">
+                            <div class="bg-slate-100 p-3 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3">
+                                
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <!-- Identificador do Pedido -->
+                                    <div class="flex items-center gap-2">
+                                        <span class="bg-[#152e50] text-white font-bold text-[10px] px-2 py-1 rounded shadow-xs">PEDIDO</span>
+                                        <span class="font-black text-slate-800 text-sm tracking-wide">${pedido.numeroPedido}</span>
+                                    </div>
+
+                                    <!-- Badges informativos (Praça de Entrega, Data, RCA, Plano de Pagamento) -->
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        ${badgePracaEntrega}
+                                        ${badgeData}
+                                        ${badgeRca}
+                                        ${badgePlano}
+                                    </div>
+                                </div>
+
+                                <span class="text-xs font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
+                                    Total: ${formatarMoeda(totalPedidoSemSt)}
+                                </span>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse min-w-[600px]">
+                                    <thead>
+                                        <tr class="bg-slate-50 text-slate-500 uppercase text-[9px] font-bold border-b-2 border-slate-200">
+                                            <th class="py-2.5 px-3 w-20">Código</th>
+                                            <th class="py-2.5 px-3">Descrição do Produto</th>
+                                            <th class="py-2.5 px-3 text-center w-24">Quantidade</th>
+                                            <th class="py-2.5 px-3 text-right w-28">Valor Unit.</th>
+                                            <th class="py-2.5 px-3 text-right w-32">Valor Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${htmlItens}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="px-3 pb-3">
+                                ${htmlObs}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                const cidadeExibicao = cidadePadraoCliente;
+                const qtdPedidosCliente = cliente.pedidos.length;
+
+                htmlClientes += `
+                    <div class="bg-white rounded-2xl border-l-4 border-l-[#fac043] border-t border-b border-r border-slate-200 shadow-sm p-4 mb-4 relative">
+                        <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-4">
+                            
+                            <!-- BLOCO 1: Código + Razão Social | Praça + Pedidos + Obs -->
+                            <div class="flex flex-col gap-2 min-w-[320px] lg:w-5/12">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="inline-flex items-center gap-1.5 bg-[#152e50] text-[#fac043] px-2.5 py-1 rounded-lg shadow-xs shrink-0">
+                                        <i class="fa-solid fa-address-card text-xs"></i>
+                                        <span class="text-xs font-black tracking-wider">${cliente.codigo}</span>
+                                    </div>
+                                    <span class="text-sm font-black text-slate-800 leading-tight truncate" title="${cliente.nome}">${cliente.nome}</span>
+                                </div>
+
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <div class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-200/80 text-xs font-black uppercase">
+                                        <i class="fa-solid fa-location-dot text-amber-600 text-[11px]"></i>
+                                        <span>${cidadeExibicao}</span>
+                                    </div>
+
+                                    <div class="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold" title="Quantidade de pedidos deste cliente">
+                                        <i class="fa-solid fa-boxes-stacked text-slate-500 text-[11px]"></i>
+                                        <span>${qtdPedidosCliente} ${qtdPedidosCliente === 1 ? 'Pedido' : 'Pedidos'}</span>
+                                    </div>
+
+                                    ${clienteTemObsEntrega ? `
+                                        <span class="inline-flex items-center gap-1 bg-rose-100 text-rose-800 border border-rose-300 px-2 py-1 rounded-lg text-xs font-black uppercase animate-pulse">
+                                            <i class="fa-solid fa-truck-fast text-rose-600"></i> Obs. Entrega
+                                        </span>
+                                    ` : ''}
+
+                                    ${clienteTemObsGeral ? `
+                                        <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-1 rounded-lg text-xs font-black uppercase">
+                                            <i class="fa-solid fa-circle-info text-emerald-600"></i> Obs. Geral
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <!-- BLOCO 2: Dados Cadastrais -->
+                            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs lg:w-1/3 border-t lg:border-t-0 border-slate-100 pt-3 lg:pt-0">
+                                <div>
+                                    ${cliente.cnpj && cliente.cnpj !== '-' ? `
+                                        <button onclick="consultarCnpjModal('${cliente.cnpj}')" title="Detalhes cadastrais" class="inline-flex items-center gap-1.5 text-xs font-bold text-[#152e50] bg-slate-100 hover:bg-[#152e50] hover:text-[#fac043] px-2.5 py-1 rounded-lg font-mono transition border border-slate-200 cursor-pointer group">
+                                            <i class="fa-solid fa-magnifying-glass text-[10px] text-slate-400 group-hover:text-[#fac043]"></i>
+                                            <span>${cliente.cnpj}</span>
+                                        </button>
+                                    ` : `<span class="text-xs font-bold text-slate-400 font-mono">-</span>`}
+                                </div>
+
+                                <div class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-phone text-[#152e50] text-[10px]"></i>
+                                    <span>${cliente.telefone || '-'}</span>
+                                </div>
+
+                                <div class="text-xs font-medium text-slate-700 flex items-center gap-1.5 w-full">
+                                    <i class="fa-solid fa-map-pin text-[#152e50] text-[10px] shrink-0"></i>
+                                    <span class="truncate" title="${[cliente.endereco, cliente.bairro].filter(Boolean).join(' - ')}">
+                                        ${[cliente.endereco, cliente.bairro].filter(Boolean).join(' - ') || '-'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- BLOCO 3: Total + Ação de Expandir -->
+                            <div class="flex items-center justify-between lg:justify-end gap-4 w-full lg:w-auto border-t lg:border-t-0 border-slate-100 pt-3 lg:pt-0 shrink-0">
+                                <div class="flex flex-col text-left lg:text-right">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Pedidos</span>
+                                    <span class="text-base font-black text-emerald-600 leading-tight">${formatarMoeda(valorTotalClienteSemSt)}</span>
+                                </div>
+
+                                <button onclick="togglePedidosCliente('${cliente.codigo}')" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-[#152e50] font-bold rounded-xl text-xs transition flex items-center gap-2 border border-slate-200 shadow-xs cursor-pointer">
+                                    <span id="texto-toggle-${cliente.codigo}">Expandir Pedidos</span>
+                                    <i id="icone-toggle-${cliente.codigo}" class="fa-solid fa-chevron-down text-xs"></i>
+                                </button>
+                            </div>
+
+                        </div>
+                        
+                        <div id="pedidos-cliente-${cliente.codigo}" class="accordion-conteudo hidden">
+                            ${htmlPedidosDoCliente}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = htmlClientes;
+        }
+
+        // ---------------------------------------------
+        // TODO 13.3 FUNÇÕES AUXILIARES E DO MODAL CNPJ
+        // ---------------------------------------------
+
+        function formatarMoeda(valor) {
+            return (valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+        window.formatarMoeda = formatarMoeda;
+
+        async function consultarCnpjModal(cnpjBruto) {
+            const cnpjLimpo = String(cnpjBruto).replace(/\D/g, '');
+            const modal = document.getElementById('modalCnpj');
+            const container = document.getElementById('conteudoModalCnpj');
+
+            if (!modal || !container) return;
+
+            if (cnpjLimpo.length !== 14) {
+                modal.classList.remove('hidden');
+                container.innerHTML = `
+                    <div class="text-center py-6 space-y-3">
+                        <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                            <i class="fa-solid fa-id-card"></i>
+                        </div>
+                        <h4 class="text-sm font-black text-slate-800 uppercase">Consulta Restrita a CNPJ</h4>
+                        <p class="text-xs text-slate-600 font-medium max-w-xs mx-auto leading-relaxed">
+                            A consulta automática via API está disponível apenas para <strong class="text-slate-800">CNPJ (14 dígitos)</strong>.
+                        </p>
+                        <div class="bg-amber-50 border border-amber-200 p-2.5 rounded-xl text-[11px] text-amber-800 font-semibold max-w-xs mx-auto">
+                            Para CPF, faça a verificação diretamente no portal da Receita Federal.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            modal.classList.remove('hidden');
+            container.innerHTML = `
+                <div class="text-center py-8 space-y-3">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl text-[#152e50]"></i>
+                    <p class="text-xs font-bold text-slate-600">Buscando ficha completa na Receita Federal...</p>
+                </div>
+            `;
+
+            try {
+                const resposta = await fetch(`https://minhareceita.org/${cnpjLimpo}`);
+                if (!resposta.ok) throw new Error('CNPJ não encontrado ou indisponível.');
+
+                const d = await resposta.json();
+                
+                const statusCor = d.descricao_situacao_cadastral === 'ATIVA' 
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+                    : 'bg-rose-100 text-rose-800 border-rose-300';
+
+                const capitalFmt = (d.capital_social || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                
+                let htmlSocios = '';
+                if (d.qsa && d.qsa.length > 0) {
+                    htmlSocios = d.qsa.map(s => {
+                        const nomeSocio = s.nome_socio || s.nome_socio_raz_social || s.nome || 'NOME NÃO INFORMADO';
+                        const qualif = s.qualificacao_socio || s.qualificacao || 'SÓCIO';
+                        return `
+                            <li class="flex justify-between items-center text-[11px] py-1 border-b border-slate-100 last:border-0">
+                                <span class="font-bold text-slate-700">${nomeSocio}</span>
+                                <span class="text-[9px] font-semibold text-slate-400 uppercase bg-slate-100 px-1.5 py-0.5 rounded">${qualif}</span>
+                            </li>
+                        `;
+                    }).join('');
+                } else {
+                    htmlSocios = '<li class="text-[11px] text-slate-400 italic">Nenhum sócio informado</li>';
+                }
+
+                let htmlCnaesSecundarios = '';
+                if (d.cnaes_secundarios && d.cnaes_secundarios.length > 0) {
+                    htmlCnaesSecundarios = d.cnaes_secundarios.map(c => `
+                        <li class="text-[10px] text-slate-600 py-0.5 border-b border-slate-100 last:border-0 flex gap-1.5">
+                            <strong class="text-slate-800 whitespace-nowrap">${c.codigo}:</strong>
+                            <span>${c.descricao}</span>
+                        </li>
+                    `).join('');
+                } else {
+                    htmlCnaesSecundarios = '<li class="text-[10px] text-slate-400 italic">Nenhuma atividade secundária cadastrada</li>';
+                }
+
+                const ufEstado = d.uf || 'BA';
+                const linkSintegra = `https://www.sintegra.gov.br/`;
+
+                container.innerHTML = `
+                    <div class="space-y-3 text-xs max-h-[75vh] overflow-y-auto pr-1">
+                        <div class="flex justify-between items-start pb-2 border-b border-slate-100">
+                            <div>
+                                <span class="text-[9px] font-bold text-slate-400 uppercase">Razão Social</span>
+                                <h4 class="text-sm font-black text-slate-800 leading-tight">${d.razao_social}</h4>
+                                ${d.nome_fantasia ? `<p class="text-xs font-bold text-[#152e50] mt-0.5"><i class="fa-solid fa-store text-[10px]"></i> ${d.nome_fantasia}</p>` : ''}
+                            </div>
+                            <span class="text-[10px] font-black px-2.5 py-1 rounded-md border ${statusCor}">
+                                ${d.descricao_situacao_cadastral}
+                            </span>
+                        </div>
+
+                        <div class="bg-amber-50 border border-amber-200/80 p-2.5 rounded-xl flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-file-invoice-dollar text-amber-600 text-sm"></i>
+                                <div>
+                                    <span class="block text-[10px] font-extrabold text-amber-900 uppercase">Inscrição Estadual / Sintegra (${ufEstado})</span>
+                                    <span class="text-[10px] text-amber-700 font-medium">Consulte a I.E. diretamente no cadastro estadual da SEFAZ-${ufEstado}</span>
+                                </div>
+                            </div>
+                            <a href="${linkSintegra}" target="_blank" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] rounded-lg transition flex items-center gap-1 shrink-0">
+                                Consultar IE <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
+                            </a>
+                        </div>
+
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                            <div>
+                                <span class="block text-[9px] font-bold text-slate-400 uppercase">CNPJ</span>
+                                <span class="font-mono font-bold text-slate-800">${d.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5")}</span>
+                            </div>
+                            <div>
+                                <span class="block text-[9px] font-bold text-slate-400 uppercase">Abertura</span>
+                                <span class="font-bold text-slate-700">${d.data_inicio_atividade || '-'}</span>
+                            </div>
+                            <div>
+                                <span class="block text-[9px] font-bold text-slate-400 uppercase">Porte / Tipo</span>
+                                <span class="font-bold text-slate-700">${d.porte || '-'} (${d.descricao_identificador_matriz_filial || 'MATRIZ'})</span>
+                            </div>
+                            <div>
+                                <span class="block text-[9px] font-bold text-slate-400 uppercase">Capital Social</span>
+                                <span class="font-bold text-emerald-600">${capitalFmt}</span>
+                            </div>
+                            <div>
+                                <span class="block text-[9px] font-bold text-slate-400 uppercase">Natureza Jurídica</span>
+                                <span class="font-bold text-slate-700 truncate block">${d.natureza_juridica || '-'}</span>
+                            </div>
+                            <div>
+                                <span class="block text-[9px] font-bold text-slate-400 uppercase">Contato Cadastro</span>
+                                <span class="font-bold text-slate-700 truncate block">${d.ddd_telefone_1 || d.email || '-'}</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5">Atividade Principal (CNAE)</span>
+                            <div class="bg-slate-100 p-2 rounded-lg text-[11px] font-semibold text-slate-700 border border-slate-200">
+                                ${d.cnae_fiscal} - ${d.cnae_fiscal_descricao}
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Atividades Secundárias (${d.cnaes_secundarios ? d.cnaes_secundarios.length : 0})</span>
+                            <ul class="bg-slate-50 p-2 rounded-lg border border-slate-200 max-h-32 overflow-y-auto space-y-1">
+                                ${htmlCnaesSecundarios}
+                            </ul>
+                        </div>
+
+                        <div>
+                            <span class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5">Endereço Fiscal</span>
+                            <p class="text-[11px] font-medium text-slate-700 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                <i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>
+                                ${d.descricao_tipo_de_logradouro || ''} ${d.logradouro}, ${d.numero} ${d.complemento ? ' - ' + d.complemento : ''} - ${d.bairro}, ${d.municipio}/${d.uf} - CEP: ${d.cep}
+                            </p>
+                        </div>
+
+                        <div>
+                            <span class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Quadro de Sócios e Administradores (QSA)</span>
+                            <ul class="bg-slate-50 p-2 rounded-lg border border-slate-200 space-y-1">
+                                ${htmlSocios}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            } catch (erro) {
+                container.innerHTML = `
+                    <div class="text-center py-6 text-rose-600 space-y-2">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                        <p class="text-xs font-bold">Erro ao buscar dados deste CNPJ.</p>
+                        <span class="text-[10px] text-slate-400 block">${erro.message}</span>
+                    </div>
+                `;
+            }
+        }
+
+        function fecharModalCnpj() {
+            document.getElementById('modalCnpj')?.classList.add('hidden');
+        }
+
+        window.consultarCnpjModal = consultarCnpjModal;
+        window.fecharModalCnpj = fecharModalCnpj;
+
+        // ---------------------------------------------------------------------
+        // TODO 13.4 CONTROLE DE ABAS E MODAIS DE RESUMO DE ITENS
+        // ---------------------------------------------------------------------
+
+        let abaItensAtiva = 'rota'; // 'rota' ou 'agrupados'
+
+        function abrirModalItensPorRota() {
+            abrirModalItensGenerico('rota');
+        }
+        window.abrirModalItensPorRota = abrirModalItensPorRota;
+
+        function abrirModalItensAgrupados() {
+            abrirModalItensGenerico('agrupados');
+        }
+        window.abrirModalItensAgrupados = abrirModalItensAgrupados;
+
+        function abrirModalItensGenerico(abaInicial) {
+            if (!window.cargaAtivaId || !bancoCargasGlobal[window.cargaAtivaId]) return;
+
+            const modal = document.getElementById('backdropModalItens');
+            if (modal) modal.classList.remove('hidden');
+
+            alternarAbaItens(abaInicial);
+        }
+
+        function fecharModalItens() {
+            const modal = document.getElementById('backdropModalItens');
+            if (modal) modal.classList.add('hidden');
+            if (window.modoJanelaFlutuanteState) alternarModoJanela();
+        }
+        window.fecharModalItens = fecharModalItens;
+
+        function alternarAbaItens(aba) {
+            abaItensAtiva = aba;
+            const btnRota = document.getElementById('btnAbaItensRota');
+            const btnAgrup = document.getElementById('btnAbaItensAgrupados');
+
+            if (!btnRota || !btnAgrup) return;
+
+            if (aba === 'rota') {
+                btnRota.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-[#152e50] text-[#fac043] shadow-xs cursor-pointer';
+                btnAgrup.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer';
+            } else {
+                btnAgrup.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-[#152e50] text-[#fac043] shadow-xs cursor-pointer';
+                btnRota.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer';
+            }
+
+            renderizarConteudoItens();
+        }
+        window.alternarAbaItens = alternarAbaItens;
+
+        // ---------------------------------------------------------------------
+        // TODO 13.5 MOTOR DE AGRUPAMENTO E CONSOLIDAÇÃO DE ITENS
+        // ---------------------------------------------------------------------
+        function renderizarConteudoItens() {
+            const carga = bancoCargasGlobal[window.cargaAtivaId];
+            const container = document.getElementById('conteudoItensCorpo');
+            const totaisInfo = document.getElementById('totaisResumoItens');
+            if (!carga || !container) return;
+
+            let totalQtd = 0;
+
+            if (abaItensAtiva === 'agrupados') {
+                const mapaItens = {};
+                Object.values(carga.clientes).forEach(cli => {
+                    cli.pedidos.forEach(ped => {
+                        (ped.itens || []).forEach(item => {
+                            if (!mapaItens[item.codigo]) {
+                                mapaItens[item.codigo] = {
+                                    codigo: item.codigo,
+                                    descricao: item.descricao,
+                                    quantidade: 0
+                                };
+                            }
+                            mapaItens[item.codigo].quantidade += item.quantidade;
+                            totalQtd += item.quantidade;
+                        });
+                    });
+                });
+
+                const listaOrdenada = Object.values(mapaItens).sort((a, b) => b.quantidade - a.quantidade);
+
+                let html = `
+                    <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="bg-slate-100 text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3 w-28">Cód.</th>
+                                    <th class="p-3">Descrição do Produto</th>
+                                    <th class="p-3 text-center w-28">Qtd Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                `;
+
+                listaOrdenada.forEach(item => {
+                    html += `
+                        <tr class="hover:bg-amber-50/50 transition">
+                            <td class="p-3 font-bold text-[#152e50]">${item.codigo}</td>
+                            <td class="p-3">${item.descricao}</td>
+                            <td class="p-3 text-center font-black text-amber-600">${item.quantidade}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `</tbody></table></div>`;
+                container.innerHTML = html;
+                if (totaisInfo) totaisInfo.innerText = `Total de Volumes: ${totalQtd}`;
+
+            } else {
+                const mapaCidades = {};
+                Object.values(carga.clientes).forEach(cli => {
+                    cli.pedidos.forEach(ped => {
+                        const cidadeKey = (ped.cidade || cli.cidade || 'CIDADE NÃO INFORMADA').toUpperCase().trim();
+                        if (!mapaCidades[cidadeKey]) mapaCidades[cidadeKey] = { itens: {}, totalVolumes: 0 };
+
+                        (ped.itens || []).forEach(item => {
+                            if (!mapaCidades[cidadeKey].itens[item.codigo]) {
+                                mapaCidades[cidadeKey].itens[item.codigo] = {
+                                    codigo: item.codigo,
+                                    descricao: item.descricao,
+                                    quantidade: 0
+                                };
+                            }
+                            mapaCidades[cidadeKey].itens[item.codigo].quantidade += item.quantidade;
+                            mapaCidades[cidadeKey].totalVolumes += item.quantidade;
+                            totalQtd += item.quantidade;
+                        });
+                    });
+                });
+
+                let html = '';
+                Object.entries(mapaCidades).forEach(([cidade, dados]) => {
+                    html += `
+                        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                            <div class="bg-slate-100 p-2.5 px-4 flex justify-between items-center border-b border-slate-200">
+                                <span class="font-bold text-xs text-[#152e50] flex items-center gap-1.5">
+                                    <i class="fa-solid fa-location-dot text-amber-500"></i> ${cidade}
+                                </span>
+                                <span class="text-[11px] font-bold text-slate-500">${dados.totalVolumes} vol.</span>
+                            </div>
+                            <div class="p-3 bg-white divide-y divide-slate-100 text-xs">
+                    `;
+
+                    Object.values(dados.itens).forEach(it => {
+                        html += `
+                            <div class="py-1.5 flex justify-between items-center">
+                                <span class="text-slate-700"><strong>${it.codigo}</strong> - ${it.descricao}</span>
+                                <span class="font-black text-amber-600 px-2 py-0.5 bg-amber-50 rounded border border-amber-100">${it.quantidade}</span>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div></div>`;
+                });
+
+                container.innerHTML = html;
+                if (totaisInfo) totaisInfo.innerText = `Total de Volumes: ${totalQtd}`;
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // TODO 13.6 GERENCIADOR DA JANELA FLUTUANTE & DRAG-AND-DROP (CORRIGIDO)
+        // ---------------------------------------------------------------------
+
+        window.modoJanelaFlutuanteState = false;
+
+        function alternarModoJanela() {
+            window.modoJanelaFlutuanteState = !window.modoJanelaFlutuanteState;
+            const modo = window.modoJanelaFlutuanteState;
+
+            const backdrop = document.getElementById('backdropModalItens');
+            const janela = document.getElementById('janelaModalItens');
+            const cabecalho = document.getElementById('cabecalhoModalItens');
+            const icone = document.getElementById('iconeModoJanela');
+            const btn = document.getElementById('btnToggleModoJanela');
+            const dica = document.getElementById('dicaJanelaFlutuante');
+
+            if (!backdrop || !janela) return;
+
+            if (modo) {
+                backdrop.classList.remove('inset-0', 'bg-slate-900/50', 'backdrop-blur-xs', 'flex', 'items-center', 'justify-center', 'p-4');
+                backdrop.classList.add('pointer-events-none');
+
+                janela.classList.remove('max-w-4xl', 'max-h-[85vh]', 'w-full');
+                janela.classList.add('w-[480px]', 'h-[520px]', 'shadow-2xl', 'pointer-events-auto', 'border-2', 'border-[#152e50]');
+                
+                janela.style.position = 'fixed';
+                janela.style.bottom = '24px';
+                janela.style.right = '24px';
+                janela.style.top = 'auto';
+                janela.style.left = 'auto';
+
+                if (cabecalho) {
+                    cabecalho.classList.remove('cursor-default');
+                    cabecalho.classList.add('cursor-move');
+                }
+
+                if (icone) icone.className = 'fa-solid fa-down-left-and-up-right-to-center text-xs';
+                if (btn) btn.title = 'Restaurar para Modal';
+                if (dica) dica.classList.remove('hidden');
+
+                tornarJanelaArrastavel(janela, cabecalho);
+            } else {
+                backdrop.classList.add('inset-0', 'bg-slate-900/50', 'backdrop-blur-xs', 'flex', 'items-center', 'justify-center', 'p-4');
+                backdrop.classList.remove('pointer-events-none');
+
+                janela.classList.add('max-w-4xl', 'max-h-[85vh]', 'w-full');
+                janela.classList.remove('w-[480px]', 'h-[520px]', 'pointer-events-auto', 'border-2', 'border-[#152e50]');
+                
+                janela.style.position = '';
+                janela.style.top = '';
+                janela.style.left = '';
+                janela.style.bottom = '';
+                janela.style.right = '';
+                janela.style.transition = '';
+
+                if (cabecalho) {
+                    cabecalho.classList.add('cursor-default');
+                    cabecalho.classList.remove('cursor-move');
+                    cabecalho.onmousedown = null; 
+                }
+
+                if (icone) icone.className = 'fa-solid fa-up-right-from-square text-xs';
+                if (btn) btn.title = 'Alternar para Janela Flutuante';
+                if (dica) dica.classList.add('hidden');
+            }
+        }
+        window.alternarModoJanela = alternarModoJanela;
+
+        function tornarJanelaArrastavel(elemento, barraArrasto) {
+            let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+            let animationFrameId = null;
+
+            barraArrasto.onmousedown = arrastarMouseDown;
+
+            function arrastarMouseDown(e) {
+                if (!window.modoJanelaFlutuanteState) return;
+                if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+
+                e.preventDefault();
+
+                elemento.style.transition = 'none';
+
+                const rect = elemento.getBoundingClientRect();
+                initialLeft = rect.left;
+                initialTop = rect.top;
+
+                elemento.style.bottom = 'auto';
+                elemento.style.right = 'auto';
+                elemento.style.left = initialLeft + 'px';
+                elemento.style.top = initialTop + 'px';
+
+                startX = e.clientX;
+                startY = e.clientY;
+
+                document.onmouseup = fecharArrasto;
+                document.onmousemove = arrastandoElemento;
+            }
+
+            function arrastandoElemento(e) {
+                e.preventDefault();
+                
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+
+                animationFrameId = requestAnimationFrame(() => {
+                    let novoLeft = initialLeft + deltaX;
+                    let novoTop = initialTop + deltaY;
+
+                    novoLeft = Math.max(0, Math.min(novoLeft, window.innerWidth - elemento.offsetWidth));
+                    novoTop = Math.max(0, Math.min(novoTop, window.innerHeight - elemento.offsetHeight));
+
+                    elemento.style.left = novoLeft + 'px';
+                    elemento.style.top = novoTop + 'px';
+                });
+            }
+
+            function fecharArrasto() {
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                elemento.style.transition = '';
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
+        }
+
+    // ---------------------------------------------------------------------
+    // TODO 14.1: VARIÁVEIS GLOBAIS E DICIONÁRIO GEOGRÁFICO DE CIDADES
+    // ---------------------------------------------------------------------
+   
+    window.cidadeRotaAtiva = null;
+    window.cargaRotaAtivaId = null;
+    window.mapaInstanciaLeaflet = null;
+    window.camadaMarcadoresRota = null;
+    window.camadaLinhasRota = null;
+    let indiceArrastadoCidade = null;
+
+    const COORDENADAS_CIDADES = {
+        'JEQUIE': [-13.8576, -40.0827],
+        'JEQUIÉ': [-13.8576, -40.0827],
+        'JAGUAQUARA': [-13.5303, -39.9722],
+        'MARACAS': [-13.4356, -40.4289],
+        'MARACÁS': [-13.4356, -40.4289],
+        'POCOES': [-14.5297, -40.3644],
+        'POÇÕES': [-14.5297, -40.3644],
+        'VITORIA DA CONQUISTA': [-14.8661, -40.8394],
+        'VITÓRIA DA CONQUISTA': [-14.8661, -40.8394],
+        'ITABUNA': [-14.7899, -39.2801],
+        'ILHEUS': [-14.7937, -39.0494],
+        'ILHÉUS': [-14.7937, -39.0494],
+        'IPAUPI': [-14.1378, -39.7369],
+        'IPIAÚ': [-14.1378, -39.7369],
+        'UBATA': [-14.2144, -39.5222],
+        'UBATÃ': [-14.2144, -39.5222],
+        'GANDU': [-13.7439, -39.4867],
+        'VALENCA': [-13.3703, -39.0731],
+        'VALENÇA': [-13.3703, -39.0731],
+        'SALVADOR': [-12.9777, -38.5016],
+        'FEIRA DE SANTANA': [-12.2664, -38.9663],
+        'SANTO ANTONIO DE JESUS': [-12.9694, -39.2606],
+        'BRUMADO': [-14.2042, -41.6669],
+        'GUANAMBI': [-14.2233, -42.7814],
+        'ITAPETINGA': [-15.2492, -40.2486],
+        'AMARGOSA': [-13.0306, -39.6056],
+        'SANTALUZ': [-11.2561, -39.3756],
+        'EUCLIDES DA CUNHA': [-10.5611, -39.0150],
+        'EUCLIDES DA CUN': [-10.5611, -39.0150],
+        'EUCLIDES DA CU': [-10.5611, -39.0150],
+        'QUIJINGUE': [-10.7517, -39.2133],
+        'QUINJINGUE': [-10.7517, -39.2133],
+        'IRARA': [-12.0503, -38.7675],
+        'IRARÁ': [-12.0503, -38.7675],
+        'BIRITINGA': [-11.6219, -38.9056],
+        'SERRINHA': [-11.6644, -38.9989],
+        'TUCANO': [-10.9631, -38.7881],
+        'CIPO': [-11.1042, -38.5200],
+        'CIPÓ': [-11.1042, -38.5200],
+        'RIBEIRA DO POMBAL': [-10.8358, -38.5361],
+        'MONTE SANTO': [-10.4383, -39.2981],
+        'CONCEICAO DO COITE': [-11.5642, -39.2819],
+        'CONCEIÇÃO DO COITÉ': [-11.5642, -39.2819],
+        'VALENTE': [-11.4111, -39.4633],
+        'CANUDOS': [-9.8978, -39.0300],
+        'ALAGOINHAS': [-12.1356, -38.4192],
+        'CRUZ DAS ALMAS': [-12.6736, -39.1028],
+        'SENHOR DO BONFIM': [-10.4614, -40.1894],
+        'JACOBINA': [-11.1814, -40.5186],
+        'ITABERABA': [-12.5278, -40.3069],
+        'SEABRA': [-12.4189, -41.7694],
+        'IRECE': [-11.3042, -41.8569],
+        'IRECÊ': [-11.3042, -41.8569]
+    };
+
+    // ---------------------------------------------------------------------
+    // TODO 14.2: NORMALIZAÇÃO E MOTOR DE GEOCODIFICAÇÃO COM CACHE
+    // ---------------------------------------------------------------------
+    function normalizarTextoCidade(cidade) {
+        return String(cidade || '')
+            .trim()
+            .toUpperCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s*-\s*[A-Z]{2}$/, '');
+    }
+
+    async function buscarCoordenadasCidade(nomeCidade) {
+        let cidadeLimpa = normalizarTextoCidade(nomeCidade);
+        if (!cidadeLimpa) return null;
+
+        if (COORDENADAS_CIDADES[cidadeLimpa]) return COORDENADAS_CIDADES[cidadeLimpa];
+
+        const matchChave = Object.keys(COORDENADAS_CIDADES).find(k => 
+            cidadeLimpa.startsWith(k) || k.startsWith(cidadeLimpa)
+        );
+        if (matchChave) return COORDENADAS_CIDADES[matchChave];
+
+        const cacheKey = 'fibrasol_geo_cidades';
+        let geoCache = {};
+        try {
+            geoCache = JSON.parse(localStorage.getItem(cacheKey)) || {};
+        } catch (e) {}
+
+        if (geoCache[cidadeLimpa]) return geoCache[cidadeLimpa];
+
+        let termoBusca = cidadeLimpa;
+        if (termoBusca.endsWith(' CUN')) termoBusca = 'EUCLIDES DA CUNHA';
+        if (termoBusca === 'QUINJINGUE') termoBusca = 'QUIJINGUE';
+
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(termoBusca + ', Bahia, Brasil')}&limit=1`;
+
+        try {
+            const res = await fetch(url);
+            const dados = await res.json();
+
+            if (dados && dados.length > 0) {
+                const coords = [parseFloat(dados[0].lat), parseFloat(dados[0].lon)];
+                geoCache[cidadeLimpa] = coords;
+                localStorage.setItem(cacheKey, JSON.stringify(geoCache));
+                return coords;
+            }
+        } catch (err) {
+            console.warn(`Não foi possível localizar online: ${nomeCidade}`);
+        }
+
+        return null;
+    }
+
+    function obterListaCidadesCarga(carga) {
+        if (!carga) return [];
+        if (carga.cidades instanceof Set) return Array.from(carga.cidades);
+        if (Array.isArray(carga.cidades)) return carga.cidades;
+        return [];
+    }
+
+    function obterClientesPorCidade(carga, nomeCidade) {
+        if (!carga || !carga.clientes) return [];
+        const cidadeFiltro = normalizarTextoCidade(nomeCidade);
+
+        return Object.values(carga.clientes).filter(cliente => {
+            const cidadeCliente = normalizarTextoCidade(cliente.cidade);
+            if (cidadeCliente === cidadeFiltro) return true;
+
+            return (cliente.pedidos || []).some(ped => {
+                const cidPed = normalizarTextoCidade(ped.cidade || cliente.cidade);
+                return cidPed === cidadeFiltro;
+            });
+        });
+    }
+
+    // --------------------------------------------------------------------------
+    // TODO 14.3: INICIALIZAÇÃO DO MAPA LEAFLET, ROTEIRIZAÇÃO (OSRM) E MAPILLARY
+    // --------------------------------------------------------------------------
+    
+    // Substitua pelo seu Client Token gratuito do Mapillary obtido em mapillary.com/developer
+    const MAPILLARY_CLIENT_TOKEN = 'SEU_CLIENT_TOKEN_AQUI';
+
+    function inicializarMapaLeaflet() {
+        const containerMapa = document.getElementById('mapaRota');
+        if (!containerMapa) return;
+
+        if (!window.mapaInstanciaLeaflet) {
+            window.mapaInstanciaLeaflet = L.map('mapaRota', {
+                zoomControl: true,
+                attributionControl: false
+            }).setView([-13.8576, -40.0827], 8);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18
+            }).addTo(window.mapaInstanciaLeaflet);
+
+            window.camadaMarcadoresRota = L.layerGroup().addTo(window.mapaInstanciaLeaflet);
+            window.camadaLinhasRota = L.layerGroup().addTo(window.mapaInstanciaLeaflet);
+            window.camadaMapillaryRota = L.layerGroup().addTo(window.mapaInstanciaLeaflet); // Camada para fotos do Mapillary
+        }
+
+        setTimeout(() => {
+            if (window.mapaInstanciaLeaflet) {
+                window.mapaInstanciaLeaflet.invalidateSize();
+            }
+        }, 250);
+    }
+
+    async function buscarFotosMapillaryProximas(lat, lng) {
+        if (!MAPILLARY_CLIENT_TOKEN || MAPILLARY_CLIENT_TOKEN === 'SEU_CLIENT_TOKEN_AQUI') return;
+
+        // Cria uma pequena caixa de delimitação (bbox) ao redor da coordenada da cidade (aprox. 1km)
+        const delta = 0.01;
+        const minLon = lng - delta;
+        const minLat = lat - delta;
+        const maxLon = lng + delta;
+        const maxLat = lat + delta;
+
+        const url = `https://graph.mapillary.com/images?access_token=${MAPILLARY_CLIENT_TOKEN}&bbox=${minLon},${minLat},${maxLon},${maxLat}&fields=id,geometry&limit=15`;
+
+        try {
+            const resposta = await fetch(url);
+            const dados = await resposta.json();
+
+            if (dados && dados.data) {
+                dados.data.forEach(img => {
+                    if (img.geometry && img.geometry.coordinates) {
+                        const [lon, imgLat] = img.geometry.coordinates;
+                        const imageKey = img.id;
+
+                        // Ícone personalizado para a foto de rua (Mapillary)
+                        const iconeCamera = L.divIcon({
+                            className: 'marker-mapillary-container',
+                            html: `
+                                <div class="w-6 h-6 rounded-full bg-emerald-600 border border-white text-white flex items-center justify-center shadow-md hover:scale-125 transition-transform cursor-pointer" title="Ver foto da rua">
+                                    <i class="fa-solid fa-camera text-[10px]"></i>
+                                </div>
+                            `,
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 12]
+                        });
+
+                        const markerFoto = L.marker([imgLat, lon], { icon: iconeCamera }).addTo(window.camadaMapillaryRota);
+                        
+                        markerFoto.bindPopup(`
+                            <div class="text-xs p-1 text-center">
+                                <strong class="text-emerald-700 block mb-1">Street View (Mapillary)</strong>
+                                <a href="https://www.mapillary.com/app/?pKey=${imageKey}" target="_blank" class="px-2 py-1 bg-[#152e50] text-[#fac043] rounded font-bold inline-block mt-1">
+                                    Abrir Imagem ↗
+                                </a>
+                            </div>
+                        `);
+                    }
+                });
+            }
+        } catch (erro) {
+            console.warn('Erro ao carregar imagens do Mapillary:', erro);
+        }
+    }
+
+    async function renderizarRotaNoMapa(listaCidades) {
+        if (!window.mapaInstanciaLeaflet) inicializarMapaLeaflet();
+        if (!window.camadaMarcadoresRota || !window.camadaLinhasRota || !window.camadaMapillaryRota) return;
+
+        window.camadaMarcadoresRota.clearLayers();
+        window.camadaLinhasRota.clearLayers();
+        window.camadaMapillaryRota.clearLayers();
+
+        const paradasValidas = [];
+
+        for (let index = 0; index < listaCidades.length; index++) {
+            const cidade = listaCidades[index];
+            const coords = await buscarCoordenadasCidade(cidade);
+
+            if (coords) {
+                paradasValidas.push({ cidade, coords, index });
+
+                // Busca fotos do Mapillary ao redor desta parada
+                buscarFotosMapillaryProximas(coords[0], coords[1]);
+
+                const customIcon = L.divIcon({
+                    className: 'marker-rota-container',
+                    html: `
+                        <div class="w-8 h-8 rounded-full bg-[#152e50] border-2 border-[#fac043] text-[#fac043] font-black text-xs flex items-center justify-center shadow-lg transition-transform hover:scale-110 cursor-pointer">
+                            ${index + 1}
+                        </div>
+                    `,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+
+                const marker = L.marker(coords, { icon: customIcon }).addTo(window.camadaMarcadoresRota);
+                marker.bindPopup(`
+                    <div class="text-xs p-1">
+                        <strong class="text-[#152e50] uppercase text-sm block">Parada ${index + 1}: ${cidade}</strong>
+                        <span class="text-slate-500 font-semibold">Clique para focar</span>
+                    </div>
+                `);
+
+                marker.on('click', () => {
+                    selecionarCidadeRota(cidade);
+                });
+            }
+        }
+
+        if (paradasValidas.length > 1) {
+            const coordsArray = paradasValidas.map(p => p.coords);
+
+            try {
+                const stringCoordenadas = paradasValidas
+                    .map(p => `${p.coords[1]},${p.coords[0]}`)
+                    .join(';');
+
+                const urlOsrm = `https://router.project-osrm.org/route/v1/driving/${stringCoordenadas}?overview=full&geometries=geojson`;
+                const resposta = await fetch(urlOsrm);
+                const dados = await resposta.json();
+
+                if (dados.code === 'Ok' && dados.routes && dados.routes[0]) {
+                    const rotaEstrada = dados.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+
+                    L.polyline(rotaEstrada, {
+                        color: '#152e50',
+                        weight: 6,
+                        opacity: 0.85,
+                        lineJoin: 'round'
+                    }).addTo(window.camadaLinhasRota);
+
+                    L.polyline(rotaEstrada, {
+                        color: '#fac043',
+                        weight: 3.5,
+                        opacity: 1,
+                        lineJoin: 'round'
+                    }).addTo(window.camadaLinhasRota);
+
+                    window.mapaInstanciaLeaflet.fitBounds(rotaEstrada, { padding: [50, 50] });
+                    return;
+                }
+            } catch (e) {
+                console.warn('Falha no traçado por estrada. Desenhando conexão direta.', e);
+            }
+
+            L.polyline(coordsArray, {
+                color: '#fac043',
+                weight: 3.5,
+                opacity: 0.9,
+                dashArray: '6, 6',
+                lineJoin: 'round'
+            }).addTo(window.camadaLinhasRota);
+
+            window.mapaInstanciaLeaflet.fitBounds(coordsArray, { padding: [50, 50] });
+        } else if (paradasValidas.length === 1) {
+            window.mapaInstanciaLeaflet.setView(paradasValidas[0].coords, 12);
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // TODO 14.4: RENDERIZAÇÃO DA LISTA LATERAL E DRAG & DROP DE CIDADES
+    // ---------------------------------------------------------------------
+    function renderizarCidadesRota(carga) {
+        const container = document.getElementById('listaCidadesRotaCorpo');
+        const badgeTotal = document.getElementById('badgeTotalCidadesRota');
+        if (!container) return;
+
+        const listaCidades = obterListaCidadesCarga(carga);
+        if (badgeTotal) badgeTotal.innerText = `${listaCidades.length} Cidades`;
+
+        if (listaCidades.length === 0) {
+            container.innerHTML = `
+                <div class="p-6 text-center text-slate-400 text-xs font-medium">
+                    Nenhuma cidade encontrada.
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        listaCidades.forEach((cidade, index) => {
+            const clientesDaCidade = obterClientesPorCidade(carga, cidade);
+            let totalPedidosCidade = 0;
+
+            clientesDaCidade.forEach(c => {
+                const pedidosValidos = (c.pedidos || []).filter(p => {
+                    const cidPed = normalizarTextoCidade(p.cidade || c.cidade);
+                    return cidPed === normalizarTextoCidade(cidade);
+                });
+                totalPedidosCidade += pedidosValidos.length;
+            });
+
+            const isAtiva = window.cidadeRotaAtiva === cidade;
+
+            html += `
+                <div 
+                    draggable="true"
+                    ondragstart="iniciarArrastoCidade(event, ${index})"
+                    ondragover="permitirSoltarCidade(event)"
+                    ondragleave="sairArrastoCidade(event)"
+                    ondrop="soltarCidade(event, ${index})"
+                    onclick="selecionarCidadeRota('${cidade.replace(/'/g, "\\'")}')" 
+                    class="p-2.5 rounded-xl border transition cursor-grab active:cursor-grabbing mb-2 select-none ${isAtiva ? 'bg-amber-50 border-amber-400 shadow-xs ring-1 ring-amber-400/30' : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
+                >
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-slate-300 hover:text-slate-500 mr-0.5">
+                                <i class="fa-solid fa-grip-vertical text-xs"></i>
+                            </span>
+                            <span class="w-5 h-5 rounded-full bg-[#152e50] text-[#fac043] font-bold text-[10px] flex items-center justify-center shrink-0">
+                                ${index + 1}
+                            </span>
+                            <span class="text-xs font-black text-slate-800 uppercase leading-tight">${cidade}</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+                    </div>
+                    <div class="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] font-semibold text-slate-500 pl-4">
+                        <span>${clientesDaCidade.length} cliente(s)</span>
+                        <span>${totalPedidosCidade} ped.</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function iniciarArrastoCidade(e, index) {
+        indiceArrastadoCidade = index;
+        e.dataTransfer.effectAllowed = 'move';
+        e.currentTarget.style.opacity = '0.4';
+    }
+
+    function permitirSoltarCidade(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const card = e.currentTarget;
+        if (!card.classList.contains('border-amber-500')) {
+            card.classList.add('border-amber-500', 'ring-2', 'ring-amber-300');
+        }
+    }
+
+    function sairArrastoCidade(e) {
+        e.currentTarget.classList.remove('border-amber-500', 'ring-2', 'ring-amber-300');
+    }
+
+    async function soltarCidade(e, indexDestino) {
+        e.preventDefault();
+        const card = e.currentTarget;
+        card.classList.remove('border-amber-500', 'ring-2', 'ring-amber-300');
+
+        if (indiceArrastadoCidade === null || indiceArrastadoCidade === indexDestino) {
+            renderizarCidadesRota(window.bancoCargasGlobal[window.cargaRotaAtivaId]);
+            return;
+        }
+
+        const carga = window.bancoCargasGlobal[window.cargaRotaAtivaId];
+        if (!carga) return;
+
+        let lista = obterListaCidadesCarga(carga);
+        const itemMovido = lista.splice(indiceArrastadoCidade, 1)[0];
+        lista.splice(indexDestino, 0, itemMovido);
+
+        carga.cidades = lista;
+        indiceArrastadoCidade = null;
+
+        renderizarCidadesRota(carga);
+        await renderizarRotaNoMapa(lista);
+    }
+
+    window.iniciarArrastoCidade = iniciarArrastoCidade;
+    window.permitirSoltarCidade = permitirSoltarCidade;
+    window.sairArrastoCidade = sairArrastoCidade;
+    window.soltarCidade = soltarCidade;
+
+    // ---------------------------------------------------------------------
+    // TODO 14.5: SELEÇÃO DE PRAÇA E DETALHAMENTO DOS PEDIDOS DA CIDADE
+    // ---------------------------------------------------------------------
+    async function selecionarCidadeRota(nomeCidade) {
+        window.cidadeRotaAtiva = nomeCidade;
+        const carga = window.bancoCargasGlobal ? window.bancoCargasGlobal[window.cargaRotaAtivaId] : null;
+        if (!carga) return;
+
+        renderizarCidadesRota(carga);
+
+        const coords = await buscarCoordenadasCidade(nomeCidade);
+        if (window.mapaInstanciaLeaflet && coords) {
+            window.mapaInstanciaLeaflet.flyTo(coords, 12, { duration: 1 });
+        }
+
+        const lblCidade = document.getElementById('lblCidadeSelecionadaRota');
+        if (lblCidade) lblCidade.innerText = String(nomeCidade).toUpperCase();
+
+        const container = document.getElementById('detalhesCidadeRotaCorpo');
+        if (!container) return;
+
+        const clientesDaCidade = obterClientesPorCidade(carga, nomeCidade);
+
+        const lblSubinfo = document.getElementById('lblSubinfoCidadeRota');
+        if (lblSubinfo) lblSubinfo.innerText = `${clientesDaCidade.length} cliente(s) nesta praça`;
+
+        if (clientesDaCidade.length === 0) {
+            container.innerHTML = `
+                <div class="py-10 text-center text-slate-400">
+                    <p class="text-xs font-semibold">Sem clientes vinculados a ${nomeCidade}.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        clientesDaCidade.forEach(cliente => {
+            const pedidosDaCidade = (cliente.pedidos || []).filter(ped => {
+                const cidPed = normalizarTextoCidade(ped.cidade || cliente.cidade);
+                return cidPed === normalizarTextoCidade(nomeCidade);
+            });
+
+            if (pedidosDaCidade.length === 0) return;
+
+            let htmlPedidos = '';
+            pedidosDaCidade.forEach(pedido => {
+                let htmlItens = '';
+                (pedido.itens || []).forEach(item => {
+                    htmlItens += `
+                        <div class="flex justify-between items-center py-1 border-b border-slate-100 last:border-0 text-xs">
+                            <span class="text-slate-700 font-medium"><strong>${item.codigo}</strong> - ${item.descricao}</span>
+                            <span class="font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${item.quantidade} vol</span>
+                        </div>
+                    `;
+                });
+
+                htmlPedidos += `
+                    <div class="mt-2 bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                        <div class="p-2 bg-slate-100 flex items-center justify-between border-b border-slate-200">
+                            <div class="flex items-center gap-1.5">
+                                <span class="bg-[#152e50] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">PEDIDO</span>
+                                <span class="text-xs font-black text-slate-800">${pedido.numeroPedido}</span>
+                            </div>
+                            <button onclick="toggleItensPedidoRota('${pedido.numeroPedido}')" class="text-[10px] font-bold text-[#152e50] hover:text-amber-600 flex items-center gap-1 cursor-pointer">
+                                <span id="txtToggleItensRota-${pedido.numeroPedido}">Itens (${(pedido.itens || []).length})</span>
+                                <i id="iconeToggleItensRota-${pedido.numeroPedido}" class="fa-solid fa-chevron-down text-[9px]"></i>
+                            </button>
+                        </div>
+                        <div id="itensPedidoRota-${pedido.numeroPedido}" class="p-2.5 bg-white divide-y divide-slate-100 hidden">
+                            ${htmlItens || '<p class="text-xs text-slate-400 italic">Sem itens detalhados.</p>'}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-xs mb-2.5">
+                    <div>
+                        <span class="text-[9px] font-mono font-bold text-slate-400">CÓD: ${cliente.codigo}</span>
+                        <h5 class="text-xs font-black text-slate-800">${cliente.nome}</h5>
+                        <p class="text-[11px] text-slate-500 mt-0.5 truncate" title="${[cliente.endereco, cliente.bairro].filter(Boolean).join(' - ')}">
+                            <i class="fa-solid fa-map-pin text-slate-400 mr-1 text-[9px]"></i>${[cliente.endereco, cliente.bairro].filter(Boolean).join(' - ') || 'Endereço não informado'}
+                        </p>
+                    </div>
+                    ${htmlPedidos}
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+    window.selecionarCidadeRota = selecionarCidadeRota;
+
+    function toggleItensPedidoRota(numeroPedido) {
+        const container = document.getElementById(`itensPedidoRota-${numeroPedido}`);
+        const icone = document.getElementById(`iconeToggleItensRota-${numeroPedido}`);
+        if (!container) return;
+
+        if (container.classList.contains('hidden')) {
+            container.classList.remove('hidden');
+            if (icone) icone.className = 'fa-solid fa-chevron-up text-[9px]';
+        } else {
+            container.classList.add('hidden');
+            if (icone) icone.className = 'fa-solid fa-chevron-down text-[9px]';
+        }
+    }
+    window.toggleItensPedidoRota = toggleItensPedidoRota;
+
+        // -------------------------------------------------------------------------
+        // TODO 14.6: CICLO DE VIDA DO MODAL, PERSISTÊNCIA E FECHAMENTO INTELIGENTE
+        // -------------------------------------------------------------------------
+ // -------------------------------------------------------------------------
+    // TODO 14.6: CICLO DE VIDA DO MODAL, PERSISTÊNCIA E FECHAMENTO INTELIGENTE
+    // -------------------------------------------------------------------------
+    
+    let timeoutToastId = null;
+    let rotaEditadaNaoSalva = false;
+    let callbackConfirmacaoSaida = null;
+
+    function exibirToast(mensagem, titulo = 'Sucesso', tipo = 'sucesso') {
+        const toast = document.getElementById('toastNotificacao');
+        const txtMsg = document.getElementById('toastMensagem');
+        const txtTit = document.getElementById('toastTitulo');
+        const icone = document.getElementById('toastIcone');
+        const iconWrap = document.getElementById('toastIconeWrapper');
+
+        if (!toast || !txtMsg) return;
+
+        if (timeoutToastId) {
+            clearTimeout(timeoutToastId);
+        }
+
+        txtMsg.innerText = mensagem;
+        if (txtTit) txtTit.innerText = titulo;
+
+        if (tipo === 'aviso') {
+            if (icone) icone.className = 'fa-solid fa-pen-to-square text-base';
+            if (iconWrap) iconWrap.className = 'w-10 h-10 rounded-xl bg-amber-400/20 text-[#fac043] flex items-center justify-center shrink-0';
+        } else {
+            if (icone) icone.className = 'fa-solid fa-check text-base';
+            if (iconWrap) iconWrap.className = 'w-10 h-10 rounded-xl bg-emerald-400/20 text-emerald-300 flex items-center justify-center shrink-0';
+        }
+
+        toast.classList.remove('translate-y-8', 'opacity-0', 'pointer-events-none');
+        toast.classList.add('translate-y-0', 'opacity-100');
+
+        timeoutToastId = setTimeout(() => {
+            toast.classList.remove('translate-y-0', 'opacity-100');
+            toast.classList.add('translate-y-8', 'opacity-0', 'pointer-events-none');
+        }, 1800);
+    }
+    window.exibirToast = exibirToast;
+
+    function obterListaCidadesCarga(carga) {
+        if (!carga || !carga.cidades) return [];
+        if (Array.isArray(carga.cidades)) return carga.cidades;
+        if (carga.cidades instanceof Set) return Array.from(carga.cidades);
+        return Object.values(carga.cidades);
+    }
+    window.obterListaCidadesCarga = obterListaCidadesCarga;
+
+    async function abrirTelaMontagemRota(idCarga) {
+        const idAlvo = idCarga || window.cargaAtivaId;
+        const carga = window.bancoCargasGlobal ? window.bancoCargasGlobal[idAlvo] : null;
+        if (!carga) return;
+
+        window.cargaRotaAtivaId = idAlvo;
+        rotaEditadaNaoSalva = false;
+
+        const modal = document.getElementById('modalMontagemRota');
+        if (!modal) return;
+
+        modal.classList.remove('hidden');
+
+        const lblCarga = document.getElementById('lblCargaRota');
+        if (lblCarga) lblCarga.innerText = `#${carga.numeroCarga}`;
+        
+        const listaCidades = obterListaCidadesCarga(carga);
+        const totalCidades = listaCidades.length;
+        const totalClientes = Object.keys(carga.clientes || {}).length;
+        
+        const lblTotais = document.getElementById('lblResumoTotaisRota');
+        if (lblTotais) lblTotais.innerText = `${totalCidades} Cidade(s), ${totalClientes} Entrega(s)`;
+        
+        atualizarBadgeStatusRota(Boolean(carga.montada));
+        renderizarCidadesRota(carga);
+
+        if (typeof inicializarMapaLeaflet === 'function') inicializarMapaLeaflet();
+        if (typeof renderizarRotaNoMapa === 'function') await renderizarRotaNoMapa(listaCidades);
+
+        if (listaCidades.length > 0 && typeof selecionarCidadeRota === 'function') {
+            selecionarCidadeRota(listaCidades[0]);
+        }
+    }
+    window.abrirTelaMontagemRota = abrirTelaMontagemRota;
+    window.abrirModalRota = function() {
+        abrirTelaMontagemRota(window.cargaAtivaId);
+    };
+
+    function tentarFecharModalRota() {
+        const carga = window.bancoCargasGlobal ? window.bancoCargasGlobal[window.cargaRotaAtivaId] : null;
+        
+        if (rotaEditadaNaoSalva || (carga && !carga.montada)) {
+            const modalConfirm = document.getElementById('modalConfirmacaoSaida');
+            if (modalConfirm) {
+                modalConfirm.classList.remove('hidden');
+                return;
+            }
+        }
+        fecharModalMontagemRota();
+    }
+    window.tentarFecharModalRota = tentarFecharModalRota;
+
+    function fecharModalConfirmacao(confirmado) {
+        const modalConfirm = document.getElementById('modalConfirmacaoSaida');
+        if (modalConfirm) modalConfirm.classList.add('hidden');
+
+        if (confirmado) {
+            fecharModalMontagemRota();
+        }
+    }
+    window.fecharModalConfirmacao = fecharModalConfirmacao;
+
+    function fecharModalMontagemRota() {
+        const modal = document.getElementById('modalMontagemRota');
+        if (modal) modal.classList.add('hidden');
+    }
+    window.fecharModalMontagemRota = fecharModalMontagemRota;
+
+    function atualizarBadgeStatusRota(isMontada) {
+        const badge = document.getElementById('badgeStatusMontagemRota');
+        if (!badge) return;
+
+        if (isMontada) {
+            badge.className = 'text-[10px] bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 px-2 py-0.5 rounded font-black uppercase';
+            badge.innerText = 'Carga Montada';
+        } else {
+            badge.className = 'text-[10px] bg-amber-400/20 border border-amber-400/40 text-amber-300 px-2 py-0.5 rounded font-black uppercase';
+            badge.innerText = 'Aguardando / Em Edição';
+        }
+    }
+
+    function salvarConclusaoRota() {
+        if (!window.cargaRotaAtivaId || !window.bancoCargasGlobal) return;
+        const carga = window.bancoCargasGlobal[window.cargaRotaAtivaId];
+        if (!carga) return;
+
+        carga.montada = true;
+        rotaEditadaNaoSalva = false;
+
+        const bancoParaSalvar = {};
+        Object.keys(window.bancoCargasGlobal).forEach(id => {
+            bancoParaSalvar[id] = {
+                ...window.bancoCargasGlobal[id],
+                cidades: Array.from(window.bancoCargasGlobal[id].cidades || [])
+            };
+        });
+        localStorage.setItem('fibrasol_banco_cargas', JSON.stringify(bancoParaSalvar));
+
+        atualizarBadgeStatusRota(true);
+
+        if (typeof renderizarGridCargas === 'function') renderizarGridCargas();
+        
+        exibirToast(`Rota da Carga #${carga.numeroCarga} salva com sucesso!`, 'Roteirização Concluída', 'sucesso');
+        
+        setTimeout(() => {
+            fecharModalMontagemRota();
+        }, 1800);
+    }
+    window.salvarConclusaoRota = salvarConclusaoRota;
+
+    function habilitarEdicaoRota() {
+        if (!window.cargaRotaAtivaId || !window.bancoCargasGlobal) return;
+        const carga = window.bancoCargasGlobal[window.cargaRotaAtivaId];
+        if (carga) carga.montada = false;
+
+        rotaEditadaNaoSalva = true;
+        atualizarBadgeStatusRota(false);
+        
+        exibirToast('Modo de edição habilitado para esta carga.', 'Modo de Edição', 'aviso');
+    }
+    window.habilitarEdicaoRota = habilitarEdicaoRota;
+
+    async function soltarCidade(e, indexDestino) {
+        e.preventDefault();
+        const card = e.currentTarget;
+        card.classList.remove('border-amber-500', 'ring-2', 'ring-amber-300');
+
+        if (typeof indiceArrastadoCidade === 'undefined' || indiceArrastadoCidade === null || indiceArrastadoCidade === indexDestino) {
+            if (typeof renderizarCidadesRota === 'function') {
+                renderizarCidadesRota(window.bancoCargasGlobal[window.cargaRotaAtivaId]);
+            }
+            return;
+        }
+
+        const carga = window.bancoCargasGlobal[window.cargaRotaAtivaId];
+        if (!carga) return;
+
+        let lista = obterListaCidadesCarga(carga);
+        const itemMovido = lista.splice(indiceArrastadoCidade, 1)[0];
+        lista.splice(indexDestino, 0, itemMovido);
+
+        carga.cidades = lista;
+        carga.montada = false; 
+        rotaEditadaNaoSalva = true;
+        atualizarBadgeStatusRota(false);
+
+        indiceArrastadoCidade = null;
+
+        if (typeof renderizarCidadesRota === 'function') renderizarCidadesRota(carga);
+        if (typeof renderizarRotaNoMapa === 'function') await renderizarRotaNoMapa(lista);
+    }
+
+    // -------------------------------------------------------------------------
+    // ABRIR EM JANELA DESTACADA COM FUNÇÕES E MAPA OPERACIONAIS
+    // -------------------------------------------------------------------------
+    function destacarJanelaRota() {
+        const idCarga = window.cargaRotaAtivaId;
+        if (!idCarga || !window.bancoCargasGlobal) return;
+        const carga = window.bancoCargasGlobal[idCarga];
+        if (!carga) return;
+
+        const modalOriginal = document.getElementById('modalMontagemRota');
+        if (!modalOriginal) return;
+
+        const win = window.open('', 'JanelaRota_' + idCarga, 'width=1300,height=850,menubar=no,toolbar=no,location=no,status=no,resizable=yes');
+        if (!win) {
+            alert('Autorize os pop-ups para abrir a janela destacada.');
+            return;
+        }
+
+        win.document.title = 'Roteirização - Carga #' + (carga.numeroCarga || '');
+
+        Array.from(document.querySelectorAll('link[rel="stylesheet"], style')).forEach(no => {
+            win.document.head.appendChild(no.cloneNode(true));
+        });
+
+        win.document.body.className = 'bg-slate-100 p-0 m-0 h-screen w-screen overflow-hidden';
+        
+        const cloneModal = modalOriginal.firstElementChild.cloneNode(true);
+        cloneModal.className = 'w-full h-full flex flex-col bg-slate-100 overflow-hidden rounded-none border-0';
+        win.document.body.appendChild(cloneModal);
+
+        fecharModalMontagemRota();
+
+        const btnFechar = cloneModal.querySelector('button[title="Fechar"]');
+        if (btnFechar) {
+            btnFechar.removeAttribute('onclick');
+            btnFechar.onclick = () => win.close();
+        }
+
+        const btnSalvar = cloneModal.querySelector('button[onclick*="salvarConclusaoRota"]');
+        if (btnSalvar) {
+            btnSalvar.removeAttribute('onclick');
+            btnSalvar.onclick = () => {
+                salvarConclusaoRota();
+                const badge = cloneModal.querySelector('#badgeStatusMontagemRota');
+                if (badge) {
+                    badge.className = 'text-[10px] bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 px-2 py-0.5 rounded font-black uppercase';
+                    badge.innerText = 'Carga Montada';
+                }
+            };
+        }
+
+        const btnEditar = cloneModal.querySelector('button[onclick*="habilitarEdicaoRota"]');
+        if (btnEditar) {
+            btnEditar.removeAttribute('onclick');
+            btnEditar.onclick = () => {
+                habilitarEdicaoRota();
+                const badge = cloneModal.querySelector('#badgeStatusMontagemRota');
+                if (badge) {
+                    badge.className = 'text-[10px] bg-amber-400/20 border border-amber-400/40 text-amber-300 px-2 py-0.5 rounded font-black uppercase';
+                    badge.innerText = 'Aguardando / Em Edição';
+                }
+            };
+        }
+
+        const listaCidadesCorpo = cloneModal.querySelector('#listaCidadesRotaCorpo');
+        const detalhesCidadeCorpo = cloneModal.querySelector('#detalhesCidadeRotaCorpo');
+        const lblCidadeSel = cloneModal.querySelector('#lblCidadeSelecionadaRota');
+        const lblSubinfo = cloneModal.querySelector('#lblSubinfoCidadeRota');
+
+        function atualizarVisualizacaoCidadePop(nomeCidade) {
+            if (lblCidadeSel) lblCidadeSel.innerText = String(nomeCidade).toUpperCase();
+            
+            const clientesDaCidade = typeof obterClientesPorCidade === 'function' 
+                ? obterClientesPorCidade(carga, nomeCidade) 
+                : [];
+
+            if (lblSubinfo) lblSubinfo.innerText = `${clientesDaCidade.length} cliente(s) nesta praça`;
+            if (!detalhesCidadeCorpo) return;
+
+            if (clientesDaCidade.length === 0) {
+                detalhesCidadeCorpo.innerHTML = `<div class="py-10 text-center text-slate-400 text-xs font-semibold">Sem clientes vinculados a ${nomeCidade}.</div>`;
+                return;
+            }
+
+            let html = '';
+            clientesDaCidade.forEach(cliente => {
+                const pedidosValidos = (cliente.pedidos || []).filter(ped => {
+                    const cidPed = typeof normalizarTextoCidade === 'function' ? normalizarTextoCidade(ped.cidade || cliente.cidade) : String(ped.cidade || cliente.cidade).toUpperCase();
+                    const cidNome = typeof normalizarTextoCidade === 'function' ? normalizarTextoCidade(nomeCidade) : String(nomeCidade).toUpperCase();
+                    return cidPed === cidNome;
+                });
+
+                if (pedidosValidos.length === 0) return;
+
+                let htmlPedidos = '';
+                pedidosValidos.forEach(pedido => {
+                    let htmlItens = '';
+                    (pedido.itens || []).forEach(item => {
+                        htmlItens += `
+                            <div class="flex justify-between items-center py-1 border-b border-slate-100 last:border-0 text-xs">
+                                <span class="text-slate-700 font-medium"><strong>${item.codigo}</strong> - ${item.descricao}</span>
+                                <span class="font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${item.quantidade} vol</span>
+                            </div>
+                        `;
+                    });
+
+                    htmlPedidos += `
+                        <div class="mt-2 bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                            <div class="p-2 bg-slate-100 flex items-center justify-between border-b border-slate-200">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="bg-[#152e50] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">PEDIDO</span>
+                                    <span class="text-xs font-black text-slate-800">${pedido.numeroPedido}</span>
+                                </div>
+                            </div>
+                            <div class="p-2.5 bg-white divide-y divide-slate-100">${htmlItens || '<p class="text-xs text-slate-400 italic">Sem itens.</p>'}</div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                    <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-xs mb-2.5">
+                        <div>
+                            <span class="text-[9px] font-mono font-bold text-slate-400">CÓD: ${cliente.codigo}</span>
+                            <h5 class="text-xs font-black text-slate-800">${cliente.nome}</h5>
+                            <p class="text-[11px] text-slate-500 mt-0.5 truncate">
+                                <i class="fa-solid fa-map-pin text-slate-400 mr-1 text-[9px]"></i>${[cliente.endereco, cliente.bairro].filter(Boolean).join(' - ') || 'Endereço não informado'}
+                            </p>
+                        </div>
+                        ${htmlPedidos}
+                    </div>
+                `;
+            });
+
+            detalhesCidadeCorpo.innerHTML = html;
+        }
+
+        const listaCidades = typeof obterListaCidadesCarga === 'function' ? obterListaCidadesCarga(carga) : [];
+        if (listaCidadesCorpo) {
+            const cardsCidades = listaCidadesCorpo.children;
+            Array.from(cardsCidades).forEach((card, idx) => {
+                const cid = listaCidades[idx];
+                if (!cid) return;
+
+                card.removeAttribute('onclick');
+                card.onclick = () => {
+                    Array.from(cardsCidades).forEach(c => c.classList.remove('bg-amber-50', 'border-amber-400', 'ring-1', 'ring-amber-400/30'));
+                    card.classList.add('bg-amber-50', 'border-amber-400', 'ring-1', 'ring-amber-400/30');
+                    atualizarVisualizacaoCidadePop(cid);
+
+                    if (win._mapaLeafletPop && typeof buscarCoordenadasCidade === 'function') {
+                        buscarCoordenadasCidade(cid).then(coords => {
+                            if (coords) win._mapaLeafletPop.flyTo(coords, 12, { duration: 1 });
+                        });
+                    }
+                };
+            });
+        }
+
+        const elementoMapa = cloneModal.querySelector('#mapaRota');
+        if (elementoMapa && window.L) {
+            elementoMapa.id = 'mapaRotaPop_' + idCarga;
+            const mapaPop = window.L.map(elementoMapa, { zoomControl: true, attributionControl: false }).setView([-13.8576, -40.0827], 8);
+            window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(mapaPop);
+            win._mapaLeafletPop = mapaPop;
+
+            const camadaMarkers = window.L.layerGroup().addTo(mapaPop);
+            const camadaLinhas = window.L.layerGroup().addTo(mapaPop);
+
+            if (typeof buscarCoordenadasCidade === 'function') {
+                Promise.all(listaCidades.map(c => buscarCoordenadasCidade(c))).then(coordenadas => {
+                    const paradas = [];
+                    coordenadas.forEach((coords, i) => {
+                        if (coords) {
+                            paradas.push({ coords: coords, cidade: listaCidades[i], index: i });
+                            const iconCustom = window.L.divIcon({
+                                className: 'marker-rota-container',
+                                html: `<div class="w-8 h-8 rounded-full bg-[#152e50] border-2 border-[#fac043] text-[#fac043] font-black text-xs flex items-center justify-center shadow-lg cursor-pointer">${i + 1}</div>`,
+                                iconSize: [32, 32],
+                                iconAnchor: [16, 16]
+                            });
+                            const marker = window.L.marker(coords, { icon: iconCustom }).addTo(camadaMarkers);
+                            marker.on('click', () => {
+                                if (listaCidadesCorpo && listaCidadesCorpo.children[i]) {
+                                    listaCidadesCorpo.children[i].click();
+                                }
+                            });
+                        }
+                    });
+
+                    if (paradas.length > 1) {
+                        const pts = paradas.map(p => p.coords);
+                        window.L.polyline(pts, { color: '#152e50', weight: 6, opacity: 0.85 }).addTo(camadaLinhas);
+                        window.L.polyline(pts, { color: '#fac043', weight: 3.5, opacity: 1 }).addTo(camadaLinhas);
+                        mapaPop.fitBounds(pts, { padding: [40, 40] });
+                    } else if (paradas.length === 1) {
+                        mapaPop.setView(paradas[0].coords, 12);
+                    }
+                });
+            }
+        }
+
+        if (listaCidades.length > 0) {
+            atualizarVisualizacaoCidadePop(listaCidades[0]);
+        }
+    }
+    window.destacarJanelaRota = destacarJanelaRota;
+</script>
+
+<!-- MODAL CUSTOMIZADO DE CONFIRMAÇÃO DE SAÍDA -->
+<div id="modalConfirmacaoSaida" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden transform transition-all">
+        <div class="bg-[#152e50] p-4 text-white flex justify-between items-center border-b-4 border-[#fac043]">
+            <div class="flex items-center gap-2.5">
+                <i class="fa-solid fa-triangle-exclamation text-[#fac043] text-lg"></i>
+                <h3 class="font-black text-sm tracking-wide uppercase">Alterações Não Salvas</h3>
+            </div>
+        </div>
+        <div class="p-6 text-slate-700 text-xs font-medium space-y-2">
+            <p>Existem alterações na rota que não foram concluídas/salvas.</p>
+            <p class="text-slate-500">Deseja realmente fechar e descartar o modo de edição?</p>
+        </div>
+        <div class="bg-slate-50 p-3 px-6 border-t border-slate-100 flex justify-end gap-2">
+            <button onclick="fecharModalConfirmacao(false)" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer">
+                Continuar Editando
+            </button>
+            <button onclick="fecharModalConfirmacao(true)" class="px-4 py-2 bg-[#152e50] hover:bg-slate-800 text-[#fac043] font-bold rounded-xl text-xs transition cursor-pointer">
+                Sim, Fechar
+            </button>
+        </div>
+    </div>
+</div>
+</body>
+</html>

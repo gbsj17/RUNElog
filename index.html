@@ -202,7 +202,7 @@
                 <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between">
                     <div class="flex items-center space-x-2 text-xs font-semibold text-slate-700">
                         <span id="firebaseStatusDot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
-                        <span id="firebaseStatusText">Status do Firebase</span>
+                        <span id="firebaseStatusText">Status do Supabase</span>
                     </div>
                 </div>
 
@@ -907,6 +907,7 @@
                     <!-- ========================================== -->
                     <!-- TODO 4-C5: Seção Representantes & Logística-->
                     <!-- ========================================== -->
+                     
                     <div id="contentReps" class="hidden space-y-4">
                         <div class="sticky top-0 z-20 pb-2 pt-1">
                             <div class="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex gap-2">
@@ -973,9 +974,39 @@
                             <div id="logUsersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
                         </div>
                     </div>
-                
                 </div>
             </main>
+        </div>
+    </div>
+
+<!-- ========================================== -->
+<!-- TODO 4-C6: Seção Gestão de Rotas e Produtos -->
+<!-- ========================================== -->
+ 
+<div id="contentRotasProdutos" class="hidden space-y-4">
+    <div class="sticky top-0 z-20 pb-2 pt-1">
+        <div class="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex gap-2 w-full">
+            <button onclick="alternarAbaRotasProdutos('produtos')" id="rotasProdTabHeaderProdutos" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-boxes-stacked"></i> Produtos
+            </button>
+            <button onclick="alternarAbaRotasProdutos('cidades')" id="rotasProdTabHeaderCidades" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-city"></i> Cidades / Praças
+            </button>
+            <button onclick="alternarAbaRotasProdutos('rotas')" id="rotasProdTabHeaderRotas" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-route"></i> Gestão de Rotas
+            </button>
+        </div>
+    </div>
+
+    <!-- SUB-ABA 1: PRODUTOS -->
+    <div id="rotasProdSectionProdutos" class="space-y-4"></div>
+
+    <!-- SUB-ABA 2: CIDADES -->
+    <div id="rotasProdSectionCidades" class="space-y-4 hidden"></div>
+
+    <!-- SUB-ABA 3: ROTAS -->
+    <div id="rotasProdSectionRotas" class="space-y-4 hidden"></div>
+</div>
 
     <!-- ========================================== -->
     <!-- TODO: Bloco 5: Painel Motorista            -->
@@ -1057,44 +1088,29 @@
     <!-- ========================================== -->
     <!-- TODO: Bloco 6: Painel Representante        -->
     <!-- ========================================== -->
-     
-    <div id="contentRotasProdutos" class="hidden h-full flex flex-col bg-slate-100 overflow-hidden relative">
-        <div class="fixed top-0 left-0 right-0 z-30 bg-white sm:bg-[#152e50] shadow-sm sm:shadow-md border-b border-slate-200 sm:border-[#0f223d]">
-            <header class="p-4 flex items-center justify-between text-slate-800 sm:text-white">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-[#152e50] sm:bg-white/10 flex items-center justify-center font-bold text-sm text-[#fac043] sm:text-white transition-colors shadow-sm">
-                        <i class="fa-solid fa-briefcase text-[#fac043]"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h2 id="repWelcomeName" class="font-bold text-base sm:text-sm text-slate-900 sm:text-white">Rep: Representante</h2>
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block shadow-[0_0_6px_#34d399]" title="Status Online"></span>
-                        </div>
-                        <p class="text-xs sm:text-[10px] text-slate-500 sm:text-slate-300 font-medium">
-                            Painel do Representante • <span class="app-version-text text-slate-700 sm:text-emerald-200 font-bold">...</span>
-                        </p>
-                    </div>
+    <div id="dashboardRepresentative" class="hidden min-h-full flex flex-col bg-slate-100 relative">
+        <header class="bg-white sm:bg-[#152e50] shadow-sm sm:shadow-md border-b border-slate-200 sm:border-[#0f223d] p-4 flex items-center justify-between text-slate-800 sm:text-white">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-[#152e50] sm:bg-white/10 flex items-center justify-center font-bold text-sm text-[#fac043] sm:text-white transition-colors shadow-sm">
+                    <i class="fa-solid fa-briefcase text-[#fac043]"></i>
                 </div>
-                <button onclick="abrirModalConfig()" class="relative w-11 h-11 rounded-xl bg-slate-100 sm:bg-white/10 hover:bg-slate-200 sm:hover:bg-white/20 transition-colors text-[#152e50] sm:text-white border border-slate-200 sm:border-white/20 flex items-center justify-center shadow-sm">
-                    <i class="fa-solid fa-gear text-lg"></i>
-                    <span class="patch-badge-notice absolute -top-1 -right-1 w-3 h-3 bg-rose-600 rounded-full border-2 border-white animate-pulse"></span>
-                </button>
-            </header>
-
-            <div class="hidden sm:flex bg-white border-b border-slate-200 text-xs font-semibold text-slate-500 overflow-x-auto hide-scrollbar whitespace-nowrap">
-                <button id="repTabHeaderInicio" onclick="alternarAbaRepresentante('inicio')" class="flex-1 min-w-[140px] py-4 px-4 text-center tab-active flex items-center justify-center gap-2 transition-all">
-                    <i class="fa-solid fa-chart-pie"></i> Início (Métricas)
-                </button>
-                <button id="repTabHeaderAtivas" onclick="alternarAbaRepresentante('ativas')" class="flex-1 min-w-[160px] py-4 px-4 text-center flex items-center justify-center gap-2 transition-all hover:bg-slate-50">
-                    <i class="fa-solid fa-truck-fast"></i> Cargas em Andamento
-                </button>
-                <button id="repTabHeaderConcluidas" onclick="alternarAbaRepresentante('concluidas')" class="flex-1 min-w-[160px] py-4 px-4 text-center flex items-center justify-center gap-2 transition-all hover:bg-slate-50">
-                    <i class="fa-solid fa-boxes-packing"></i> Cargas Concluídas
-                </button>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 id="repWelcomeName" class="font-bold text-base sm:text-sm text-slate-900 sm:text-white">Rep: Representante</h2>
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block shadow-[0_0_6px_#34d399]" title="Status Online"></span>
+                    </div>
+                    <p class="text-xs sm:text-[10px] text-slate-500 sm:text-slate-300 font-medium">
+                        Painel do Representante • <span class="app-version-text text-slate-700 sm:text-emerald-200 font-bold">...</span>
+                    </p>
+                </div>
             </div>
-        </div>
+            <button onclick="abrirModalConfig()" class="relative w-11 h-11 rounded-xl bg-slate-100 sm:bg-white/10 hover:bg-slate-200 sm:hover:bg-white/20 transition-colors text-[#152e50] sm:text-white border border-slate-200 sm:border-white/20 flex items-center justify-center shadow-sm">
+                <i class="fa-solid fa-gear text-lg"></i>
+                <span class="patch-badge-notice absolute -top-1 -right-1 w-3 h-3 bg-rose-600 rounded-full border-2 border-white animate-pulse"></span>
+            </button>
+        </header>
 
-        <main class="flex-1 overflow-y-auto p-4 space-y-4 max-w-xl mx-auto w-full pt-24 sm:pt-36 pb-24 sm:pb-8 screen-android-animate">
+        <main class="flex-1 overflow-y-auto p-4 space-y-4 max-w-xl mx-auto w-full pt-4 pb-24 sm:pb-8 screen-android-animate">
             <div id="repSectionInicio" class="space-y-4">
                 <div class="grid grid-cols-3 gap-2">
                     <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm text-center">
@@ -1203,7 +1219,7 @@
     <!-- CARREGAMENTO DOS SCRIPTS MODULARES -->
     
     <!-- Configurações e Segurança -->
-    <script type="module" src="js/config/firebase-config.js"></script>
+    <script type="module" src="js/config/supabase-config.js"></script>
     <script type="module" src="js/auth/auth.js"></script>
 
     <!-- Módulos da Aplicação de Logística -->

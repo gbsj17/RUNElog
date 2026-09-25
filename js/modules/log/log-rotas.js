@@ -1,4 +1,4 @@
-        // ----------------------------------------------------
+// ----------------------------------------------------
         // TODO: BLOCO 7.3-5: GERENCIAMENTO E CRIAÇÃO DE ROTAS
         // ----------------------------------------------------
 
@@ -24,7 +24,7 @@
             if (allAdmins.length <= 1) return showToast("Atenção: Não é possível remover o único administrador do sistema.", "error");
             window.pedirConfirmacao("Remover Admin", "Tem certeza que deseja remover este administrador?", async () => {
                 if (useFirebase) {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/admins`, id));
+                    await db.from('admins').delete().eq('id', id);
                 } else {
                     const admins = LocalDb.get('admins').filter(d => d.id !== id);
                     LocalDb.set('admins', admins);
@@ -36,7 +36,7 @@
         window.removerMotorista = (id) => {
             window.pedirConfirmacao("Remover Motorista", "Tem certeza que deseja remover este motorista?", async () => {
                 if (useFirebase) {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/drivers`, id));
+                    await db.from('drivers').delete().eq('id', id);
                 } else {
                     const drivers = LocalDb.get('drivers').filter(d => d.id !== id);
                     LocalDb.set('drivers', drivers);
@@ -49,7 +49,7 @@
         window.removerRepresentante = (id) => {
             window.pedirConfirmacao("Remover Representante", "Tem certeza que deseja remover este representante?", async () => {
                 if (useFirebase) {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/representatives`, id));
+                    await db.from('representatives').delete().eq('id', id);
                 } else {
                     const reps = LocalDb.get('representatives').filter(r => r.id !== id);
                     LocalDb.set('representatives', reps);
@@ -159,7 +159,7 @@
                 };
 
                 if (useFirebase) {
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/routes`), routeData);
+                    await db.from('routes').insert(routeData);
                 } else {
                     const routes = LocalDb.get('routes');
                     routes.push({ id: `route_${Date.now()}`, ...routeData });
@@ -230,11 +230,11 @@
             const primaryRep = selectedReps.length > 0 ? selectedReps[0] : null;
 
             if (useFirebase) {
-                await updateDoc(doc(db, `artifacts/${appId}/public/data/routes`, routeId), {
+                await db.from('routes').update({
                     repId: primaryRep ? primaryRep.id : null,
                     repName: primaryRep ? primaryRep.name : null,
                     representantes: selectedReps
-                });
+                }).eq('id', routeId);
             } else {
                 const routes = LocalDb.get('routes');
                 const idx = routes.findIndex(r => r.id === routeId);
@@ -284,7 +284,7 @@
             document.getElementById('modalMultiReps')?.classList.add('hidden');
         };
 
-                // ----------------------------------------------------------------------
+        // ----------------------------------------------------------------------
         // TODO: BLOCO 7.3-5E: RENDERIZAÇÃO, ARQUIVAMENTO E VISUALIZAÇÃO DE ROTAS
         // ----------------------------------------------------------------------
         // ----------------------------------------------------------------------
@@ -487,9 +487,7 @@
 
             window.pedirConfirmacao("Apagar Cargas", `Tem certeza que deseja apagar permanentemente ${idsParaApagar.length} carga(s) selecionada(s)?`, async () => {
                 if (useFirebase) {
-                    for (let idCarga of idsParaApagar) {
-                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/routes`, idCarga));
-                    }
+                    await db.from('routes').delete().in('id', idsParaApagar);
                 } else {
                     let routes = LocalDb.get('routes');
                     routes = routes.filter(r => !idsParaApagar.includes(r.id));
@@ -563,7 +561,7 @@
             window.pedirConfirmacao("Encerrar Rota", "Deseja encerrar e arquivar esta rota?", async () => {
                 const nowTime = Date.now();
                 if (useFirebase) {
-                    await updateDoc(doc(db, `artifacts/${appId}/public/data/routes`, id), { status: 'archived', finishedAt: nowTime });
+                    await db.from('routes').update({ status: 'archived', finishedAt: nowTime }).eq('id', id);
                 } else {
                     const routes = LocalDb.get('routes');
                     const idx = routes.findIndex(r => r.id === id);
@@ -577,36 +575,27 @@
         };  
 
 // --------------------------------------------------------------------
-// TODO: BLOCO 7.3-5E5: CONTROLE DE SUB-ABAS DE ROTAS E PRODUTOS
+// TODO: BLOCO 7.3-5E5: CONTROLE DE 3 SUB-ABAS (PRODUTOS, CIDADES, ROTAS)
 // --------------------------------------------------------------------
+
 window.alternarAbaRotasProdutos = function(aba) {
-    const secoes = ['produtos', 'rotas', 'usuarios'];
-    
+    const secoes = ['produtos', 'cidades', 'rotas'];
+
     secoes.forEach(s => {
         const elSecao = document.getElementById(`rotasProdSection${s.charAt(0).toUpperCase() + s.slice(1)}`);
-        const btnDesktop = document.getElementById(`rotasProdTabHeader${s.charAt(0).toUpperCase() + s.slice(1)}`);
-        const btnMobile = document.getElementById(`mobileRotasProdTab${s.charAt(0).toUpperCase() + s.slice(1)}`);
+        const btn = document.getElementById(`rotasProdTabHeader${s.charAt(0).toUpperCase() + s.slice(1)}`);
 
-        if (elSecao) elSecao.classList.add('hidden');
-        if (btnDesktop) {
-            btnDesktop.className = "flex-1 py-4 px-4 text-center flex items-center justify-center gap-2 transition-all hover:bg-slate-50 text-slate-500";
-        }
-        if (btnMobile) {
-            btnMobile.className = "flex-1 flex flex-col items-center gap-1.5 text-[11px] font-medium text-slate-400";
+        if (elSecao) elSecao.classList.toggle('hidden', aba !== s);
+        if (btn) {
+            btn.className = aba === s
+                ? "flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
+                : "flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap";
         }
     });
 
-    const abaAtivaSecao = document.getElementById(`rotasProdSection${aba.charAt(0).toUpperCase() + aba.slice(1)}`);
-    const abaAtivaDesktop = document.getElementById(`rotasProdTabHeader${aba.charAt(0).toUpperCase() + aba.slice(1)}`);
-    const abaAtivaMobile = document.getElementById(`mobileRotasProdTab${aba.charAt(0).toUpperCase() + aba.slice(1)}`);
-
-    if (abaAtivaSecao) abaAtivaSecao.classList.remove('hidden');
-    if (abaAtivaDesktop) {
-        abaAtivaDesktop.className = "flex-1 py-4 px-4 text-center tab-active flex items-center justify-center gap-2 transition-all font-bold text-[#152e50] border-b-2 border-[#152e50] bg-white";
-    }
-    if (abaAtivaMobile) {
-        abaAtivaMobile.className = "flex-1 flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#152e50]";
-    }
+    if (aba === 'produtos' && typeof window.renderizarTabelaProdutos === 'function') window.renderizarTabelaProdutos();
+    if (aba === 'cidades' && typeof window.renderizarTabelaCidades === 'function') window.renderizarTabelaCidades();
+    if (aba === 'rotas' && typeof window.renderizarTabelaRotas === 'function') window.renderizarTabelaRotas();
 };
 
 // --------------------------------------------------------------------
@@ -616,7 +605,6 @@ window.renderizarTabelaProdutos = function() {
     const container = document.getElementById('rotasProdSectionProdutos');
     if (!container) return;
 
-    // Estado inicial de produtos mockados/salvos
     if (!window.produtosState) {
         window.produtosState = [
             { id: 'P1', nome: 'Tanque Polietileno 5.000L', categoria: 'Tanques', pesoMedio: '180 KG' },
@@ -631,7 +619,7 @@ window.renderizarTabelaProdutos = function() {
             <td class="p-3"><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-bold">${p.categoria}</span></td>
             <td class="p-3 text-right font-mono">${p.pesoMedio}</td>
             <td class="p-3 text-center">
-                <button onclick="removerProduto('${p.id}')" class="text-rose-500 hover:text-rose-700 p-1 cursor-pointer" title="Excluir Produto">
+                <button onclick="removerProduto('${p.id}')" class="text-rose-500 hover:text-rose-700 p-1 cursor-pointer">
                     <i class="fa-solid fa-trash-can"></i>
                 </button>
             </td>
@@ -639,31 +627,24 @@ window.renderizarTabelaProdutos = function() {
     `).join('');
 
     container.innerHTML = `
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h3 class="font-extrabold text-slate-800 text-sm">Catálogo de Produtos e Materiais</h3>
-                <p class="text-xs text-slate-500">Cadastre tanques, caixas e insumos integrados ao cálculo de fretes</p>
+                <h3 class="font-extrabold text-slate-800 text-sm">Catálogo de Produtos</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Gestão de itens para cálculo de peso/cubagem</p>
             </div>
-            <button onclick="abrirModalNovoProduto()" class="px-4 py-2.5 bg-[#152e50] hover:bg-[#10223d] text-[#fac043] font-extrabold rounded-xl text-xs transition-all flex items-center gap-2 shadow-sm cursor-pointer">
+            <button onclick="abrirModalNovoProduto()" class="px-4 py-2.5 bg-[#152e50] hover:bg-[#10223d] text-[#fac043] font-extrabold rounded-xl text-xs transition-all flex items-center gap-2 shadow-sm cursor-pointer shrink-0">
                 <i class="fa-solid fa-plus"></i> Novo Produto
             </button>
         </div>
-
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs border-collapse">
                     <thead>
-                        <tr class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200 text-[10px]">
-                            <th class="p-3">Código</th>
-                            <th class="p-3">Nome do Produto</th>
-                            <th class="p-3">Categoria</th>
-                            <th class="p-3 text-right">Peso Médio</th>
-                            <th class="p-3 text-center">Ações</th>
+                        <tr class="bg-slate-50 text-slate-400 uppercase font-bold border-b border-slate-100 text-[10px]">
+                            <th class="p-3">Código</th><th class="p-3">Nome do Produto</th><th class="p-3">Categoria</th><th class="p-3 text-right">Peso Médio</th><th class="p-3 text-center">Ações</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        ${htmlItens}
-                    </tbody>
+                    <tbody class="divide-y divide-slate-100">${htmlItens}</tbody>
                 </table>
             </div>
         </div>
@@ -671,95 +652,53 @@ window.renderizarTabelaProdutos = function() {
 };
 
 // --------------------------------------------------------------------
-// TODO: BLOCO 7.3-5E7: ATUALIZAÇÃO DO CONTROLE DE SUB-ABAS COM RENDERIZAÇÃO
+// TODO: BLOCO 7.3-5E7: RENDERIZAÇÃO DE CIDADES E PRAÇAS
 // --------------------------------------------------------------------
-window.alternarAbaRotasProdutos = function(aba) {
-    const secoes = ['produtos', 'rotas', 'usuarios'];
-    
-    secoes.forEach(s => {
-        const elSecao = document.getElementById(`rotasProdSection${s.charAt(0).toUpperCase() + s.slice(1)}`);
-        const btnDesktop = document.getElementById(`rotasProdTabHeader${s.charAt(0).toUpperCase() + s.slice(1)}`);
-        const btnMobile = document.getElementById(`mobileRotasProdTab${s.charAt(0).toUpperCase() + s.slice(1)}`);
-
-        if (elSecao) elSecao.classList.add('hidden');
-        if (btnDesktop) {
-            btnDesktop.className = "flex-1 py-4 px-4 text-center flex items-center justify-center gap-2 transition-all hover:bg-slate-50 text-slate-500";
-        }
-        if (btnMobile) {
-            btnMobile.className = "flex-1 flex flex-col items-center gap-1.5 text-[11px] font-medium text-slate-400";
-        }
-    });
-
-    const abaAtivaSecao = document.getElementById(`rotasProdSection${aba.charAt(0).toUpperCase() + aba.slice(1)}`);
-    const abaAtivaDesktop = document.getElementById(`rotasProdTabHeader${aba.charAt(0).toUpperCase() + aba.slice(1)}`);
-    const abaAtivaMobile = document.getElementById(`mobileRotasProdTab${aba.charAt(0).toUpperCase() + aba.slice(1)}`);
-
-    if (abaAtivaSecao) abaAtivaSecao.classList.remove('hidden');
-    if (abaAtivaDesktop) {
-        abaAtivaDesktop.className = "flex-1 py-4 px-4 text-center tab-active flex items-center justify-center gap-2 transition-all font-bold text-[#152e50] border-b-2 border-[#152e50] bg-white";
-    }
-    if (abaAtivaMobile) {
-        abaAtivaMobile.className = "flex-1 flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#152e50]";
-    }
-
-    // DISPARA OS RENDERIZADORES CONFORME A ABA ATIVA
-    if (aba === 'produtos' && typeof window.renderizarTabelaProdutos === 'function') {
-        window.renderizarTabelaProdutos();
-    } else if (aba === 'rotas' && typeof window.renderizarTabelaRotasPracas === 'function') {
-        window.renderizarTabelaRotasPracas();
-    }
-};
-
-// --------------------------------------------------------------------
-// TODO: BLOCO 7.3-5E8: RENDERIZAÇÃO E GESTÃO DE ROTAS, PRAÇAS E CIDADES
-// --------------------------------------------------------------------
-window.renderizarTabelaRotasPracas = function() {
-    const container = document.getElementById('rotasProdSectionRotas');
+window.renderizarTabelaCidades = function() {
+    const container = document.getElementById('rotasProdSectionCidades');
     if (!container) return;
 
-    if (!window.rotasPracasState) {
-        window.rotasPracasState = [
-            { id: 'R1', rota: 'TERESINA-PI', praca: 'Teresina / Timon / Caxias', distancia: '1.254 KM', status: 'Ativa' },
-            { id: 'R2', rota: 'FORTALEZA-CE', praca: 'Fortaleza / Caucaia', distancia: '1.100 KM', status: 'Ativa' }
+    if (!window.cidadesState) {
+        window.cidadesState = [
+            { id: 'C1', nome: 'Teresina', uf: 'PI', regiao: 'Nordeste' },
+            { id: 'C2', nome: 'Timon', uf: 'MA', regiao: 'Nordeste' },
+            { id: 'C3', nome: 'Caxias', uf: 'MA', regiao: 'Nordeste' },
+            { id: 'C4', nome: 'Fortaleza', uf: 'CE', regiao: 'Nordeste' }
         ];
     }
 
-    let htmlRotas = window.rotasPracasState.map(r => `
+    let htmlCidades = window.cidadesState.map(c => `
         <tr class="hover:bg-slate-50 transition-colors">
-            <td class="p-3 font-bold text-[#152e50]">${r.id}</td>
-            <td class="p-3 font-medium text-slate-700">${r.rota}</td>
-            <td class="p-3 text-slate-600">${r.praca}</td>
-            <td class="p-3 text-right font-mono">${r.distancia}</td>
-            <td class="p-3 text-center"><span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">${r.status}</span></td>
+            <td class="p-3 font-bold text-[#152e50]">${c.id}</td>
+            <td class="p-3 font-medium text-slate-700">${c.nome} - ${c.uf}</td>
+            <td class="p-3 text-slate-500">${c.regiao}</td>
+            <td class="p-3 text-center">
+                <button onclick="removerCidade('${c.id}')" class="text-rose-500 hover:text-rose-700 p-1 cursor-pointer">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </td>
         </tr>
     `).join('');
 
     container.innerHTML = `
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h3 class="font-extrabold text-slate-800 text-sm">Gerenciamento de Rotas e Cidades</h3>
-                <p class="text-xs text-slate-500">Mapeamento de praças, quilometragens e destinos frequentes</p>
+                <h3 class="font-extrabold text-slate-800 text-sm">Cidades e Praças de Atuação</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Cadastre destinos individuais para aglomerar nas rotas depois</p>
             </div>
-            <button onclick="abrirModalNovaRota()" class="px-4 py-2.5 bg-[#152e50] hover:bg-[#10223d] text-[#fac043] font-extrabold rounded-xl text-xs transition-all flex items-center gap-2 shadow-sm cursor-pointer">
-                <i class="fa-solid fa-plus"></i> Nova Rota / Cidade
+            <button onclick="abrirModalNovaCidade()" class="px-4 py-2.5 bg-[#152e50] hover:bg-[#10223d] text-[#fac043] font-extrabold rounded-xl text-xs transition-all flex items-center gap-2 shadow-sm cursor-pointer shrink-0">
+                <i class="fa-solid fa-plus"></i> Nova Cidade
             </button>
         </div>
-
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs border-collapse">
                     <thead>
-                        <tr class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200 text-[10px]">
-                            <th class="p-3">Código</th>
-                            <th class="p-3">Rota Base</th>
-                            <th class="p-3">Praças / Cidades de Entrega</th>
-                            <th class="p-3 text-right">Distância (KM)</th>
-                            <th class="p-3 text-center">Status</th>
+                        <tr class="bg-slate-50 text-slate-400 uppercase font-bold border-b border-slate-100 text-[10px]">
+                            <th class="p-3">Código</th><th class="p-3">Cidade / UF</th><th class="p-3">Região</th><th class="p-3 text-center">Ações</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        ${htmlRotas}
-                    </tbody>
+                    <tbody class="divide-y divide-slate-100">${htmlCidades}</tbody>
                 </table>
             </div>
         </div>
@@ -767,7 +706,61 @@ window.renderizarTabelaRotasPracas = function() {
 };
 
 // --------------------------------------------------------------------
-// TODO: BLOCO 7.3-5E9: MODAIS DE CADASTRO (PRODUTOS E ROTAS)
+// TODO: BLOCO 7.3-5E8: RENDERIZAÇÃO E GESTÃO DE ROTAS (AGLOMERADOS)
+// --------------------------------------------------------------------
+window.renderizarTabelaRotas = function() {
+    const container = document.getElementById('rotasProdSectionRotas');
+    if (!container) return;
+
+    if (!window.rotasState) {
+        window.rotasState = [
+            { id: 'R1', nome: 'Rota Piauí/Maranhão', cidades: ['Teresina-PI', 'Timon-MA', 'Caxias-MA'], distancia: '1.254 KM', status: 'Ativa' },
+            { id: 'R2', nome: 'Rota Ceará Expresso', cidades: ['Fortaleza-CE', 'Caucaia-CE'], distancia: '1.100 KM', status: 'Ativa' }
+        ];
+    }
+
+    let htmlRotas = window.rotasState.map(r => {
+        let tagsCidades = r.cidades.map(c => `<span class="bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded-md text-[10px] font-bold whitespace-nowrap">${c}</span>`).join(' ');
+        
+        return `
+        <tr class="hover:bg-slate-50 transition-colors">
+            <td class="p-3 font-bold text-[#152e50]">${r.id}</td>
+            <td class="p-3 font-bold text-slate-700">${r.nome}</td>
+            <td class="p-3">
+                <div class="flex flex-wrap gap-1.5">${tagsCidades}</div>
+            </td>
+            <td class="p-3 text-right font-mono">${r.distancia}</td>
+            <td class="p-3 text-center"><span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">${r.status}</span></td>
+        </tr>
+    `}).join('');
+
+    container.innerHTML = `
+        <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h3 class="font-extrabold text-slate-800 text-sm">Gestão de Rotas (Aglomerados)</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Agrupe cidades cadastradas para formar uma rota de entrega</p>
+            </div>
+            <button onclick="abrirModalNovaRota()" class="px-4 py-2.5 bg-[#152e50] hover:bg-[#10223d] text-[#fac043] font-extrabold rounded-xl text-xs transition-all flex items-center gap-2 shadow-sm cursor-pointer shrink-0">
+                <i class="fa-solid fa-plus"></i> Nova Rota
+            </button>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-400 uppercase font-bold border-b border-slate-100 text-[10px]">
+                            <th class="p-3 w-16">Código</th><th class="p-3 w-48">Nome da Rota</th><th class="p-3">Cidades Aglomeradas</th><th class="p-3 text-right w-24">Distância</th><th class="p-3 text-center w-20">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">${htmlRotas}</tbody>
+                </table>
+            </div>
+        </div>
+    `;
+};
+
+// --------------------------------------------------------------------
+// TODO: BLOCO 7.3-5E9: MODAIS SIMPLIFICADOS
 // --------------------------------------------------------------------
 window.abrirModalNovoProduto = function() {
     const nome = prompt("Digite o nome do produto (ex: Tanque 3.000L):");
@@ -777,7 +770,6 @@ window.abrirModalNovoProduto = function() {
 
     const novoId = 'P' + (window.produtosState.length + 1);
     window.produtosState.push({ id: novoId, nome, categoria, pesoMedio });
-    
     window.renderizarTabelaProdutos();
 };
 
@@ -787,14 +779,30 @@ window.removerProduto = function(id) {
     window.renderizarTabelaProdutos();
 };
 
-window.abrirModalNovaRota = function() {
-    const rota = prompt("Digite a Rota Base (ex: SALVADOR-BA):");
-    if (!rota) return;
-    const praca = prompt("Digite as praças/cidades de entrega:") || "-";
-    const distancia = prompt("Digite a distância (ex: 450 KM):") || "0 KM";
-
-    const novoId = 'R' + (window.rotasPracasState.length + 1);
-    window.rotasPracasState.push({ id: novoId, rota, praca, distancia, status: 'Ativa' });
+window.abrirModalNovaCidade = function() {
+    const nome = prompt("Nome da Cidade:");
+    if (!nome) return;
+    const uf = prompt("UF (ex: BA, PI, MA):") || "BA";
     
-    window.renderizarTabelaRotasPracas();
+    const novoId = 'C' + (window.cidadesState.length + 1);
+    window.cidadesState.push({ id: novoId, nome, uf, regiao: 'Nordeste' });
+    window.renderizarTabelaCidades();
+};
+
+window.removerCidade = function(id) {
+    if (!confirm("Deseja excluir esta cidade?")) return;
+    window.cidadesState = window.cidadesState.filter(c => c.id !== id);
+    window.renderizarTabelaCidades();
+};
+
+window.abrirModalNovaRota = function() {
+    const nome = prompt("Digite o Nome da Rota (ex: Rota Litoral Sul):");
+    if (!nome) return;
+    const cidadesInput = prompt("Quais cidades fazem parte dessa rota?\n(Digite separando por vírgula. Ex: Teresina-PI, Timon-MA)");
+    const cidades = cidadesInput ? cidadesInput.split(',').map(c => c.trim()) : [];
+    const distancia = prompt("Distância total estimada (ex: 450 KM):") || "0 KM";
+
+    const novoId = 'R' + (window.rotasState.length + 1);
+    window.rotasState.push({ id: novoId, nome, cidades, distancia, status: 'Ativa' });
+    window.renderizarTabelaRotas();
 };

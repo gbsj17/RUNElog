@@ -6,7 +6,7 @@ const ASSETS = [
   './assets/css/style.css',
   './assets/images/icon.png',
   './js/app.js',
-  './js/config/firebase-config.js',
+  './js/config/supabase-config.js',
   './js/auth/auth.js',
   './js/modules/log/log-core.js',
   './js/modules/log/log-rotas.js',

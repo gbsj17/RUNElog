@@ -2,14 +2,6 @@
 // TODO: BLOCO 7.5.1: PATCH NOTES & VERSÕES DINÂMICAS
 // =======================================================
 
-import { 
-    collection, 
-    doc, 
-    getDoc, 
-    addDoc, 
-    onSnapshot 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
 let globalLatestVersion = 'v1.3.0';
 
 // Busca e renderiza o patch-notes.json dinamicamente sem travar o app
@@ -132,19 +124,19 @@ window.togglePatch = (patchId) => {
 
 window.startAdminListeners = function() {
     if (window.useFirebase) {
-        if (!window.unsubDrivers) window.unsubDrivers = onSnapshot(collection(window.db, `artifacts/${window.appId}/public/data/drivers`), snap => {
-            window.allDrivers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (!window.unsubDrivers) window.unsubDrivers = window.subscribeTable('drivers', data => {
+            window.allDrivers = data;
             if (window.currentUserRole === 'admin') {
                 if (window.renderlogDriversList) window.renderlogDriversList();
                 if (window.renderAdminDashboard) window.renderAdminDashboard();
             }
         });
-        if (!window.unsubReps) window.unsubReps = onSnapshot(collection(window.db, `artifacts/${window.appId}/public/data/representatives`), snap => {
-            window.allReps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (!window.unsubReps) window.unsubReps = window.subscribeTable('representatives', data => {
+            window.allReps = data;
             if (window.currentUserRole === 'admin' && window.renderlogRepsList) window.renderlogRepsList();
         });
-        if (!window.unsubAdmins) window.unsubAdmins = onSnapshot(collection(window.db, `artifacts/${window.appId}/public/data/admins`), snap => {
-            window.allAdmins = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (!window.unsubAdmins) window.unsubAdmins = window.subscribeTable('admins', data => {
+            window.allAdmins = data;
             if (window.currentUserRole === 'admin' && window.renderloglogsList) window.renderloglogsList();
         });
     } else {
@@ -178,8 +170,8 @@ window.startAdminListeners = function() {
 
 window.startDriverListeners = function() {
     if (window.useFirebase) {
-        if (!window.unsubRoutes) window.unsubRoutes = onSnapshot(collection(window.db, `artifacts/${window.appId}/public/data/routes`), snap => {
-            window.allRoutes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (!window.unsubRoutes) window.unsubRoutes = window.subscribeTable('routes', data => {
+            window.allRoutes = data;
             if (window.currentUserRole === 'driver' && window.renderDriverDashboard) window.renderDriverDashboard();
         });
     } else {
@@ -192,8 +184,8 @@ window.startDriverListeners = function() {
 
 window.startRepListeners = function() {
     if (window.useFirebase) {
-        if (!window.unsubRoutes) window.unsubRoutes = onSnapshot(collection(window.db, `artifacts/${window.appId}/public/data/routes`), snap => {
-            window.allRoutes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (!window.unsubRoutes) window.unsubRoutes = window.subscribeTable('routes', data => {
+            window.allRoutes = data;
             if (window.currentUserRole === 'representative' && window.renderRepDashboard) window.renderRepDashboard();
         });
     } else {
@@ -212,8 +204,8 @@ async function inicializarContaAdminPadrao() {
     let configAdminLegacy = JSON.parse(localStorage.getItem('app_admin_settings') || '{"username": "gbsj17", "password": "1234"}');
     if (window.useFirebase) {
         try {
-            const snapLegacy = await getDoc(doc(window.db, `artifacts/${window.appId}/public/data/settings`, 'admin'));
-            if (snapLegacy.exists()) configAdminLegacy = snapLegacy.data();
+            const { data: settingsRow } = await window.db.from('settings').select('value').eq('key', 'admin').maybeSingle();
+            if (settingsRow) configAdminLegacy = settingsRow.value;
         } catch(e){}
     }
     if (!window.useFirebase) {
@@ -335,28 +327,28 @@ function verificarSessaoSalva() {
 
 function carregarDadosIniciais(callback) {
     if (window.useFirebase) {
-        onSnapshot(collection(window.db, `artifacts/${window.appId}/public/data/drivers`), snap => {
-            window.allDrivers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        window.subscribeTable('drivers', data => {
+            window.allDrivers = data;
             if (window.currentUserRole === 'admin') {
                 if (window.renderlogDriversList) window.renderlogDriversList();
                 if (window.renderAdminDashboard) window.renderAdminDashboard();
             }
             if (callback) callback();
         });
-        onSnapshot(collection(window.db, `artifacts/${window.appId}/public/data/representatives`), snap => {
-            window.allReps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        window.subscribeTable('representatives', data => {
+            window.allReps = data;
             if (window.currentUserRole === 'admin' && window.renderlogRepsList) window.renderlogRepsList();
         });
-        onSnapshot(collection(window.db, `artifacts/${window.appId}/public/data/admins`), snap => {
-            window.allAdmins = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        window.subscribeTable('admins', async data => {
+            window.allAdmins = data;
             if (window.allAdmins.length === 0) {
                 const legacyUser = JSON.parse(localStorage.getItem('app_admin_settings') || '{"username": "gbsj17", "password": "1234"}');
-                addDoc(collection(window.db, `artifacts/${window.appId}/public/data/admins`), { name: legacyUser.username, pin: legacyUser.password, createdAt: Date.now() });
+                await window.db.from('admins').insert({ name: legacyUser.username, pin: legacyUser.password, createdAt: Date.now() });
             }
             if (window.currentUserRole === 'admin' && window.renderloglogsList) window.renderloglogsList();
         });
-        onSnapshot(collection(window.db, `artifacts/${window.appId}/public/data/routes`), snap => {
-            window.allRoutes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        window.subscribeTable('routes', data => {
+            window.allRoutes = data;
             if (window.currentUserRole === 'admin') {
                 if (window.renderlogRoutesList) window.renderlogRoutesList();
                 if (window.renderlogArchivedRoutesList) window.renderlogArchivedRoutesList();

@@ -2,7 +2,6 @@
 // MÓDULO DE GESTÃO DE FRETES TERCEIRIZADOS (HOMEPAGE + DASHBOARD + FORM)
 // ==========================================================
 
-import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { renderAbasMetricasFretes } from "./log-metricas.js";
 
 // ==========================================================

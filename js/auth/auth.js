@@ -2,8 +2,6 @@
 // TODO: BLOCO 7.2: AUTENTICAÇÃO, MODAIS E SESSÃO
 // ==============================================
 
-import { doc, updateDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
 // Função global de Toast para alertas visuais
 window.showToast = function(message, type = 'info') {
     const container = document.getElementById('toastContainer');
@@ -185,10 +183,9 @@ window.salvarNovaSenhaPessoal = async (e) => {
     }
 
     if (window.useFirebase) {
-        try {
-            await updateDoc(doc(window.db, `artifacts/${window.appId}/public/data/${collectionName}`, userObj.id), { pin: nova });
-        } catch(err) {
-            return window.showToast("Erro ao salvar no banco: " + err.message, "error");
+        const { error } = await window.db.from(collectionName).update({ pin: nova }).eq('id', userObj.id);
+        if (error) {
+            return window.showToast("Erro ao salvar no banco: " + error.message, "error");
         }
     } else {
         const list = window.LocalDb.get(collectionName);
@@ -278,18 +275,15 @@ window.realizarLoginUnificado = async (e) => {
         return;
     }
 
-    // Busca Remota Direta no Firestore (Garante login se o estado local ainda não carregou)
+    // Busca Remota Direta no Supabase (Garante login se o estado local ainda não carregou)
     if (window.useFirebase && window.db) {
         try {
-            const appId = window.appId || "rune-byte-logistics-v1";
-
             // Admins
-            const admSnap = await getDocs(collection(window.db, `artifacts/${appId}/public/data/admins`));
+            const { data: admRows } = await window.db.from('admins').select('*');
             let admFound = null;
-            admSnap.forEach(docSnap => {
-                const data = docSnap.data();
-                if ((data.name?.toLowerCase() === typedName || docSnap.id === typedName) && String(data.pin) === typedPin) {
-                    admFound = { id: docSnap.id, ...data };
+            (admRows || []).forEach(data => {
+                if ((data.name?.toLowerCase() === typedName || data.id === typedName) && String(data.pin) === typedPin) {
+                    admFound = data;
                 }
             });
 
@@ -304,12 +298,11 @@ window.realizarLoginUnificado = async (e) => {
             }
 
             // Motoristas
-            const drvSnap = await getDocs(collection(window.db, `artifacts/${appId}/public/data/drivers`));
+            const { data: drvRows } = await window.db.from('drivers').select('*');
             let drvFound = null;
-            drvSnap.forEach(docSnap => {
-                const data = docSnap.data();
-                if ((data.name?.toLowerCase() === typedName || docSnap.id === typedName) && String(data.pin) === typedPin) {
-                    drvFound = { id: docSnap.id, ...data };
+            (drvRows || []).forEach(data => {
+                if ((data.name?.toLowerCase() === typedName || data.id === typedName) && String(data.pin) === typedPin) {
+                    drvFound = data;
                 }
             });
 
@@ -325,12 +318,11 @@ window.realizarLoginUnificado = async (e) => {
             }
 
             // Representantes
-            const repSnap = await getDocs(collection(window.db, `artifacts/${appId}/public/data/representatives`));
+            const { data: repRows } = await window.db.from('representatives').select('*');
             let repFound = null;
-            repSnap.forEach(docSnap => {
-                const data = docSnap.data();
-                if ((data.name?.toLowerCase() === typedName || docSnap.id === typedName) && String(data.pin) === typedPin) {
-                    repFound = { id: docSnap.id, ...data };
+            (repRows || []).forEach(data => {
+                if ((data.name?.toLowerCase() === typedName || data.id === typedName) && String(data.pin) === typedPin) {
+                    repFound = data;
                 }
             });
 
