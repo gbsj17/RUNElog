@@ -368,6 +368,14 @@
             </div>
         </div>
 
+        <!-- Filtro: busca por código de cliente, cidade ou rota montada -->
+        <div class="pt-3 pb-1">
+            <div class="relative max-w-md">
+                <i class="fa-solid fa-magnifying-glass text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 text-xs"></i>
+                <input type="text" id="inputFiltroClientesCarga" oninput="filtrarClientesCarga(this.value)" placeholder="Buscar por código do cliente, cidade ou rota..." class="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#152e50] shadow-xs transition">
+            </div>
+        </div>
+
         <!-- CONTAINER ONDE OS CARDS DE CLIENTES E PEDIDOS SERÃO INJETADOS -->
         <div id="containerClientesCarga" class="space-y-4 pt-2">
             <!-- Injetado via JS -->
@@ -2036,8 +2044,14 @@
                         + '</button>')
                     : '<span class="text-xs font-bold text-slate-400 font-mono">-</span>';
 
+                // Texto de busca do card: código/nome do cliente, cidade padrão e a
+                // rota montada de cada pedido (praça de entrega, quando ajustada).
+                const termosBuscaCliente = [cliente.codigo, cliente.nome, cidadeExibicao];
+                cliente.pedidos.forEach(p => { if (p.pracaEntrega) termosBuscaCliente.push(p.pracaEntrega); });
+                const textoBuscaCliente = esc(termosBuscaCliente.filter(Boolean).join(' ').toLowerCase());
+
                 htmlClientes += `
-                    <div class="bg-white rounded-2xl border-l-4 border-l-[#fac043] border-t border-b border-r border-slate-200 shadow-sm p-4 mb-4 relative">
+                    <div data-busca-cliente="${textoBuscaCliente}" class="bg-white rounded-2xl border-l-4 border-l-[#fac043] border-t border-b border-r border-slate-200 shadow-sm p-4 mb-4 relative">
                         <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-4">
                             
                             <!-- BLOCO 1: Código + Razão Social | Praça + Pedidos + Obs -->
@@ -2108,7 +2122,25 @@
             });
 
             container.innerHTML = htmlClientes;
+
+            // Reaplica o filtro ativo (se houver) depois de reconstruir a lista -
+            // sem isso, editar uma praça de entrega ou expandir/recolher um pedido
+            // desfaria a busca em andamento.
+            const inputFiltroClientes = document.getElementById('inputFiltroClientesCarga');
+            if (inputFiltroClientes && inputFiltroClientes.value) filtrarClientesCarga(inputFiltroClientes.value);
         }
+
+        // Filtra os cards de cliente do detalhe da carga por código, cidade ou
+        // rota montada (praça de entrega) - só esconde via CSS, não mexe nos
+        // dados nem precisa re-renderizar nada.
+        function filtrarClientesCarga(termo) {
+            const termoNormalizado = String(termo || '').trim().toLowerCase();
+            document.querySelectorAll('#containerClientesCarga [data-busca-cliente]').forEach(card => {
+                const combina = !termoNormalizado || card.dataset.buscaCliente.includes(termoNormalizado);
+                card.classList.toggle('hidden', !combina);
+            });
+        }
+        window.filtrarClientesCarga = filtrarClientesCarga;
 
         // ---------------------------------------------
         // TODO 13.3 FUNÇÕES AUXILIARES E DO MODAL CNPJ
