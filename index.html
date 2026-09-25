@@ -623,10 +623,6 @@
                     <i class="fa-solid fa-truck-front text-lg w-6 text-center shrink-0"></i>
                     <span class="sidebar-text-element whitespace-nowrap">Gestão de Frota e Funcionários</span>
                 </button>
-                <button onclick="alternarAbalog('reps')" id="nav-reps" title="Representantes & Equipe" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
-                    <i class="fa-solid fa-user-tie text-lg w-6 text-center shrink-0"></i>
-                    <span class="sidebar-text-element whitespace-nowrap">Representantes & Equipe</span>
-                </button>
                 <button onclick="alternarAbalog('rotas-produtos')" id="nav-rotas-produtos" title="Gestão de Rotas e Produtos" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
                     <i class="fa-solid fa-boxes-stacked text-lg w-6 text-center shrink-0"></i>
                     <span class="sidebar-text-element whitespace-nowrap">Gestão de Rotas e Produtos</span>
@@ -870,6 +866,9 @@
                                 <button onclick="mudarSubAbaFrota('veiculos')" id="tabSubVeiculos" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
                                     <i class="fa-solid fa-truck"></i> Frota, Veículos, Reboques & Dolly
                                 </button>
+                                <button onclick="mudarSubAbaFrota('representantes')" id="tabSubRepresentantes" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-user-tie"></i> Representantes
+                                </button>
                             </div>
                         </div>
 
@@ -906,26 +905,9 @@
                             </div>
                             <div id="logVehiclesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
                         </div>
-                    </div>
 
-                    <!-- ========================================== -->
-                    <!-- TODO 4-C5: Seção Representantes & Logística-->
-                    <!-- ========================================== -->
-                     
-                    <div id="contentReps" class="hidden space-y-4">
-                        <div class="sticky top-0 z-20 pb-2 pt-1">
-                            <div class="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex gap-2">
-                                <button onclick="mudarSubAbaRepsLog('reps')" id="tabSubReps" class="flex-1 py-2 px-2 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
-                                    <i class="fa-solid fa-user-tie"></i> Representantes Comerciais
-                                </button>
-                                <button onclick="mudarSubAbaRepsLog('cobertura')" id="tabSubCobertura" class="flex-1 py-2 px-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
-                                    <i class="fa-solid fa-map-location-dot"></i> Cobertura & Rotas
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- SUB-ABA 1: REPRESENTANTES COMERCIAIS -->
-                        <div id="subAbaRepsContent" class="space-y-4">
+                        <!-- SUB-ABA 3: REPRESENTANTES COMERCIAIS -->
+                        <div id="subAbaRepresentantesContent" class="space-y-4 hidden">
                             <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div>
                                     <h3 class="font-bold text-slate-800 text-sm">Representantes Comerciais</h3>
@@ -940,17 +922,34 @@
                             </div>
                             <div id="logRepsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
                         </div>
+                    </div>
 
-                        <!-- SUB-ABA 2: COBERTURA & ROTAS -->
-                        <div id="subAbaCoberturaContent" class="space-y-4 hidden">
-                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
-                                <h3 class="font-bold text-slate-800 text-sm">Mapeamento de Cobertura & Rotas</h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5">Vínculo de cidades e praças atendidas aos representantes</p>
-                            </div>
-                            <div class="p-6 bg-white rounded-2xl border border-slate-200 text-center text-xs text-slate-400">
-                                Em breve. Essa área vai permitir vincular cidades/praças de cobertura a cada representante.
+                    <!-- ========================================== -->
+                    <!-- TODO 4-C6: Seção Gestão de Rotas e Produtos -->
+                    <!-- ========================================== -->
+                    <div id="contentRotasProdutos" class="hidden space-y-4">
+                        <div class="sticky top-0 z-20 pb-2 pt-1">
+                            <div class="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex gap-2 w-full">
+                                <button onclick="alternarAbaRotasProdutos('produtos')" id="rotasProdTabHeaderProdutos" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-boxes-stacked"></i> Produtos
+                                </button>
+                                <button onclick="alternarAbaRotasProdutos('cidades')" id="rotasProdTabHeaderCidades" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-city"></i> Cidades / Praças
+                                </button>
+                                <button onclick="alternarAbaRotasProdutos('rotas')" id="rotasProdTabHeaderRotas" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-route"></i> Gestão de Rotas
+                                </button>
                             </div>
                         </div>
+
+                        <!-- SUB-ABA 1: PRODUTOS -->
+                        <div id="rotasProdSectionProdutos" class="space-y-4"></div>
+
+                        <!-- SUB-ABA 2: CIDADES -->
+                        <div id="rotasProdSectionCidades" class="space-y-4 hidden"></div>
+
+                        <!-- SUB-ABA 3: ROTAS -->
+                        <div id="rotasProdSectionRotas" class="space-y-4 hidden"></div>
                     </div>
                 </div>
             </main>
@@ -1086,35 +1085,6 @@
             </nav>
         </div>
     </div>
-
-<!-- ========================================== -->
-<!-- TODO 4-C6: Seção Gestão de Rotas e Produtos -->
-<!-- ========================================== -->
- 
-<div id="contentRotasProdutos" class="hidden space-y-4">
-    <div class="sticky top-0 z-20 pb-2 pt-1">
-        <div class="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex gap-2 w-full">
-            <button onclick="alternarAbaRotasProdutos('produtos')" id="rotasProdTabHeaderProdutos" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
-                <i class="fa-solid fa-boxes-stacked"></i> Produtos
-            </button>
-            <button onclick="alternarAbaRotasProdutos('cidades')" id="rotasProdTabHeaderCidades" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
-                <i class="fa-solid fa-city"></i> Cidades / Praças
-            </button>
-            <button onclick="alternarAbaRotasProdutos('rotas')" id="rotasProdTabHeaderRotas" class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
-                <i class="fa-solid fa-route"></i> Gestão de Rotas
-            </button>
-        </div>
-    </div>
-
-    <!-- SUB-ABA 1: PRODUTOS -->
-    <div id="rotasProdSectionProdutos" class="space-y-4"></div>
-
-    <!-- SUB-ABA 2: CIDADES -->
-    <div id="rotasProdSectionCidades" class="space-y-4 hidden"></div>
-
-    <!-- SUB-ABA 3: ROTAS -->
-    <div id="rotasProdSectionRotas" class="space-y-4 hidden"></div>
-</div>
 
     <!-- ========================================== -->
     <!-- TODO: Bloco 5: Painel Motorista            -->

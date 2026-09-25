@@ -86,7 +86,7 @@ window.aplicarFeaturesDaEmpresa = function() {
 window.alternarAbalog = (tab, direction = 'none') => {
     window.logCurrentTab = tab;
     
-    const secoesSidebar = ['rotas', 'fretes', 'dashboard', 'frota', 'reps', 'rotas-produtos'];
+    const secoesSidebar = ['rotas', 'fretes', 'dashboard', 'frota', 'rotas-produtos'];
     secoesSidebar.forEach(s => {
         const btn = document.getElementById('nav-' + s);
         if (btn) {
@@ -103,7 +103,6 @@ window.alternarAbalog = (tab, direction = 'none') => {
         'fretes': document.getElementById('contentFretes'),
         'dashboard': document.getElementById('contentDashboard'),
         'frota': document.getElementById('contentFrota'),
-        'reps': document.getElementById('contentReps'),
         'rotas-produtos': document.getElementById('contentRotasProdutos')
     };
 
@@ -122,8 +121,7 @@ window.alternarAbalog = (tab, direction = 'none') => {
         'rotas': { title: 'Gestão Operacional de Rotas', subtitle: 'Cargas em andamento e novas rotas', icon: 'fa-route' },
         'fretes': { title: 'Gestão de Fretes Terceirizados', subtitle: 'Gerenciamento financeiro e emissão de OC', icon: 'fa-calculator' },
         'dashboard': { title: 'Visão Geral & Métricas', subtitle: 'Desempenho e relatórios estratégicos', icon: 'fa-chart-pie' },
-        'frota': { title: 'Gestão de Frota e Funcionários', subtitle: 'Controle de motoristas, veículos e equipes', icon: 'fa-truck-front' },
-        'reps': { title: 'Representantes & Equipe', subtitle: 'Representantes comerciais e cobertura por região', icon: 'fa-user-tie' },
+        'frota': { title: 'Gestão de Frota e Funcionários', subtitle: 'Motoristas, veículos e representantes', icon: 'fa-truck-front' },
         'rotas-produtos': { title: 'Gestão de Rotas e Produtos', subtitle: 'Cadastros centrais de apoio logístico', icon: 'fa-boxes-stacked' }
     };
 
@@ -145,8 +143,6 @@ window.alternarAbalog = (tab, direction = 'none') => {
     } else if (tab === 'frota') {
         if (window.renderlogDriversList) window.renderlogDriversList();
         if (window.renderlogVehiclesList) window.renderlogVehiclesList();
-    } else if (tab === 'reps') {
-        if (window.mudarSubAbaRepsLog) window.mudarSubAbaRepsLog('reps');
         if (window.renderlogRepsList) window.renderlogRepsList();
     } else if (tab === 'rotas-produtos') {
         if (window.alternarAbaRotasProdutos) {
@@ -166,44 +162,29 @@ window.alternarAbalog = (tab, direction = 'none') => {
 // TODO: BLOCO 7.3-2: SUB-ABAS (PÍLULAS INTERNAS)
 // -----------------------------------------------------
 window.mudarSubAbaFrota = function(aba) {
-    const btnM = document.getElementById('tabSubMotoristas');
-    const btnV = document.getElementById('tabSubVeiculos');
-    const contentM = document.getElementById('subAbaMotoristasContent');
-    const contentV = document.getElementById('subAbaVeiculosContent');
+    const botoes = {
+        motoristas: document.getElementById('tabSubMotoristas'),
+        veiculos: document.getElementById('tabSubVeiculos'),
+        representantes: document.getElementById('tabSubRepresentantes')
+    };
+    const conteudos = {
+        motoristas: document.getElementById('subAbaMotoristasContent'),
+        veiculos: document.getElementById('subAbaVeiculosContent'),
+        representantes: document.getElementById('subAbaRepresentantesContent')
+    };
 
-    if (aba === 'motoristas') {
-        if (btnM) btnM.className = "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5";
-        if (btnV) btnV.className = "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5";
-        if (contentM) contentM.classList.remove('hidden');
-        if (contentV) contentV.classList.add('hidden');
-    } else {
-        if (btnV) btnV.className = "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5";
-        if (btnM) btnM.className = "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5";
-        if (contentV) contentV.classList.remove('hidden');
-        if (contentM) contentM.classList.add('hidden');
-    }
-};
-
-window.mudarSubAbaRepsLog = function(aba) {
-    const btnR = document.getElementById('tabSubReps');
-    const btnC = document.getElementById('tabSubCobertura');
-    const contentR = document.getElementById('subAbaRepsContent');
-    const contentC = document.getElementById('subAbaCoberturaContent');
-
-    [btnR, btnC].forEach(b => {
-        if (b) b.className = "flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5";
-    });
-    [contentR, contentC].forEach(c => {
-        if (c) c.classList.add('hidden');
+    Object.keys(botoes).forEach(key => {
+        const btn = botoes[key];
+        const content = conteudos[key];
+        if (btn) {
+            btn.className = key === aba
+                ? "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5"
+                : "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5";
+        }
+        if (content) content.classList.toggle('hidden', key !== aba);
     });
 
-    if (aba === 'reps') {
-        if (btnR) btnR.className = "flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5";
-        if (contentR) contentR.classList.remove('hidden');
-    } else if (aba === 'cobertura') {
-        if (btnC) btnC.className = "flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5";
-        if (contentC) contentC.classList.remove('hidden');
-    }
+    if (aba === 'representantes' && window.renderlogRepsList) window.renderlogRepsList();
 };
 
 // -----------------------------------------------------
