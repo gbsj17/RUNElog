@@ -311,7 +311,7 @@ window.abrirModalNovoMotorista = function() {
         const novoDriver = { name, cpf, phone, pin, companyId: window.currentCompanyId, createdAt: Date.now() };
 
         if (window.useFirebase) {
-            const { error } = await window.db.from('drivers').insert(novoDriver);
+            const { error } = await window.db.rpc('create_team_member', { p_role: 'driver', p_name: name, p_pin: pin, p_cpf: cpf, p_phone: phone });
             if (error) {
                 if (window.showToast) window.showToast("Erro ao salvar motorista: " + error.message, "error");
                 return false;
@@ -544,7 +544,7 @@ window.abrirModalNovoRep = function() {
         const novoRep = { name, cpf, phone, pin, companyId: window.currentCompanyId, createdAt: Date.now() };
 
         if (window.useFirebase) {
-            const { error } = await window.db.from('representatives').insert(novoRep);
+            const { error } = await window.db.rpc('create_team_member', { p_role: 'representative', p_name: name, p_pin: pin, p_cpf: cpf, p_phone: phone });
             if (error) {
                 if (window.showToast) window.showToast("Erro ao salvar representante: " + error.message, "error");
                 return false;
@@ -811,7 +811,7 @@ window.removerAdmin = async (id) => {
     if (window.pedirConfirmacao) {
         window.pedirConfirmacao("Remover Administrador", "Deseja realmente remover este usuário?", async () => {
             if (window.useFirebase) {
-                await window.db.from('admins').delete().eq('id', id);
+                await window.db.rpc('delete_team_member', { p_role: 'admin', p_id: id });
             } else {
                 let list = LocalDb.get('admins').filter(item => item.id !== id);
                 LocalDb.set('admins', list);
