@@ -102,6 +102,51 @@ window.mudarSubAbaFretes = function(subAba) {
 window.abrirEditorCotacao = function(cargaId = null) {
     window.fretesState.viewModo = 'editor';
     window.fretesState.cargaSelecionadaId = cargaId;
+    if (cargaId === null) window.fretesState.novaCotacaoDraft = null;
+    window.renderPainelFretes();
+};
+
+// ==========================================================
+// TODO 3.1: SELEÇÃO DE UMA ROTA REAL (Gestão de Rotas) PARA A COTAÇÃO
+// ==========================================================
+// Preenche o rascunho da "Nova Cotação" com os dados reais da rota escolhida
+// (window.allRoutes, vindo do Supabase) em vez dos dados fixos de exemplo.
+window.aoSelecionarRotaParaCotacao = function(routeId) {
+    if (!routeId) {
+        window.fretesState.novaCotacaoDraft = null;
+        window.renderPainelFretes();
+        return;
+    }
+
+    const route = (window.allRoutes || []).find(r => r.id === routeId);
+    if (!route) return;
+
+    const paradasValidas = window.obterParadasValidas ? window.obterParadasValidas(route.stops) : (route.stops || []);
+    const cidadesEntrega = paradasValidas.map(s => (s.textoOriginal || s.texto || '').trim()).filter(Boolean);
+
+    const driver = (window.allDrivers || []).find(d => d.id === route.driverId);
+    const veiculo = (window.allVehicles || []).find(v => v.driver === route.driverName);
+
+    window.fretesState.novaCotacaoDraft = {
+        id: route.numeroCarga || ('CG-' + route.id.slice(0, 8).toUpperCase()),
+        _routeId: route.id,
+        motorista: route.driverName || '-',
+        cpf: driver?.cpf || '-',
+        placa: veiculo?.placa || '-',
+        rota: cidadesEntrega[cidadesEntrega.length - 1] || route.numeroCarga || '-',
+        coleta: 'JEQUIÉ, BA',
+        material: 'TANQUES & CAIXAS',
+        peso: '0,00 KG',
+        distancia: '0 KM',
+        carroceria: '0,00 M',
+        freteTotal: '-',
+        adiantamento: '-',
+        saldo: '-',
+        qtdEntregas: String(cidadesEntrega.length).padStart(2, '0'),
+        cidadesEntrega: cidadesEntrega.length ? cidadesEntrega : ['-'],
+        status: route.status === 'archived' ? 'Concluída' : 'Aguardando Embarque'
+    };
+
     window.renderPainelFretes();
 };
 
@@ -216,9 +261,18 @@ window.renderFormColuna1HTML = function(carga) {
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="uppercase text-slate-500">Rota:</span>
-                        <select class="bg-[#152e50] text-[#fac043] font-bold rounded px-2 py-0.5 text-xs outline-none">
-                            <option>--► ${carga.rota}</option>
+                        ${carga.rota === 'SELECIONAR ROTA' ? `
+                        <select id="freteSelectRotaOrigem" onchange="aoSelecionarRotaParaCotacao(this.value)" class="bg-[#152e50] text-[#fac043] font-bold rounded px-2 py-1 text-xs outline-none max-w-[160px]">
+                            <option value="">--► SELECIONAR ROTA</option>
+                            ${(window.allRoutes || [])
+                                .slice()
+                                .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+                                .map(r => `<option value="${r.id}">${r.numeroCarga ? r.numeroCarga + ' - ' : ''}${r.driverName || 'Sem motorista'}</option>`)
+                                .join('')}
                         </select>
+                        ` : `
+                        <span class="bg-[#152e50] text-[#fac043] font-bold rounded px-2 py-0.5 text-xs">--► ${carga.rota}</span>
+                        `}
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="uppercase text-slate-500">Qtd. Entregas:</span>
@@ -428,7 +482,9 @@ window.renderFormColuna4HTML = function(carga) {
 // ===========================================================
 window.renderFormularioPlanilhaHTML = function() {
     const atualId = window.fretesState.cargaSelecionadaId;
-    const carga = window.fretesState.cargasAtivas.find(c => c.id === atualId) || {
+    const carga = window.fretesState.cargasAtivas.find(c => c.id === atualId)
+        || (atualId === null && window.fretesState.novaCotacaoDraft)
+        || {
         id: 'NOVA',
         motorista: '',
         rota: 'SELECIONAR ROTA',
