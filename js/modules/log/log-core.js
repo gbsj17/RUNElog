@@ -86,7 +86,7 @@ window.aplicarFeaturesDaEmpresa = function() {
 window.alternarAbalog = (tab, direction = 'none') => {
     window.logCurrentTab = tab;
     
-    const secoesSidebar = ['rotas', 'fretes', 'dashboard', 'frota', 'rotas-produtos'];
+    const secoesSidebar = ['rotas', 'fretes', 'dashboard', 'frota', 'reps', 'rotas-produtos'];
     secoesSidebar.forEach(s => {
         const btn = document.getElementById('nav-' + s);
         if (btn) {
@@ -103,6 +103,7 @@ window.alternarAbalog = (tab, direction = 'none') => {
         'fretes': document.getElementById('contentFretes'),
         'dashboard': document.getElementById('contentDashboard'),
         'frota': document.getElementById('contentFrota'),
+        'reps': document.getElementById('contentReps'),
         'rotas-produtos': document.getElementById('contentRotasProdutos')
     };
 
@@ -122,6 +123,7 @@ window.alternarAbalog = (tab, direction = 'none') => {
         'fretes': { title: 'Gestão de Fretes Terceirizados', subtitle: 'Gerenciamento financeiro e emissão de OC', icon: 'fa-calculator' },
         'dashboard': { title: 'Visão Geral & Métricas', subtitle: 'Desempenho e relatórios estratégicos', icon: 'fa-chart-pie' },
         'frota': { title: 'Gestão de Frota e Funcionários', subtitle: 'Controle de motoristas, veículos e equipes', icon: 'fa-truck-front' },
+        'reps': { title: 'Representantes & Equipe', subtitle: 'Representantes comerciais e cobertura por região', icon: 'fa-user-tie' },
         'rotas-produtos': { title: 'Gestão de Rotas e Produtos', subtitle: 'Cadastros centrais de apoio logístico', icon: 'fa-boxes-stacked' }
     };
 
@@ -143,6 +145,9 @@ window.alternarAbalog = (tab, direction = 'none') => {
     } else if (tab === 'frota') {
         if (window.renderlogDriversList) window.renderlogDriversList();
         if (window.renderlogVehiclesList) window.renderlogVehiclesList();
+    } else if (tab === 'reps') {
+        if (window.mudarSubAbaRepsLog) window.mudarSubAbaRepsLog('reps');
+        if (window.renderlogRepsList) window.renderlogRepsList();
     } else if (tab === 'rotas-produtos') {
         if (window.alternarAbaRotasProdutos) {
             window.alternarAbaRotasProdutos('produtos');
@@ -182,15 +187,13 @@ window.mudarSubAbaFrota = function(aba) {
 window.mudarSubAbaRepsLog = function(aba) {
     const btnR = document.getElementById('tabSubReps');
     const btnC = document.getElementById('tabSubCobertura');
-    const btnL = document.getElementById('tabSubLogUsers');
     const contentR = document.getElementById('subAbaRepsContent');
     const contentC = document.getElementById('subAbaCoberturaContent');
-    const contentL = document.getElementById('subAbaLogUsersContent');
 
-    [btnR, btnC, btnL].forEach(b => {
+    [btnR, btnC].forEach(b => {
         if (b) b.className = "flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5";
     });
-    [contentR, contentC, contentL].forEach(c => {
+    [contentR, contentC].forEach(c => {
         if (c) c.classList.add('hidden');
     });
 
@@ -200,9 +203,6 @@ window.mudarSubAbaRepsLog = function(aba) {
     } else if (aba === 'cobertura') {
         if (btnC) btnC.className = "flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5";
         if (contentC) contentC.classList.remove('hidden');
-    } else if (aba === 'logusers') {
-        if (btnL) btnL.className = "flex-1 py-2.5 px-3 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer flex items-center justify-center gap-1.5";
-        if (contentL) contentL.classList.remove('hidden');
     }
 };
 
@@ -610,85 +610,6 @@ window.renderlogRepsList = function() {
 };
 
 
-// 4. USUÁRIOS DA LOGÍSTICA
-window.abrirModalNovoLogUser = function() {
-    const html = `
-        <div class="space-y-3">
-            <div>
-                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Nome do Funcionário *</label>
-                <input type="text" id="modalLogName" placeholder="Ex: Ana Operações" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#152e50] outline-none">
-            </div>
-            <div>
-                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Usuário de Acesso (Login) *</label>
-                <input type="text" id="modalLogUser" placeholder="Ex: ana.log" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-            </div>
-            <div>
-                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Senha / PIN</label>
-                <input type="text" id="modalLogPin" placeholder="Ex: 1234 (Gerado se vazio)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
-            </div>
-        </div>
-    `;
-
-    window.abrirModalPersistente("Cadastrar Usuário da Logística", html, () => {
-        const name = document.getElementById('modalLogName')?.value.trim();
-        const username = document.getElementById('modalLogUser')?.value.trim();
-        const pin = document.getElementById('modalLogPin')?.value.trim() || Math.floor(1000 + Math.random() * 9000).toString();
-
-        if (!name || !username) {
-            alert("Preencha o Nome e o Usuário.");
-            return false;
-        }
-
-        if (!window.allLogUsers) window.allLogUsers = [];
-        window.allLogUsers.push({ id: 'log_' + Date.now(), name, username, pin });
-
-        if (window.renderlogUsersList) window.renderlogUsersList();
-        return true;
-    });
-};
-
-window.renderlogUsersList = function() {
-    const container = document.getElementById('logUsersList');
-    const query = (document.getElementById('searchLogUsersInput')?.value || "").toLowerCase().trim();
-    if (!container) return;
-
-    const users = window.allLogUsers || [];
-    const filtrados = users.filter(u => 
-        (u.name || "").toLowerCase().includes(query) || 
-        (u.username || "").toLowerCase().includes(query)
-    );
-
-    if (filtrados.length === 0) {
-        container.innerHTML = `<div class="col-span-full p-6 bg-white rounded-2xl border border-slate-200 text-center text-xs text-slate-400">Nenhum usuário logístico cadastrado.</div>`;
-        return;
-    }
-
-    container.innerHTML = filtrados.map(u => `
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-3">
-            <div>
-                <div class="flex items-center justify-between">
-                    <h4 class="font-bold text-slate-800 text-sm">${u.name}</h4>
-                    <span class="text-[10px] bg-purple-50 text-purple-700 font-bold px-2 py-0.5 rounded-md font-mono">Login: ${u.username}</span>
-                </div>
-                <p class="text-xs text-slate-500 mt-2"><i class="fa-solid fa-shield-halved mr-1 text-[#152e50]"></i> Acesso Restrito à Logística</p>
-            </div>
-            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button onclick="removerLogUser('${u.id}')" class="text-rose-500 hover:bg-rose-50 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer" title="Excluir">
-                    <i class="fa-solid fa-trash-can"></i> Excluir
-                </button>
-            </div>
-        </div>
-    `).join('');
-};
-
-window.removerLogUser = function(id) {
-    if (window.allLogUsers) {
-        window.allLogUsers = window.allLogUsers.filter(u => u.id !== id);
-        window.renderlogUsersList();
-    }
-};
-
-
 // ----------------------------------------------------
 // TODO: BLOCO 7.3-5: DASHBOARD, MÉTRICAS E RANKINGS
 // ----------------------------------------------------
@@ -807,30 +728,5 @@ window.renderAdminDashboard = () => {
     }
 };
 
-window.removerAdmin = async (id) => {
-    if (window.pedirConfirmacao) {
-        window.pedirConfirmacao("Remover Administrador", "Deseja realmente remover este usuário?", async () => {
-            if (window.useFirebase) {
-                await window.db.rpc('delete_team_member', { p_role: 'admin', p_id: id });
-            } else {
-                let list = LocalDb.get('admins').filter(item => item.id !== id);
-                LocalDb.set('admins', list);
-            }
-            if (window.renderloglogsList) window.renderloglogsList();
-        });
-    }
-};
-
-window.removerMotorista = async (id) => {
-    if (window.allDrivers) {
-        window.allDrivers = window.allDrivers.filter(d => d.id !== id);
-        if (window.renderlogDriversList) window.renderlogDriversList();
-    }
-};
-
-window.removerRepresentante = async (id) => {
-    if (window.allReps) {
-        window.allReps = window.allReps.filter(r => r.id !== id);
-        if (window.renderlogRepsList) window.renderlogRepsList();
-    }
-};
+// removerAdmin / removerMotorista / removerRepresentante ficam definidos em
+// log-rotas.js (única fonte da verdade — usam a RPC delete_team_member).

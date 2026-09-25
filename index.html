@@ -623,6 +623,10 @@
                     <i class="fa-solid fa-truck-front text-lg w-6 text-center shrink-0"></i>
                     <span class="sidebar-text-element whitespace-nowrap">Gestão de Frota e Funcionários</span>
                 </button>
+                <button onclick="alternarAbalog('reps')" id="nav-reps" title="Representantes & Equipe" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
+                    <i class="fa-solid fa-user-tie text-lg w-6 text-center shrink-0"></i>
+                    <span class="sidebar-text-element whitespace-nowrap">Representantes & Equipe</span>
+                </button>
                 <button onclick="alternarAbalog('rotas-produtos')" id="nav-rotas-produtos" title="Gestão de Rotas e Produtos" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
                     <i class="fa-solid fa-boxes-stacked text-lg w-6 text-center shrink-0"></i>
                     <span class="sidebar-text-element whitespace-nowrap">Gestão de Rotas e Produtos</span>
@@ -917,9 +921,6 @@
                                 <button onclick="mudarSubAbaRepsLog('cobertura')" id="tabSubCobertura" class="flex-1 py-2 px-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
                                     <i class="fa-solid fa-map-location-dot"></i> Cobertura & Rotas
                                 </button>
-                                <button onclick="mudarSubAbaRepsLog('logusers')" id="tabSubLogUsers" class="flex-1 py-2 px-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
-                                    <i class="fa-solid fa-users-gear"></i> Usuários da Logística
-                                </button>
                             </div>
                         </div>
 
@@ -942,36 +943,13 @@
 
                         <!-- SUB-ABA 2: COBERTURA & ROTAS -->
                         <div id="subAbaCoberturaContent" class="space-y-4 hidden">
-                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div>
-                                    <h3 class="font-bold text-slate-800 text-sm">Mapeamento de Cobertura & Rotas</h3>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">Vínculo de cidades e praças atendidas aos representantes</p>
-                                </div>
-                                <div class="flex items-center gap-2 w-full sm:w-auto">
-                                    <input type="text" id="searchRoutesInput" oninput="renderlogRoutesList()" placeholder="Buscar cidade ou rota..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
-                                    <button onclick="abrirModalNovaRota()" class="px-3 py-2 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer">
-                                        <i class="fa-solid fa-route"></i> Cadastrar Rota
-                                    </button>
-                                </div>
+                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+                                <h3 class="font-bold text-slate-800 text-sm">Mapeamento de Cobertura & Rotas</h3>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Vínculo de cidades e praças atendidas aos representantes</p>
                             </div>
-                            <div id="logRoutesList" class="space-y-3"></div>
-                        </div>
-
-                        <!-- SUB-ABA 3: USUÁRIOS DA LOGÍSTICA -->
-                        <div id="subAbaLogUsersContent" class="space-y-4 hidden">
-                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div>
-                                    <h3 class="font-bold text-slate-800 text-sm">Usuários da Logística & Operações</h3>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">Controle de contas internas com acesso ao painel logístico</p>
-                                </div>
-                                <div class="flex items-center gap-2 w-full sm:w-auto">
-                                    <input type="text" id="searchLogUsersInput" oninput="renderlogUsersList()" placeholder="Buscar usuário..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
-                                    <button onclick="abrirModalNovoLogUser()" class="px-3 py-2 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer">
-                                        <i class="fa-solid fa-user-shield"></i> Novo Usuário
-                                    </button>
-                                </div>
+                            <div class="p-6 bg-white rounded-2xl border border-slate-200 text-center text-xs text-slate-400">
+                                Em breve. Essa área vai permitir vincular cidades/praças de cobertura a cada representante.
                             </div>
-                            <div id="logUsersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
                         </div>
                     </div>
                 </div>
