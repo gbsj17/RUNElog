@@ -36,11 +36,11 @@
         }
 
         .painel-transicao {
-            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
         }
         .painel-oculto {
             opacity: 0;
-            transform: translateY(8px);
+            transform: translateY(6px);
             pointer-events: none;
         }
         .painel-visivel {
@@ -1476,24 +1476,31 @@
             if (btnTexto) btnTexto.innerText = 'Expandir Todos';
             if (btnIcone) btnIcone.className = 'fa-solid fa-up-right-and-down-left-from-center text-[11px]';
 
+            // Monta o conteúdo do detalhe ANTES de disparar a transição, enquanto a
+            // seção ainda está com "display: none" - assim o trabalho pesado de
+            // renderizarClientesDaCarga (pode ser bastante HTML pra cargas com muitos
+            // clientes) não trava o navegador bem no meio do fade, que era o que dava
+            // aquela sensação de travadinha/estranha ao abrir uma carga.
+            document.getElementById('detalheCargaNum').innerText = `${carga.numeroCarga}`;
+            document.getElementById('detalheCargaValor').innerText = formatarMoeda(carga.valorTotalSemSt);
+            document.getElementById('detalheCargaEntregas').innerText = Object.keys(carga.clientes).length;
+            document.getElementById('detalheCargaCidades').innerText = carga.cidades.size;
+            document.getElementById('detalheCargaPedidos').innerText = carga.totalPedidosCount;
+            renderizarClientesDaCarga(carga);
+
             secaoGrid.classList.add('painel-oculto');
             setTimeout(() => {
                 secaoGrid.classList.add('hidden');
                 secaoDetalhe.classList.remove('hidden');
-                
-                document.getElementById('detalheCargaNum').innerText = `${carga.numeroCarga}`;
-                document.getElementById('detalheCargaValor').innerText = formatarMoeda(carga.valorTotalSemSt);
-                document.getElementById('detalheCargaEntregas').innerText = Object.keys(carga.clientes).length;
-                document.getElementById('detalheCargaCidades').innerText = carga.cidades.size;
-                document.getElementById('detalheCargaPedidos').innerText = carga.totalPedidosCount;
 
-                renderizarClientesDaCarga(carga);
-
-                setTimeout(() => {
+                // requestAnimationFrame em vez de um setTimeout arbitrário: espera o
+                // navegador pintar o "display: none -> block" antes de iniciar o fade,
+                // senão o navegador pode fundir os dois estados e pular a transição.
+                requestAnimationFrame(() => {
                     secaoDetalhe.classList.remove('painel-oculto');
                     secaoDetalhe.classList.add('painel-visivel');
-                }, 50);
-            }, 300);
+                });
+            }, 200);
         }
         window.visualizarCarga = visualizarCarga;
 
@@ -1512,11 +1519,11 @@
                 if (headerFiltro) headerFiltro.classList.remove('hidden');
                 if (btnVoltar) btnVoltar.classList.add('hidden');
 
-                setTimeout(() => {
+                requestAnimationFrame(() => {
                     secaoGrid.classList.remove('painel-oculto');
                     secaoGrid.classList.add('painel-visivel');
-                }, 50);
-            }, 300);
+                });
+            }, 200);
         }
         window.mostrarGridCargas = mostrarGridCargas;
 
