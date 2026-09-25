@@ -86,7 +86,7 @@ window.aplicarFeaturesDaEmpresa = function() {
 window.alternarAbalog = (tab, direction = 'none') => {
     window.logCurrentTab = tab;
     
-    const secoesSidebar = ['rotas', 'fretes', 'dashboard', 'frota', 'rotas-produtos'];
+    const secoesSidebar = ['importador', 'rotas', 'fretes', 'dashboard', 'frota', 'rotas-produtos'];
     secoesSidebar.forEach(s => {
         const btn = document.getElementById('nav-' + s);
         if (btn) {
@@ -99,6 +99,7 @@ window.alternarAbalog = (tab, direction = 'none') => {
     });
 
     const secoesLog = {
+        'importador': document.getElementById('contentImportador'),
         'rotas': document.getElementById('contentRotas'),
         'fretes': document.getElementById('contentFretes'),
         'dashboard': document.getElementById('contentDashboard'),
@@ -118,6 +119,7 @@ window.alternarAbalog = (tab, direction = 'none') => {
     });
 
     const headerInfo = {
+        'importador': { title: 'Importador de Cargas', subtitle: 'Importação de planilhas WinThor e montagem de rotas', icon: 'fa-file-excel' },
         'rotas': { title: 'Gestão Operacional de Rotas', subtitle: 'Cargas em andamento e novas rotas', icon: 'fa-route' },
         'fretes': { title: 'Gestão de Fretes Terceirizados', subtitle: 'Gerenciamento financeiro e emissão de OC', icon: 'fa-calculator' },
         'dashboard': { title: 'Visão Geral & Métricas', subtitle: 'Desempenho e relatórios estratégicos', icon: 'fa-chart-pie' },
@@ -136,7 +138,14 @@ window.alternarAbalog = (tab, direction = 'none') => {
     const hIcon = document.getElementById('logHeaderMobileIcon');
     if (hIcon) hIcon.className = `fa-solid ${currentInfo.icon}`;
 
-    if (tab === 'dashboard' && window.renderAdminDashboard) {
+    if (tab === 'importador') {
+        // Lazy-load: só carrega o iframe na primeira vez que a aba é aberta,
+        // pra não pagar o custo de XLSX/Leaflet em toda sessão do admin.
+        const iframeImportador = document.getElementById('iframeImportador');
+        if (iframeImportador && !iframeImportador.getAttribute('src')) {
+            iframeImportador.setAttribute('src', 'import-cargas.html');
+        }
+    } else if (tab === 'dashboard' && window.renderAdminDashboard) {
         window.renderAdminDashboard();
     } else if (tab === 'fretes' && window.renderPainelFretes) {
         window.renderPainelFretes();

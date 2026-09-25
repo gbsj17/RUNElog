@@ -607,6 +607,10 @@
 
             <!-- Links de Navegação Principal -->
             <nav class="flex-1 p-3 space-y-2 text-xs font-semibold overflow-x-hidden">
+                <button onclick="alternarAbalog('importador')" id="nav-importador" title="Importador de Cargas" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
+                    <i class="fa-solid fa-file-excel text-lg w-6 text-center shrink-0"></i>
+                    <span class="sidebar-text-element whitespace-nowrap">Importador de Cargas</span>
+                </button>
                 <button onclick="alternarAbalog('rotas')" id="nav-rotas" title="Gestão de Rotas" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl bg-white/15 text-[#fac043] transition-all cursor-pointer">
                     <i class="fa-solid fa-route text-lg w-6 text-center shrink-0"></i>
                     <span class="sidebar-text-element whitespace-nowrap">Gestão de Rotas</span>
@@ -665,7 +669,18 @@
              
             <main class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-[2px] pb-16 sm:pb-4">
                 <div class="max-w-7xl mx-auto w-full space-y-[2px]">
-                
+
+                    <!-- ========================================== -->
+                    <!-- TODO 4-C0: Seção Importador de Cargas       -->
+                    <!-- Ferramenta standalone (import-cargas.html), rodando isolada num  -->
+                    <!-- iframe para não colidir com funções globais do app principal     -->
+                    <!-- (ex.: fecharModalConfirmacao existe nos dois com lógica diferente). -->
+                    <!-- Carregada só na primeira vez que a aba é aberta (lazy-load).      -->
+                    <!-- ========================================== -->
+                    <div id="contentImportador" class="hidden space-y-4">
+                        <iframe id="iframeImportador" title="Importador de Cargas" class="w-full rounded-2xl border border-slate-200 shadow-sm bg-white" style="height: calc(100vh - 150px); min-height: 600px;"></iframe>
+                    </div>
+
                     <!-- ========================================== -->
                     <!-- TODO 4-C1: Seção Gestão de Rotas            -->
                     <!-- ========================================== -->
