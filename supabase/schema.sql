@@ -89,6 +89,7 @@ alter table companies add column if not exists cidade text;
 alter table companies add column if not exists uf text;
 alter table companies add column if not exists "planValue" numeric;
 alter table companies add column if not exists "billingCycle" text default 'mensal';
+alter table companies add column if not exists phone text;
 
 -- RLS: acesso aberto para o anon key, equivalente ao Firestore em modo teste.
 -- Mantém a mesma postura de segurança atual do app (fora de escopo endurecer agora).
