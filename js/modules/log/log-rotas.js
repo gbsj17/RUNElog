@@ -24,7 +24,8 @@
             if (allAdmins.length <= 1) return showToast("Atenção: Não é possível remover o único administrador do sistema.", "error");
             window.pedirConfirmacao("Remover Admin", "Tem certeza que deseja remover este administrador?", async () => {
                 if (useFirebase) {
-                    await db.from('admins').delete().eq('id', id);
+                    const { error } = await db.rpc('delete_team_member', { p_role: 'admin', p_id: id });
+                    if (error) return showToast("Erro ao remover administrador: " + error.message, "error");
                 } else {
                     const admins = LocalDb.get('admins').filter(d => d.id !== id);
                     LocalDb.set('admins', admins);
@@ -36,7 +37,8 @@
         window.removerMotorista = (id) => {
             window.pedirConfirmacao("Remover Motorista", "Tem certeza que deseja remover este motorista?", async () => {
                 if (useFirebase) {
-                    await db.from('drivers').delete().eq('id', id);
+                    const { error } = await db.rpc('delete_team_member', { p_role: 'driver', p_id: id });
+                    if (error) return showToast("Erro ao remover motorista: " + error.message, "error");
                 } else {
                     const drivers = LocalDb.get('drivers').filter(d => d.id !== id);
                     LocalDb.set('drivers', drivers);
@@ -49,7 +51,8 @@
         window.removerRepresentante = (id) => {
             window.pedirConfirmacao("Remover Representante", "Tem certeza que deseja remover este representante?", async () => {
                 if (useFirebase) {
-                    await db.from('representatives').delete().eq('id', id);
+                    const { error } = await db.rpc('delete_team_member', { p_role: 'representative', p_id: id });
+                    if (error) return showToast("Erro ao remover representante: " + error.message, "error");
                 } else {
                     const reps = LocalDb.get('representatives').filter(r => r.id !== id);
                     LocalDb.set('representatives', reps);
