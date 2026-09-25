@@ -19,6 +19,12 @@
 --     empresa (companyId) do usuário autenticado.
 -- ==========================================================================
 
+-- No Supabase, pgcrypto normalmente já vem instalada no schema "extensions",
+-- não em "public" — por isso crypt()/gen_salt() sem qualificar dão "does not
+-- exist" mesmo com a extensão presente. As funções abaixo que usam essas
+-- funções (_runelog_create_auth_user, _runelog_set_auth_password) por isso
+-- incluem "extensions" no próprio search_path fixo delas.
+create extension if not exists pgcrypto with schema extensions;
 create extension if not exists pgcrypto;
 
 alter table admins add column if not exists "authUserId" uuid unique;
@@ -40,7 +46,7 @@ create or replace function public._runelog_create_auth_user(p_email text, p_pass
 returns uuid
 language plpgsql
 security definer
-set search_path = auth, public
+set search_path = auth, public, extensions
 as $$
 declare
   new_id uuid := gen_random_uuid();
@@ -74,7 +80,7 @@ create or replace function public._runelog_set_auth_password(p_auth_user_id uuid
 returns void
 language sql
 security definer
-set search_path = auth, public
+set search_path = auth, public, extensions
 as $$
   update auth.users
   set encrypted_password = crypt(p_new_password, gen_salt('bf')), updated_at = now()
