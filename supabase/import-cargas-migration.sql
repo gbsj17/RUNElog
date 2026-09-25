@@ -58,4 +58,17 @@ create policy "admin da empresa ou master" on import_cargas for all using (
   )
 );
 
+-- Habilita Realtime nessa tabela, mesmo padrão idempotente do schema.sql -
+-- sem isso, o painel de Fretes (que lista as cargas nesse select) só vê uma
+-- carga nova depois de recarregar a página, em vez de na hora.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'import_cargas'
+  ) then
+    execute 'alter publication supabase_realtime add table import_cargas';
+  end if;
+end $$;
+
 notify pgrst, 'reload schema';

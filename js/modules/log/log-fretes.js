@@ -107,33 +107,32 @@ window.abrirEditorCotacao = function(cargaId = null) {
 };
 
 // ==========================================================
-// TODO 3.1: SELEÇÃO DE UMA ROTA REAL (Gestão de Rotas) PARA A COTAÇÃO
+// TODO 3.1: SELEÇÃO DE UMA CARGA REAL (Importador de Cargas) PARA A COTAÇÃO
 // ==========================================================
-// Preenche o rascunho da "Nova Cotação" com os dados reais da rota escolhida
-// (window.allRoutes, vindo do Supabase) em vez dos dados fixos de exemplo.
-window.aoSelecionarRotaParaCotacao = function(routeId) {
-    if (!routeId) {
+// Preenche o rascunho da "Nova Cotação" com os dados reais da carga escolhida
+// (window.allImportCargas, vindo da tabela import_cargas no Supabase - a mesma
+// que o Importador de Cargas grava) em vez dos dados fixos de exemplo.
+window.aoSelecionarCargaParaCotacao = function(numeroCarga) {
+    if (!numeroCarga) {
         window.fretesState.novaCotacaoDraft = null;
         window.renderPainelFretes();
         return;
     }
 
-    const route = (window.allRoutes || []).find(r => r.id === routeId);
-    if (!route) return;
+    const registro = (window.allImportCargas || []).find(c => c.numeroCarga === numeroCarga);
+    if (!registro) return;
 
-    const paradasValidas = window.obterParadasValidas ? window.obterParadasValidas(route.stops) : (route.stops || []);
-    const cidadesEntrega = paradasValidas.map(s => (s.textoOriginal || s.texto || '').trim()).filter(Boolean);
-
-    const driver = (window.allDrivers || []).find(d => d.id === route.driverId);
-    const veiculo = (window.allVehicles || []).find(v => v.driver === route.driverName);
+    const dados = registro.dados || {};
+    const cidadesEntrega = Array.isArray(dados.cidades) ? dados.cidades : [];
+    const qtdEntregas = dados.totalPedidosCount || Object.keys(dados.clientes || {}).length || cidadesEntrega.length;
 
     window.fretesState.novaCotacaoDraft = {
-        id: route.numeroCarga || ('CG-' + route.id.slice(0, 8).toUpperCase()),
-        _routeId: route.id,
-        motorista: route.driverName || '-',
-        cpf: driver?.cpf || '-',
-        placa: veiculo?.placa || '-',
-        rota: cidadesEntrega[cidadesEntrega.length - 1] || route.numeroCarga || '-',
+        id: registro.numeroCarga,
+        _cargaId: registro.numeroCarga,
+        motorista: '-',
+        cpf: '-',
+        placa: '-',
+        rota: cidadesEntrega[cidadesEntrega.length - 1] || registro.numeroCarga,
         coleta: 'JEQUIÉ, BA',
         material: 'TANQUES & CAIXAS',
         peso: '0,00 KG',
@@ -142,9 +141,9 @@ window.aoSelecionarRotaParaCotacao = function(routeId) {
         freteTotal: '-',
         adiantamento: '-',
         saldo: '-',
-        qtdEntregas: String(cidadesEntrega.length).padStart(2, '0'),
+        qtdEntregas: String(qtdEntregas).padStart(2, '0'),
         cidadesEntrega: cidadesEntrega.length ? cidadesEntrega : ['-'],
-        status: route.status === 'archived' ? 'Concluída' : 'Aguardando Embarque'
+        status: registro.montada ? 'Aguardando Embarque' : 'Em Montagem'
     };
 
     window.renderPainelFretes();
@@ -262,12 +261,12 @@ window.renderFormColuna1HTML = function(carga) {
                     <div class="flex justify-between items-center">
                         <span class="uppercase text-slate-500">Rota:</span>
                         ${carga.rota === 'SELECIONAR ROTA' ? `
-                        <select id="freteSelectRotaOrigem" onchange="aoSelecionarRotaParaCotacao(this.value)" class="bg-[#152e50] text-[#fac043] font-bold rounded px-2 py-1 text-xs outline-none max-w-[160px]">
-                            <option value="">--► SELECIONAR ROTA</option>
-                            ${(window.allRoutes || [])
+                        <select id="freteSelectCargaOrigem" onchange="aoSelecionarCargaParaCotacao(this.value)" class="bg-[#152e50] text-[#fac043] font-bold rounded px-2 py-1 text-xs outline-none max-w-[160px]">
+                            <option value="">--► SELECIONAR CARGA</option>
+                            ${(window.allImportCargas || [])
                                 .slice()
-                                .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
-                                .map(r => `<option value="${r.id}">${r.numeroCarga ? r.numeroCarga + ' - ' : ''}${r.driverName || 'Sem motorista'}</option>`)
+                                .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+                                .map(c => `<option value="${c.numeroCarga}">${c.numeroCarga}${c.montada ? '' : ' (em montagem)'}</option>`)
                                 .join('')}
                         </select>
                         ` : `

@@ -140,6 +140,12 @@ window.startAdminListeners = function() {
             window.allAdmins = data;
             if (window.currentUserRole === 'admin' && window.renderloglogsList) window.renderloglogsList();
         }, companyFilter);
+        if (!window.unsubImportCargas) window.unsubImportCargas = window.subscribeTable('import_cargas', data => {
+            window.allImportCargas = data;
+            if (window.currentUserRole === 'admin' && window.renderPainelFretes && window.fretesState?.viewModo === 'editor') {
+                window.renderPainelFretes();
+            }
+        }, companyFilter);
     } else {
         window.unsubDrivers = LocalDb.subscribe('drivers', data => { 
             window.allDrivers = data; 
