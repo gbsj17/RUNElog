@@ -1846,17 +1846,33 @@
         // alterna entre 'codigo', 'cidade' e 'rota' pelo botão "Ordenar por".
         window.criterioOrdemClientesCarga = window.criterioOrdemClientesCarga || 'codigo';
 
+        // Posição (índice) de uma cidade dentro da sequência salva em "Ordem das
+        // Paradas" (carga.cidades - reordenada por arrastar-e-soltar e persistida
+        // ao "Concluir Rota"). É essa sequência que conta como a "rota montada"
+        // de verdade: qualquer ordenação "por Rota" no resto da tela segue ela,
+        // em vez de reordenar por conta própria (ex.: alfabético). Cidade que
+        // ainda não está na rota montada vai pro final.
+        function obterIndiceRotaMontada(carga, textoLocal) {
+            const listaCidades = obterListaCidadesCarga(carga);
+            const alvo = normalizarTextoCidade(textoLocal);
+            const idx = listaCidades.findIndex(c => normalizarTextoCidade(c) === alvo);
+            return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
+        }
+        window.obterIndiceRotaMontada = obterIndiceRotaMontada;
+
         function obterClientesOrdenados(carga) {
+            if (window.criterioOrdemClientesCarga === 'rota') {
+                return Object.values(carga.clientes).slice().sort((a, b) => {
+                    const cidadeDoCliente = (cliente) =>
+                        (cliente.pedidos || []).map(p => p.pracaEntrega).find(Boolean)
+                        || [cliente.cidade, cliente.uf].filter(Boolean).join(' - ');
+                    return obterIndiceRotaMontada(carga, cidadeDoCliente(a)) - obterIndiceRotaMontada(carga, cidadeDoCliente(b));
+                });
+            }
+
             const chaveOrdem = (cliente) => {
                 if (window.criterioOrdemClientesCarga === 'cidade') {
                     return [cliente.cidade, cliente.uf].filter(Boolean).join(' - ') || 'CIDADE NÃO INFORMADA';
-                }
-                if (window.criterioOrdemClientesCarga === 'rota') {
-                    // "Rota montada" no nível do cliente: a praça de entrega já
-                    // ajustada manualmente em algum dos pedidos dele, ou a cidade
-                    // padrão quando nenhum pedido teve a praça alterada.
-                    const pracaAjustada = (cliente.pedidos || []).map(p => p.pracaEntrega).find(Boolean);
-                    return pracaAjustada || [cliente.cidade, cliente.uf].filter(Boolean).join(' - ') || 'CIDADE NÃO INFORMADA';
                 }
                 return String(cliente.codigo || '');
             };
@@ -2502,7 +2518,12 @@
                 });
 
                 let html = '';
-                Object.entries(mapaCidades).forEach(([cidade, dados]) => {
+                // Segue a mesma ordem de "Ordem das Paradas" (a rota montada e
+                // salva), não a ordem em que os pedidos apareceram na planilha.
+                const cidadesOrdenadas = Object.entries(mapaCidades).sort(([cidadeA], [cidadeB]) =>
+                    obterIndiceRotaMontada(carga, cidadeA) - obterIndiceRotaMontada(carga, cidadeB)
+                );
+                cidadesOrdenadas.forEach(([cidade, dados]) => {
                     html += `
                         <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
                             <div class="bg-slate-100 p-2.5 px-4 flex justify-between items-center border-b border-slate-200">
