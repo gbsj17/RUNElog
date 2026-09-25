@@ -46,12 +46,24 @@ function mascararCEP(valor) {
     return (valor || '').replace(/\D/g, '').slice(0, 8).replace(/(\d{5})(\d)/, '$1-$2');
 }
 
+function mascararTelefone(valor) {
+    const digitos = (valor || '').replace(/\D/g, '').slice(0, 11);
+    if (digitos.length <= 10) {
+        return digitos.replace(/(\d{2})(\d{4})(\d{0,4})/, (m, ddd, p1, p2) => p2 ? `(${ddd}) ${p1}-${p2}` : (p1 ? `(${ddd}) ${p1}` : ddd));
+    }
+    return digitos.replace(/(\d{2})(\d{5})(\d{0,4})/, (m, ddd, p1, p2) => p2 ? `(${ddd}) ${p1}-${p2}` : `(${ddd}) ${p1}`);
+}
+
 window.aoDigitarCnpjEmpresaForm = function(el) {
     el.value = mascararCNPJ(el.value);
 };
 
 window.aoDigitarCepEmpresaForm = function(el) {
     el.value = mascararCEP(el.value);
+};
+
+window.aoDigitarTelefoneEmpresaForm = function(el) {
+    el.value = mascararTelefone(el.value);
 };
 
 window.aoBlurCepEmpresaForm = async function() {
@@ -95,14 +107,21 @@ window.abrirModalNovaEmpresa = function() {
                     <input type="text" id="modalCompanyName" placeholder="Ex: Fibrasol Logística" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#152e50] outline-none">
                 </div>
                 <div>
-                    <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Razão Social *</label>
-                    <input type="text" id="modalCompanyRazaoSocial" placeholder="Ex: Fibrasol Transportes Ltda" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                    <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">CNPJ *</label>
+                    <input type="text" id="modalCompanyCnpj" oninput="aoDigitarCnpjEmpresaForm(this)" placeholder="00.000.000/0000-00" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
                 </div>
             </div>
 
             <div>
-                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">CNPJ *</label>
-                <input type="text" id="modalCompanyCnpj" oninput="aoDigitarCnpjEmpresaForm(this)" placeholder="00.000.000/0000-00" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Razão Social *</label>
+                <input type="text" id="modalCompanyRazaoSocial" placeholder="Ex: Fibrasol Transportes Ltda" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Telefone</label>
+                    <input type="text" id="modalCompanyPhone" oninput="aoDigitarTelefoneEmpresaForm(this)" placeholder="(00) 00000-0000" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+                </div>
             </div>
 
             <div class="pt-2 border-t border-slate-100 space-y-3">
@@ -112,10 +131,10 @@ window.abrirModalNovaEmpresa = function() {
                     <input type="text" id="modalCompanyNumero" placeholder="Número" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
                 </div>
                 <input type="text" id="modalCompanyLogradouro" placeholder="Logradouro / Rua" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <input type="text" id="modalCompanyBairro" placeholder="Bairro" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                    <input type="text" id="modalCompanyCidade" placeholder="Cidade" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                    <input type="text" id="modalCompanyUf" placeholder="UF" maxlength="2" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs uppercase">
+                <div class="grid grid-cols-5 gap-3">
+                    <input type="text" id="modalCompanyBairro" placeholder="Bairro" class="w-full col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                    <input type="text" id="modalCompanyCidade" placeholder="Cidade" class="w-full col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                    <input type="text" id="modalCompanyUf" placeholder="UF" maxlength="2" class="w-full col-span-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs uppercase text-center">
                 </div>
             </div>
 
@@ -148,6 +167,7 @@ window.abrirModalNovaEmpresa = function() {
         const name = document.getElementById('modalCompanyName')?.value.trim();
         const razaoSocial = document.getElementById('modalCompanyRazaoSocial')?.value.trim();
         const cnpj = document.getElementById('modalCompanyCnpj')?.value.trim();
+        const phone = document.getElementById('modalCompanyPhone')?.value.trim();
         const cep = document.getElementById('modalCompanyCep')?.value.trim();
         const numero = document.getElementById('modalCompanyNumero')?.value.trim();
         const logradouro = document.getElementById('modalCompanyLogradouro')?.value.trim();
@@ -171,6 +191,7 @@ window.abrirModalNovaEmpresa = function() {
             name,
             razaoSocial,
             cnpj,
+            phone,
             cep,
             numero,
             logradouro,

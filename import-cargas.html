@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Integrar biblioteca SheetJS para leitura XLSX no browser -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 
     <!-- Leaflet CSS & JS para Mapa Interativo -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -508,38 +508,60 @@
         // TODO 05: INICIALIZAÇÃO E LEITURA DO ARQUIVO XLSX
         // =================================================
 
+        // Todo texto vindo da planilha ou de APIs externas passa por aqui antes de
+        // entrar num template de innerHTML, pra não virar HTML/script na página.
+        function esc(valor) {
+            return String(valor ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        // Argumento de função dentro de onclick="...": vira string JS literal e
+        // depois é escapado pro atributo HTML (aspas no dado não quebram mais nada).
+        function jsArg(valor) {
+            return esc(JSON.stringify(String(valor ?? '')));
+        }
+
         let bancoCargasGlobal = {};
         window.bancoCargasGlobal = bancoCargasGlobal;
 
         // ---------------------------------------------------------------------
-        // RESTAURAÇÃO AUTOMÁTICA DO BANCO DE DADOS LOCAL (CACHE LOCALSTORAGE)
+        // CARREGAMENTO DAS CARGAS SALVAS (SUPABASE, COM CÓPIA LOCAL DE SEGURANÇA)
+        // A persistência fica em js/modules/importador/cargas-store.js, exposto
+        // como window.cargasStore pelo <script type="module"> no fim da página.
         // ---------------------------------------------------------------------
-        function carregarBancoDoLocalStorage() {
-            try {
-                const dadosSalvos = localStorage.getItem('fibrasol_banco_cargas');
-                if (!dadosSalvos) return false;
-
-                const objetoRecuperado = JSON.parse(dadosSalvos);
-                if (!objetoRecuperado || typeof objetoRecuperado !== 'object') return false;
-
-                // Restaura o banco reconstruindo as Cidades como instâncias de Set
-                Object.keys(objetoRecuperado).forEach(id => {
-                    const carga = objetoRecuperado[id];
-                    bancoCargasGlobal[id] = {
-                        ...carga,
-                        cidades: new Set(carga.cidades || [])
-                    };
-                });
-
-                window.bancoCargasGlobal = bancoCargasGlobal;
-                console.log(`Banco restaurado do LocalStorage: ${Object.keys(bancoCargasGlobal).length} carga(s) carregada(s).`);
-                return true;
-            } catch (err) {
-                console.error('Erro ao ler dados do LocalStorage:', err);
+        async function carregarBancoSalvo() {
+            if (!window.cargasStore) {
+                exibirToast('Não foi possível conectar ao banco de dados. Recarregue a página.', 'Sem conexão', 'erro');
                 return false;
             }
+
+            const { cargas, origem, erro } = await window.cargasStore.carregarCargas();
+            Object.keys(cargas).forEach(id => { bancoCargasGlobal[id] = cargas[id]; });
+            window.bancoCargasGlobal = bancoCargasGlobal;
+
+            if (origem === 'cache') {
+                exibirToast(`${erro && erro.message ? erro.message : 'Falha ao acessar o banco de dados.'} Exibindo a última cópia salva neste navegador.`, 'Modo offline', 'aviso');
+            }
+            return Object.keys(cargas).length > 0;
         }
-        window.carregarBancoDoLocalStorage = carregarBancoDoLocalStorage;
+        window.carregarBancoSalvo = carregarBancoSalvo;
+
+        // Salva as cargas indicadas no Supabase e avisa se não conseguiu.
+        // Mesmo com falha, a cópia local guarda as alterações e elas são
+        // reenviadas no próximo salvamento ou quando a página abrir de novo.
+        async function persistirCargas(ids) {
+            if (!window.cargasStore) {
+                exibirToast('Sem conexão com o banco de dados: as alterações não foram salvas.', 'Erro ao salvar', 'erro');
+                return false;
+            }
+            const { ok, erro } = await window.cargasStore.salvarCargas(window.bancoCargasGlobal, Array.from(ids));
+            if (!ok) {
+                exibirToast(`${erro && erro.message ? erro.message : 'Falha ao salvar.'} As alterações ficaram guardadas neste navegador e serão reenviadas.`, 'Não salvo no servidor', 'erro');
+            }
+            return ok;
+        }
+        window.persistirCargas = persistirCargas;
 
         function processarArquivoXlsx(event) {
             const file = event.target ? event.target.files[0] : (event.files ? event.files[0] : null);
@@ -564,6 +586,7 @@
                 if (txtStatus) txtStatus.innerText = 'Extraindo matriz e aplicando regras WinThor...';
 
                 setTimeout(() => {
+                  try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheetName = workbook.SheetNames[0];
@@ -584,8 +607,21 @@
                         if (modalLoading) modalLoading.classList.add('hidden');
                         if (barraProgresso) barraProgresso.style.width = '0%';
                     }, 2200);
-
+                  } catch (erro) {
+                    console.error('Erro ao ler a planilha:', erro);
+                    if (modalLoading) modalLoading.classList.add('hidden');
+                    if (barraProgresso) barraProgresso.style.width = '0%';
+                    exibirToast('Não foi possível ler a planilha. Confira se é o relatório XLSX do WinThor.', 'Erro na importação', 'erro');
+                  } finally {
+                    // Permite reimportar o mesmo arquivo em seguida.
+                    if (event.target && 'value' in event.target) event.target.value = '';
+                  }
                 }, 750);
+            };
+
+            reader.onerror = function() {
+                if (modalLoading) modalLoading.classList.add('hidden');
+                exibirToast('Não foi possível abrir o arquivo selecionado.', 'Erro na importação', 'erro');
             };
 
             reader.readAsArrayBuffer(file);
@@ -599,11 +635,12 @@
                 elInput.addEventListener('change', processarArquivoXlsx);
             }
 
-            // Inicialização imediata ao abrir o site: restaura o cache e exibe o grid
-            const temDadosNoCache = carregarBancoDoLocalStorage();
-            if (temDadosNoCache && typeof renderizarGridCargas === 'function') {
-                renderizarGridCargas();
-            }
+            // Inicialização ao abrir a página: busca as cargas salvas e exibe o grid
+            carregarBancoSalvo().then(temDados => {
+                if (temDados && typeof renderizarGridCargas === 'function') {
+                    renderizarGridCargas();
+                }
+            });
         });
 
         function converterNumero(val) {
@@ -961,8 +998,8 @@
                 }, cargasProcessadasNestaImportacao);
             });
 
-            sincronizarComLocalStorage(); // 1. Salva tudo no cache local imediatamente
-            renderizarGridCargas();       // 2. Atualiza a tela
+            renderizarGridCargas();                            // 1. Atualiza a tela
+            persistirCargas(cargasProcessadasNestaImportacao); // 2. Salva só as cargas desta planilha
         }
 
         window.extrairDadosWinthor = extrairDadosWinthor;
@@ -1021,25 +1058,6 @@
             carga.clientes[codCli].valorTotalCliente += valorPedido;
             carga.clientes[codCli].pedidos.push(pedido);
         }
-
-        // =========================================================================
-        // GERENCIADOR DO LOCALSTORAGE (BANCO DE DADOS LOCAL EM CACHE)
-        // =========================================================================
-        function sincronizarComLocalStorage() {
-            const bancoCache = {};
-            
-            Object.keys(window.bancoCargasGlobal).forEach(id => {
-                const carga = window.bancoCargasGlobal[id];
-                bancoCache[id] = {
-                    ...carga,
-                    cidades: Array.from(carga.cidades) // O JSON não aceita objetos do tipo 'Set', então convertemos para Array
-                };
-            });
-            
-            localStorage.setItem('fibrasol_banco_cargas', JSON.stringify(bancoCache));
-            console.log('Banco de dados sincronizado com o LocalStorage.');
-        }
-        window.sincronizarComLocalStorage = sincronizarComLocalStorage;
 
         // ============================================================================
         // TODO 12: RENDERIZAÇÃO DO GRID DE CARGAS COM BUSCA MULTIFILTRO, ABAS E BADGES
@@ -1205,7 +1223,7 @@
             container.innerHTML = `
                 <div class="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 text-xs italic">
                     <i class="fa-solid fa-magnifying-glass-slash text-3xl mb-2 block text-slate-300"></i>
-                    ${termoBusca ? `Nenhum resultado encontrado para "<strong>${termoBusca}</strong>".` : 'Nenhuma carga encontrada nesta aba.'}
+                    ${termoBusca ? `Nenhum resultado encontrado para "<strong>${esc(termoBusca)}</strong>".` : 'Nenhuma carga encontrada nesta aba.'}
                 </div>
             `;
             return;
@@ -1231,13 +1249,13 @@
             });
 
             html += `
-                <div onclick="visualizarCarga('${idCarga}')" class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden group flex flex-col justify-between">
+                <div onclick="visualizarCarga(${jsArg(idCarga)})" class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition cursor-pointer overflow-hidden group flex flex-col justify-between">
                     <div>
                         <!-- CABEÇALHO DO CARD DA CARGA -->
                         <div class="bg-[#152e50] p-4 text-white flex justify-between items-center group-hover:bg-[#1a3860] transition">
                             <div>
                                 <span class="text-[9px] font-bold text-[#fac043] uppercase tracking-wider block">CARREGAMENTO</span>
-                                <h3 class="text-xl font-black">${carga.numeroCarga}</h3>
+                                <h3 class="text-xl font-black">${esc(carga.numeroCarga)}</h3>
                             </div>
                             <span class="bg-[#fac043] text-[#152e50] text-[10px] font-bold px-2 py-1 rounded-md uppercase flex items-center gap-1">
                                 <i class="fa-solid ${iconeStatus}"></i> ${textoStatus}
@@ -1368,11 +1386,11 @@
                 <div class="p-3 bg-white hover:bg-amber-50/40 rounded-xl border border-slate-200 flex items-center justify-between gap-4 transition group">
                     <div class="flex items-center gap-3">
                         <div class="bg-[#152e50] text-[#fac043] font-black text-xs px-2.5 py-1.5 rounded-lg">
-                            ${carga.numeroCarga}
+                            ${esc(carga.numeroCarga)}
                         </div>
                         <div>
                             <div class="flex items-center gap-2">
-                                <span class="text-xs font-bold text-slate-800">Carregamento #${carga.numeroCarga}</span>
+                                <span class="text-xs font-bold text-slate-800">Carregamento #${esc(carga.numeroCarga)}</span>
                                 <span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-black tracking-wider uppercase">Aguardando</span>
                             </div>
                             <div class="flex items-center gap-3 mt-1 text-[11px] text-slate-500 font-medium">
@@ -1383,7 +1401,7 @@
                         </div>
                     </div>
 
-                    <button onclick="fecharModalMontarCarga(); abrirTelaMontagemRota('${carga.numeroCarga}')" class="px-3.5 py-2 bg-[#152e50] hover:bg-slate-800 text-[#fac043] text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+                    <button onclick="fecharModalMontarCarga(); abrirTelaMontagemRota(${jsArg(carga.numeroCarga)})" class="px-3.5 py-2 bg-[#152e50] hover:bg-slate-800 text-[#fac043] text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer">
                         <span>Montar</span>
                         <i class="fa-solid fa-chevron-right text-[10px]"></i>
                     </button>
@@ -1561,6 +1579,7 @@
             }
 
             renderizarClientesDaCarga(carga);
+            persistirCargas([idCarga]);
         }
         window.editarPracaEntregaPedido = editarPracaEntregaPedido;
 
@@ -1589,9 +1608,9 @@
                         totalPedidoSemSt += item.valorTotalSemSt;
                         htmlItens += `
                             <tr class="border-b border-slate-200 hover:bg-slate-50 transition">
-                                <td class="py-2 px-3 font-bold text-slate-600 text-[11px] align-middle">${item.codigo}</td>
-                                <td class="py-2 px-3 text-slate-800 font-medium text-xs align-middle">${item.descricao}</td>
-                                <td class="py-2 px-3 text-center font-bold text-[#152e50] text-xs align-middle">${item.quantidade}</td>
+                                <td class="py-2 px-3 font-bold text-slate-600 text-[11px] align-middle">${esc(item.codigo)}</td>
+                                <td class="py-2 px-3 text-slate-800 font-medium text-xs align-middle">${esc(item.descricao)}</td>
+                                <td class="py-2 px-3 text-center font-bold text-[#152e50] text-xs align-middle">${esc(item.quantidade)}</td>
                                 <td class="py-2 px-3 text-right text-slate-600 text-[11px] align-middle">${formatarMoeda(item.precoUnitario)}</td>
                                 <td class="py-2 px-3 text-right font-black text-[#152e50] text-[11px] align-middle">${formatarMoeda(item.valorTotalSemSt)}</td>
                             </tr>
@@ -1615,9 +1634,9 @@
                             htmlObs += `<div>
                                 <h4 class="text-[10px] font-bold text-slate-400 uppercase mb-1">Observações Internas</h4>
                                 <ul class="text-[11px] text-slate-700 space-y-1">
-                                    ${pedido.obs01 ? `<li><strong class="text-slate-500 mr-1">OBS01:</strong>${pedido.obs01}</li>` : ''}
-                                    ${pedido.obs02 ? `<li><strong class="text-slate-500 mr-1">OBS02:</strong>${pedido.obs02}</li>` : ''}
-                                    ${pedido.obs03 ? `<li><strong class="text-slate-500 mr-1">OBS03:</strong>${pedido.obs03}</li>` : ''}
+                                    ${pedido.obs01 ? `<li><strong class="text-slate-500 mr-1">OBS01:</strong>${esc(pedido.obs01)}</li>` : ''}
+                                    ${pedido.obs02 ? `<li><strong class="text-slate-500 mr-1">OBS02:</strong>${esc(pedido.obs02)}</li>` : ''}
+                                    ${pedido.obs03 ? `<li><strong class="text-slate-500 mr-1">OBS03:</strong>${esc(pedido.obs03)}</li>` : ''}
                                 </ul>
                             </div>`;
                         }
@@ -1626,7 +1645,7 @@
                             htmlObs += `<div>
                                 <h4 class="text-[10px] font-bold text-rose-600 uppercase mb-1 flex items-center gap-1"><i class="fa-solid fa-truck-fast"></i> Observações de Entrega</h4>
                                 <ul class="text-[11px] text-slate-700 font-medium space-y-0.5 bg-rose-50 p-2 rounded-lg border border-rose-200">
-                                    ${pedido.obsEntrega.map(obs => `<li>${obs}</li>`).join('')}
+                                    ${pedido.obsEntrega.map(obs => `<li>${esc(obs)}</li>`).join('')}
                                 </ul>
                             </div>`;
                         }
@@ -1635,7 +1654,7 @@
                             htmlObs += `<div class="md:col-span-2">
                                 <h4 class="text-[10px] font-bold text-emerald-600 uppercase mb-1 flex items-center gap-1"><i class="fa-solid fa-circle-info"></i> Observações Gerais</h4>
                                 <ul class="text-[11px] text-slate-800 font-semibold space-y-0.5 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
-                                    ${pedido.obsGerais.map(obs => `<li>${obs}</li>`).join('')}
+                                    ${pedido.obsGerais.map(obs => `<li>${esc(obs)}</li>`).join('')}
                                 </ul>
                             </div>`;
                         }
@@ -1650,16 +1669,16 @@
                     const badgePracaEntrega = foiAlterada ? `
                         <div class="inline-flex items-center gap-1.5 bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded-md text-[11px] font-black uppercase animate-pulse shadow-xs" title="Praça alterada manualmente para este pedido!">
                             <i class="fa-solid fa-truck-ramp-box text-rose-600 text-[10px]"></i>
-                            <span>ENTREGA: ${pracaEfetiva}</span>
-                            <button onclick="editarPracaEntregaPedido('${pedido.numeroPedido}')" title="Editar praça de entrega" class="ml-1 hover:text-rose-950 p-0.5 rounded cursor-pointer">
+                            <span>ENTREGA: ${esc(pracaEfetiva)}</span>
+                            <button onclick="editarPracaEntregaPedido(${jsArg(pedido.numeroPedido)})" title="Editar praça de entrega" class="ml-1 hover:text-rose-950 p-0.5 rounded cursor-pointer">
                                 <i class="fa-solid fa-pen-to-square text-[10px]"></i>
                             </button>
                         </div>
                     ` : `
                         <div class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-md text-[11px] font-bold uppercase" title="Praça de entrega padrão (mesma do cliente)">
                             <i class="fa-solid fa-location-dot text-amber-600 text-[10px]"></i>
-                            <span>ENTREGA: ${pracaEfetiva}</span>
-                            <button onclick="editarPracaEntregaPedido('${pedido.numeroPedido}')" title="Alterar local de entrega deste pedido" class="ml-1 text-slate-400 hover:text-[#152e50] p-0.5 rounded cursor-pointer">
+                            <span>ENTREGA: ${esc(pracaEfetiva)}</span>
+                            <button onclick="editarPracaEntregaPedido(${jsArg(pedido.numeroPedido)})" title="Alterar local de entrega deste pedido" class="ml-1 text-slate-400 hover:text-[#152e50] p-0.5 rounded cursor-pointer">
                                 <i class="fa-solid fa-pen-to-square text-[10px]"></i>
                             </button>
                         </div>
@@ -1669,21 +1688,21 @@
                     const badgeData = pedido.dataDigitacao ? `
                         <div class="inline-flex items-center gap-1 bg-white text-slate-600 px-2 py-0.5 rounded-md border border-slate-200 text-[11px] font-semibold" title="Data de Digitação / Lançamento">
                             <i class="fa-regular fa-calendar text-slate-400 text-[10px]"></i>
-                            <span>${pedido.dataDigitacao}</span>
+                            <span>${esc(pedido.dataDigitacao)}</span>
                         </div>
                     ` : '';
 
                     const badgeRca = pedido.rca ? `
                         <div class="inline-flex items-center gap-1 bg-white text-slate-700 px-2 py-0.5 rounded-md border border-slate-200 text-[11px] font-bold" title="Representante Comercial">
                             <i class="fa-solid fa-user-tie text-slate-400 text-[10px]"></i>
-                            <span>RCA: <strong class="text-[#152e50]">${pedido.rca}</strong></span>
+                            <span>RCA: <strong class="text-[#152e50]">${esc(pedido.rca)}</strong></span>
                         </div>
                     ` : '';
 
                     const badgePlano = pedido.planoPagamento ? `
                         <div class="inline-flex items-center gap-1 bg-amber-50 text-amber-900 px-2 py-0.5 rounded-md border border-amber-200 text-[11px] font-bold" title="Plano de Pagamento">
                             <i class="fa-solid fa-file-invoice-dollar text-amber-600 text-[10px]"></i>
-                            <span>${pedido.planoPagamento}</span>
+                            <span>${esc(pedido.planoPagamento)}</span>
                         </div>
                     ` : '';
 
@@ -1695,7 +1714,7 @@
                                     <!-- Identificador do Pedido -->
                                     <div class="flex items-center gap-2">
                                         <span class="bg-[#152e50] text-white font-bold text-[10px] px-2 py-1 rounded shadow-xs">PEDIDO</span>
-                                        <span class="font-black text-slate-800 text-sm tracking-wide">${pedido.numeroPedido}</span>
+                                        <span class="font-black text-slate-800 text-sm tracking-wide">${esc(pedido.numeroPedido)}</span>
                                     </div>
 
                                     <!-- Badges informativos (Praça de Entrega, Data, RCA, Plano de Pagamento) -->
@@ -1748,15 +1767,15 @@
                                 <div class="flex items-center gap-2.5">
                                     <div class="inline-flex items-center gap-1.5 bg-[#152e50] text-[#fac043] px-2.5 py-1 rounded-lg shadow-xs shrink-0">
                                         <i class="fa-solid fa-address-card text-xs"></i>
-                                        <span class="text-xs font-black tracking-wider">${cliente.codigo}</span>
+                                        <span class="text-xs font-black tracking-wider">${esc(cliente.codigo)}</span>
                                     </div>
-                                    <span class="text-sm font-black text-slate-800 leading-tight truncate" title="${cliente.nome}">${cliente.nome}</span>
+                                    <span class="text-sm font-black text-slate-800 leading-tight truncate" title="${esc(cliente.nome)}">${esc(cliente.nome)}</span>
                                 </div>
 
                                 <div class="flex flex-wrap items-center gap-2">
                                     <div class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-200/80 text-xs font-black uppercase">
                                         <i class="fa-solid fa-location-dot text-amber-600 text-[11px]"></i>
-                                        <span>${cidadeExibicao}</span>
+                                        <span>${esc(cidadeExibicao)}</span>
                                     </div>
 
                                     <div class="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-bold" title="Quantidade de pedidos deste cliente">
@@ -1782,22 +1801,22 @@
                             <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs lg:w-1/3 border-t lg:border-t-0 border-slate-100 pt-3 lg:pt-0">
                                 <div>
                                     ${cliente.cnpj && cliente.cnpj !== '-' ? `
-                                        <button onclick="consultarCnpjModal('${cliente.cnpj}')" title="Detalhes cadastrais" class="inline-flex items-center gap-1.5 text-xs font-bold text-[#152e50] bg-slate-100 hover:bg-[#152e50] hover:text-[#fac043] px-2.5 py-1 rounded-lg font-mono transition border border-slate-200 cursor-pointer group">
+                                        <button onclick="consultarCnpjModal(${jsArg(cliente.cnpj)})" title="Detalhes cadastrais" class="inline-flex items-center gap-1.5 text-xs font-bold text-[#152e50] bg-slate-100 hover:bg-[#152e50] hover:text-[#fac043] px-2.5 py-1 rounded-lg font-mono transition border border-slate-200 cursor-pointer group">
                                             <i class="fa-solid fa-magnifying-glass text-[10px] text-slate-400 group-hover:text-[#fac043]"></i>
-                                            <span>${cliente.cnpj}</span>
+                                            <span>${esc(cliente.cnpj)}</span>
                                         </button>
                                     ` : `<span class="text-xs font-bold text-slate-400 font-mono">-</span>`}
                                 </div>
 
                                 <div class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                                     <i class="fa-solid fa-phone text-[#152e50] text-[10px]"></i>
-                                    <span>${cliente.telefone || '-'}</span>
+                                    <span>${esc(cliente.telefone || '-')}</span>
                                 </div>
 
                                 <div class="text-xs font-medium text-slate-700 flex items-center gap-1.5 w-full">
                                     <i class="fa-solid fa-map-pin text-[#152e50] text-[10px] shrink-0"></i>
-                                    <span class="truncate" title="${[cliente.endereco, cliente.bairro].filter(Boolean).join(' - ')}">
-                                        ${[cliente.endereco, cliente.bairro].filter(Boolean).join(' - ') || '-'}
+                                    <span class="truncate" title="${esc([cliente.endereco, cliente.bairro].filter(Boolean).join(' - '))}">
+                                        ${esc([cliente.endereco, cliente.bairro].filter(Boolean).join(' - ') || '-')}
                                     </span>
                                 </div>
                             </div>
@@ -1809,15 +1828,15 @@
                                     <span class="text-base font-black text-emerald-600 leading-tight">${formatarMoeda(valorTotalClienteSemSt)}</span>
                                 </div>
 
-                                <button onclick="togglePedidosCliente('${cliente.codigo}')" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-[#152e50] font-bold rounded-xl text-xs transition flex items-center gap-2 border border-slate-200 shadow-xs cursor-pointer">
-                                    <span id="texto-toggle-${cliente.codigo}">Expandir Pedidos</span>
-                                    <i id="icone-toggle-${cliente.codigo}" class="fa-solid fa-chevron-down text-xs"></i>
+                                <button onclick="togglePedidosCliente(${jsArg(cliente.codigo)})" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-[#152e50] font-bold rounded-xl text-xs transition flex items-center gap-2 border border-slate-200 shadow-xs cursor-pointer">
+                                    <span id="texto-toggle-${esc(cliente.codigo)}">Expandir Pedidos</span>
+                                    <i id="icone-toggle-${esc(cliente.codigo)}" class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
                             </div>
 
                         </div>
                         
-                        <div id="pedidos-cliente-${cliente.codigo}" class="accordion-conteudo hidden">
+                        <div id="pedidos-cliente-${esc(cliente.codigo)}" class="accordion-conteudo hidden">
                             ${htmlPedidosDoCliente}
                         </div>
                     </div>
@@ -1889,8 +1908,8 @@
                         const qualif = s.qualificacao_socio || s.qualificacao || 'SÓCIO';
                         return `
                             <li class="flex justify-between items-center text-[11px] py-1 border-b border-slate-100 last:border-0">
-                                <span class="font-bold text-slate-700">${nomeSocio}</span>
-                                <span class="text-[9px] font-semibold text-slate-400 uppercase bg-slate-100 px-1.5 py-0.5 rounded">${qualif}</span>
+                                <span class="font-bold text-slate-700">${esc(nomeSocio)}</span>
+                                <span class="text-[9px] font-semibold text-slate-400 uppercase bg-slate-100 px-1.5 py-0.5 rounded">${esc(qualif)}</span>
                             </li>
                         `;
                     }).join('');
@@ -1902,8 +1921,8 @@
                 if (d.cnaes_secundarios && d.cnaes_secundarios.length > 0) {
                     htmlCnaesSecundarios = d.cnaes_secundarios.map(c => `
                         <li class="text-[10px] text-slate-600 py-0.5 border-b border-slate-100 last:border-0 flex gap-1.5">
-                            <strong class="text-slate-800 whitespace-nowrap">${c.codigo}:</strong>
-                            <span>${c.descricao}</span>
+                            <strong class="text-slate-800 whitespace-nowrap">${esc(c.codigo)}:</strong>
+                            <span>${esc(c.descricao)}</span>
                         </li>
                     `).join('');
                 } else {
@@ -1918,11 +1937,11 @@
                         <div class="flex justify-between items-start pb-2 border-b border-slate-100">
                             <div>
                                 <span class="text-[9px] font-bold text-slate-400 uppercase">Razão Social</span>
-                                <h4 class="text-sm font-black text-slate-800 leading-tight">${d.razao_social}</h4>
-                                ${d.nome_fantasia ? `<p class="text-xs font-bold text-[#152e50] mt-0.5"><i class="fa-solid fa-store text-[10px]"></i> ${d.nome_fantasia}</p>` : ''}
+                                <h4 class="text-sm font-black text-slate-800 leading-tight">${esc(d.razao_social)}</h4>
+                                ${d.nome_fantasia ? `<p class="text-xs font-bold text-[#152e50] mt-0.5"><i class="fa-solid fa-store text-[10px]"></i> ${esc(d.nome_fantasia)}</p>` : ''}
                             </div>
                             <span class="text-[10px] font-black px-2.5 py-1 rounded-md border ${statusCor}">
-                                ${d.descricao_situacao_cadastral}
+                                ${esc(d.descricao_situacao_cadastral)}
                             </span>
                         </div>
 
@@ -1930,8 +1949,8 @@
                             <div class="flex items-center gap-2">
                                 <i class="fa-solid fa-file-invoice-dollar text-amber-600 text-sm"></i>
                                 <div>
-                                    <span class="block text-[10px] font-extrabold text-amber-900 uppercase">Inscrição Estadual / Sintegra (${ufEstado})</span>
-                                    <span class="text-[10px] text-amber-700 font-medium">Consulte a I.E. diretamente no cadastro estadual da SEFAZ-${ufEstado}</span>
+                                    <span class="block text-[10px] font-extrabold text-amber-900 uppercase">Inscrição Estadual / Sintegra (${esc(ufEstado)})</span>
+                                    <span class="text-[10px] text-amber-700 font-medium">Consulte a I.E. diretamente no cadastro estadual da SEFAZ-${esc(ufEstado)}</span>
                                 </div>
                             </div>
                             <a href="${linkSintegra}" target="_blank" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] rounded-lg transition flex items-center gap-1 shrink-0">
@@ -1942,15 +1961,15 @@
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
                             <div>
                                 <span class="block text-[9px] font-bold text-slate-400 uppercase">CNPJ</span>
-                                <span class="font-mono font-bold text-slate-800">${d.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5")}</span>
+                                <span class="font-mono font-bold text-slate-800">${esc(String(d.cnpj || '').replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5"))}</span>
                             </div>
                             <div>
                                 <span class="block text-[9px] font-bold text-slate-400 uppercase">Abertura</span>
-                                <span class="font-bold text-slate-700">${d.data_inicio_atividade || '-'}</span>
+                                <span class="font-bold text-slate-700">${esc(d.data_inicio_atividade || '-')}</span>
                             </div>
                             <div>
                                 <span class="block text-[9px] font-bold text-slate-400 uppercase">Porte / Tipo</span>
-                                <span class="font-bold text-slate-700">${d.porte || '-'} (${d.descricao_identificador_matriz_filial || 'MATRIZ'})</span>
+                                <span class="font-bold text-slate-700">${esc(d.porte || '-')} (${esc(d.descricao_identificador_matriz_filial || 'MATRIZ')})</span>
                             </div>
                             <div>
                                 <span class="block text-[9px] font-bold text-slate-400 uppercase">Capital Social</span>
@@ -1958,18 +1977,18 @@
                             </div>
                             <div>
                                 <span class="block text-[9px] font-bold text-slate-400 uppercase">Natureza Jurídica</span>
-                                <span class="font-bold text-slate-700 truncate block">${d.natureza_juridica || '-'}</span>
+                                <span class="font-bold text-slate-700 truncate block">${esc(d.natureza_juridica || '-')}</span>
                             </div>
                             <div>
                                 <span class="block text-[9px] font-bold text-slate-400 uppercase">Contato Cadastro</span>
-                                <span class="font-bold text-slate-700 truncate block">${d.ddd_telefone_1 || d.email || '-'}</span>
+                                <span class="font-bold text-slate-700 truncate block">${esc(d.ddd_telefone_1 || d.email || '-')}</span>
                             </div>
                         </div>
 
                         <div>
                             <span class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5">Atividade Principal (CNAE)</span>
                             <div class="bg-slate-100 p-2 rounded-lg text-[11px] font-semibold text-slate-700 border border-slate-200">
-                                ${d.cnae_fiscal} - ${d.cnae_fiscal_descricao}
+                                ${esc(d.cnae_fiscal)} - ${esc(d.cnae_fiscal_descricao)}
                             </div>
                         </div>
 
@@ -1984,7 +2003,7 @@
                             <span class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5">Endereço Fiscal</span>
                             <p class="text-[11px] font-medium text-slate-700 bg-slate-50 p-2 rounded-lg border border-slate-100">
                                 <i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>
-                                ${d.descricao_tipo_de_logradouro || ''} ${d.logradouro}, ${d.numero} ${d.complemento ? ' - ' + d.complemento : ''} - ${d.bairro}, ${d.municipio}/${d.uf} - CEP: ${d.cep}
+                                ${esc(d.descricao_tipo_de_logradouro || '')} ${esc(d.logradouro)}, ${esc(d.numero)} ${d.complemento ? ' - ' + esc(d.complemento) : ''} - ${esc(d.bairro)}, ${esc(d.municipio)}/${esc(d.uf)} - CEP: ${esc(d.cep)}
                             </p>
                         </div>
 
@@ -2001,7 +2020,7 @@
                     <div class="text-center py-6 text-rose-600 space-y-2">
                         <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
                         <p class="text-xs font-bold">Erro ao buscar dados deste CNPJ.</p>
-                        <span class="text-[10px] text-slate-400 block">${erro.message}</span>
+                        <span class="text-[10px] text-slate-400 block">${esc(erro.message)}</span>
                     </div>
                 `;
             }
@@ -2112,9 +2131,9 @@
                 listaOrdenada.forEach(item => {
                     html += `
                         <tr class="hover:bg-amber-50/50 transition">
-                            <td class="p-3 font-bold text-[#152e50]">${item.codigo}</td>
-                            <td class="p-3">${item.descricao}</td>
-                            <td class="p-3 text-center font-black text-amber-600">${item.quantidade}</td>
+                            <td class="p-3 font-bold text-[#152e50]">${esc(item.codigo)}</td>
+                            <td class="p-3">${esc(item.descricao)}</td>
+                            <td class="p-3 text-center font-black text-amber-600">${esc(item.quantidade)}</td>
                         </tr>
                     `;
                 });
@@ -2151,7 +2170,7 @@
                         <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
                             <div class="bg-slate-100 p-2.5 px-4 flex justify-between items-center border-b border-slate-200">
                                 <span class="font-bold text-xs text-[#152e50] flex items-center gap-1.5">
-                                    <i class="fa-solid fa-location-dot text-amber-500"></i> ${cidade}
+                                    <i class="fa-solid fa-location-dot text-amber-500"></i> ${esc(cidade)}
                                 </span>
                                 <span class="text-[11px] font-bold text-slate-500">${dados.totalVolumes} vol.</span>
                             </div>
@@ -2161,8 +2180,8 @@
                     Object.values(dados.itens).forEach(it => {
                         html += `
                             <div class="py-1.5 flex justify-between items-center">
-                                <span class="text-slate-700"><strong>${it.codigo}</strong> - ${it.descricao}</span>
-                                <span class="font-black text-amber-600 px-2 py-0.5 bg-amber-50 rounded border border-amber-100">${it.quantidade}</span>
+                                <span class="text-slate-700"><strong>${esc(it.codigo)}</strong> - ${esc(it.descricao)}</span>
+                                <span class="font-black text-amber-600 px-2 py-0.5 bg-amber-50 rounded border border-amber-100">${esc(it.quantidade)}</span>
                             </div>
                         `;
                     });
@@ -2427,12 +2446,6 @@
         return null;
     }
 
-    function obterListaCidadesCarga(carga) {
-        if (!carga) return [];
-        if (carga.cidades instanceof Set) return Array.from(carga.cidades);
-        if (Array.isArray(carga.cidades)) return carga.cidades;
-        return [];
-    }
 
     function obterClientesPorCidade(carga, nomeCidade) {
         if (!carga || !carga.clientes) return [];
@@ -2521,7 +2534,7 @@
                         markerFoto.bindPopup(`
                             <div class="text-xs p-1 text-center">
                                 <strong class="text-emerald-700 block mb-1">Street View (Mapillary)</strong>
-                                <a href="https://www.mapillary.com/app/?pKey=${imageKey}" target="_blank" class="px-2 py-1 bg-[#152e50] text-[#fac043] rounded font-bold inline-block mt-1">
+                                <a href="https://www.mapillary.com/app/?pKey=${encodeURIComponent(imageKey)}" target="_blank" class="px-2 py-1 bg-[#152e50] text-[#fac043] rounded font-bold inline-block mt-1">
                                     Abrir Imagem ↗
                                 </a>
                             </div>
@@ -2568,7 +2581,7 @@
                 const marker = L.marker(coords, { icon: customIcon }).addTo(window.camadaMarcadoresRota);
                 marker.bindPopup(`
                     <div class="text-xs p-1">
-                        <strong class="text-[#152e50] uppercase text-sm block">Parada ${index + 1}: ${cidade}</strong>
+                        <strong class="text-[#152e50] uppercase text-sm block">Parada ${index + 1}: ${esc(cidade)}</strong>
                         <span class="text-slate-500 font-semibold">Clique para focar</span>
                     </div>
                 `);
@@ -2671,7 +2684,7 @@
                     ondragover="permitirSoltarCidade(event)"
                     ondragleave="sairArrastoCidade(event)"
                     ondrop="soltarCidade(event, ${index})"
-                    onclick="selecionarCidadeRota('${cidade.replace(/'/g, "\\'")}')" 
+                    onclick="selecionarCidadeRota(${jsArg(cidade)})" 
                     class="p-2.5 rounded-xl border transition cursor-grab active:cursor-grabbing mb-2 select-none ${isAtiva ? 'bg-amber-50 border-amber-400 shadow-xs ring-1 ring-amber-400/30' : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
                 >
                     <div class="flex items-center justify-between">
@@ -2682,7 +2695,7 @@
                             <span class="w-5 h-5 rounded-full bg-[#152e50] text-[#fac043] font-bold text-[10px] flex items-center justify-center shrink-0">
                                 ${index + 1}
                             </span>
-                            <span class="text-xs font-black text-slate-800 uppercase leading-tight">${cidade}</span>
+                            <span class="text-xs font-black text-slate-800 uppercase leading-tight">${esc(cidade)}</span>
                         </div>
                         <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
                     </div>
@@ -2716,29 +2729,6 @@
         e.currentTarget.classList.remove('border-amber-500', 'ring-2', 'ring-amber-300');
     }
 
-    async function soltarCidade(e, indexDestino) {
-        e.preventDefault();
-        const card = e.currentTarget;
-        card.classList.remove('border-amber-500', 'ring-2', 'ring-amber-300');
-
-        if (indiceArrastadoCidade === null || indiceArrastadoCidade === indexDestino) {
-            renderizarCidadesRota(window.bancoCargasGlobal[window.cargaRotaAtivaId]);
-            return;
-        }
-
-        const carga = window.bancoCargasGlobal[window.cargaRotaAtivaId];
-        if (!carga) return;
-
-        let lista = obterListaCidadesCarga(carga);
-        const itemMovido = lista.splice(indiceArrastadoCidade, 1)[0];
-        lista.splice(indexDestino, 0, itemMovido);
-
-        carga.cidades = lista;
-        indiceArrastadoCidade = null;
-
-        renderizarCidadesRota(carga);
-        await renderizarRotaNoMapa(lista);
-    }
 
     window.iniciarArrastoCidade = iniciarArrastoCidade;
     window.permitirSoltarCidade = permitirSoltarCidade;
@@ -2774,7 +2764,7 @@
         if (clientesDaCidade.length === 0) {
             container.innerHTML = `
                 <div class="py-10 text-center text-slate-400">
-                    <p class="text-xs font-semibold">Sem clientes vinculados a ${nomeCidade}.</p>
+                    <p class="text-xs font-semibold">Sem clientes vinculados a ${esc(nomeCidade)}.</p>
                 </div>
             `;
             return;
@@ -2795,8 +2785,8 @@
                 (pedido.itens || []).forEach(item => {
                     htmlItens += `
                         <div class="flex justify-between items-center py-1 border-b border-slate-100 last:border-0 text-xs">
-                            <span class="text-slate-700 font-medium"><strong>${item.codigo}</strong> - ${item.descricao}</span>
-                            <span class="font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${item.quantidade} vol</span>
+                            <span class="text-slate-700 font-medium"><strong>${esc(item.codigo)}</strong> - ${esc(item.descricao)}</span>
+                            <span class="font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${esc(item.quantidade)} vol</span>
                         </div>
                     `;
                 });
@@ -2806,14 +2796,14 @@
                         <div class="p-2 bg-slate-100 flex items-center justify-between border-b border-slate-200">
                             <div class="flex items-center gap-1.5">
                                 <span class="bg-[#152e50] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">PEDIDO</span>
-                                <span class="text-xs font-black text-slate-800">${pedido.numeroPedido}</span>
+                                <span class="text-xs font-black text-slate-800">${esc(pedido.numeroPedido)}</span>
                             </div>
-                            <button onclick="toggleItensPedidoRota('${pedido.numeroPedido}')" class="text-[10px] font-bold text-[#152e50] hover:text-amber-600 flex items-center gap-1 cursor-pointer">
-                                <span id="txtToggleItensRota-${pedido.numeroPedido}">Itens (${(pedido.itens || []).length})</span>
-                                <i id="iconeToggleItensRota-${pedido.numeroPedido}" class="fa-solid fa-chevron-down text-[9px]"></i>
+                            <button onclick="toggleItensPedidoRota(${jsArg(pedido.numeroPedido)})" class="text-[10px] font-bold text-[#152e50] hover:text-amber-600 flex items-center gap-1 cursor-pointer">
+                                <span id="txtToggleItensRota-${esc(pedido.numeroPedido)}">Itens (${(pedido.itens || []).length})</span>
+                                <i id="iconeToggleItensRota-${esc(pedido.numeroPedido)}" class="fa-solid fa-chevron-down text-[9px]"></i>
                             </button>
                         </div>
-                        <div id="itensPedidoRota-${pedido.numeroPedido}" class="p-2.5 bg-white divide-y divide-slate-100 hidden">
+                        <div id="itensPedidoRota-${esc(pedido.numeroPedido)}" class="p-2.5 bg-white divide-y divide-slate-100 hidden">
                             ${htmlItens || '<p class="text-xs text-slate-400 italic">Sem itens detalhados.</p>'}
                         </div>
                     </div>
@@ -2823,10 +2813,10 @@
             html += `
                 <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-xs mb-2.5">
                     <div>
-                        <span class="text-[9px] font-mono font-bold text-slate-400">CÓD: ${cliente.codigo}</span>
-                        <h5 class="text-xs font-black text-slate-800">${cliente.nome}</h5>
-                        <p class="text-[11px] text-slate-500 mt-0.5 truncate" title="${[cliente.endereco, cliente.bairro].filter(Boolean).join(' - ')}">
-                            <i class="fa-solid fa-map-pin text-slate-400 mr-1 text-[9px]"></i>${[cliente.endereco, cliente.bairro].filter(Boolean).join(' - ') || 'Endereço não informado'}
+                        <span class="text-[9px] font-mono font-bold text-slate-400">CÓD: ${esc(cliente.codigo)}</span>
+                        <h5 class="text-xs font-black text-slate-800">${esc(cliente.nome)}</h5>
+                        <p class="text-[11px] text-slate-500 mt-0.5 truncate" title="${esc([cliente.endereco, cliente.bairro].filter(Boolean).join(' - '))}">
+                            <i class="fa-solid fa-map-pin text-slate-400 mr-1 text-[9px]"></i>${esc([cliente.endereco, cliente.bairro].filter(Boolean).join(' - ') || 'Endereço não informado')}
                         </p>
                     </div>
                     ${htmlPedidos}
@@ -2880,7 +2870,10 @@
         txtMsg.innerText = mensagem;
         if (txtTit) txtTit.innerText = titulo;
 
-        if (tipo === 'aviso') {
+        if (tipo === 'erro') {
+            if (icone) icone.className = 'fa-solid fa-triangle-exclamation text-base';
+            if (iconWrap) iconWrap.className = 'w-10 h-10 rounded-xl bg-rose-400/20 text-rose-300 flex items-center justify-center shrink-0';
+        } else if (tipo === 'aviso') {
             if (icone) icone.className = 'fa-solid fa-pen-to-square text-base';
             if (iconWrap) iconWrap.className = 'w-10 h-10 rounded-xl bg-amber-400/20 text-[#fac043] flex items-center justify-center shrink-0';
         } else {
@@ -2894,7 +2887,7 @@
         timeoutToastId = setTimeout(() => {
             toast.classList.remove('translate-y-0', 'opacity-100');
             toast.classList.add('translate-y-8', 'opacity-0', 'pointer-events-none');
-        }, 1800);
+        }, tipo === 'sucesso' ? 1800 : 5000); // avisos e erros ficam mais tempo pra dar tempo de ler
     }
     window.exibirToast = exibirToast;
 
@@ -2987,26 +2980,18 @@
         }
     }
 
-    function salvarConclusaoRota() {
+    async function salvarConclusaoRota() {
         if (!window.cargaRotaAtivaId || !window.bancoCargasGlobal) return;
         const carga = window.bancoCargasGlobal[window.cargaRotaAtivaId];
         if (!carga) return;
 
         carga.montada = true;
-        rotaEditadaNaoSalva = false;
-
-        const bancoParaSalvar = {};
-        Object.keys(window.bancoCargasGlobal).forEach(id => {
-            bancoParaSalvar[id] = {
-                ...window.bancoCargasGlobal[id],
-                cidades: Array.from(window.bancoCargasGlobal[id].cidades || [])
-            };
-        });
-        localStorage.setItem('fibrasol_banco_cargas', JSON.stringify(bancoParaSalvar));
-
         atualizarBadgeStatusRota(true);
-
         if (typeof renderizarGridCargas === 'function') renderizarGridCargas();
+
+        const salvou = await persistirCargas([window.cargaRotaAtivaId]);
+        if (!salvou) return; // persistirCargas já avisou; mantém o modal aberto
+        rotaEditadaNaoSalva = false;
         
         exibirToast(`Rota da Carga #${carga.numeroCarga} salva com sucesso!`, 'Roteirização Concluída', 'sucesso');
         
@@ -3138,7 +3123,7 @@
             if (!detalhesCidadeCorpo) return;
 
             if (clientesDaCidade.length === 0) {
-                detalhesCidadeCorpo.innerHTML = `<div class="py-10 text-center text-slate-400 text-xs font-semibold">Sem clientes vinculados a ${nomeCidade}.</div>`;
+                detalhesCidadeCorpo.innerHTML = `<div class="py-10 text-center text-slate-400 text-xs font-semibold">Sem clientes vinculados a ${esc(nomeCidade)}.</div>`;
                 return;
             }
 
@@ -3158,8 +3143,8 @@
                     (pedido.itens || []).forEach(item => {
                         htmlItens += `
                             <div class="flex justify-between items-center py-1 border-b border-slate-100 last:border-0 text-xs">
-                                <span class="text-slate-700 font-medium"><strong>${item.codigo}</strong> - ${item.descricao}</span>
-                                <span class="font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${item.quantidade} vol</span>
+                                <span class="text-slate-700 font-medium"><strong>${esc(item.codigo)}</strong> - ${esc(item.descricao)}</span>
+                                <span class="font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${esc(item.quantidade)} vol</span>
                             </div>
                         `;
                     });
@@ -3169,7 +3154,7 @@
                             <div class="p-2 bg-slate-100 flex items-center justify-between border-b border-slate-200">
                                 <div class="flex items-center gap-1.5">
                                     <span class="bg-[#152e50] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">PEDIDO</span>
-                                    <span class="text-xs font-black text-slate-800">${pedido.numeroPedido}</span>
+                                    <span class="text-xs font-black text-slate-800">${esc(pedido.numeroPedido)}</span>
                                 </div>
                             </div>
                             <div class="p-2.5 bg-white divide-y divide-slate-100">${htmlItens || '<p class="text-xs text-slate-400 italic">Sem itens.</p>'}</div>
@@ -3180,10 +3165,10 @@
                 html += `
                     <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-xs mb-2.5">
                         <div>
-                            <span class="text-[9px] font-mono font-bold text-slate-400">CÓD: ${cliente.codigo}</span>
-                            <h5 class="text-xs font-black text-slate-800">${cliente.nome}</h5>
+                            <span class="text-[9px] font-mono font-bold text-slate-400">CÓD: ${esc(cliente.codigo)}</span>
+                            <h5 class="text-xs font-black text-slate-800">${esc(cliente.nome)}</h5>
                             <p class="text-[11px] text-slate-500 mt-0.5 truncate">
-                                <i class="fa-solid fa-map-pin text-slate-400 mr-1 text-[9px]"></i>${[cliente.endereco, cliente.bairro].filter(Boolean).join(' - ') || 'Endereço não informado'}
+                                <i class="fa-solid fa-map-pin text-slate-400 mr-1 text-[9px]"></i>${esc([cliente.endereco, cliente.bairro].filter(Boolean).join(' - ') || 'Endereço não informado')}
                             </p>
                         </div>
                         ${htmlPedidos}
@@ -3289,5 +3274,11 @@
         </div>
     </div>
 </div>
+<!-- Persistência no Supabase: expõe carregarCargas/salvarCargas como window.cargasStore.
+     Scripts type="module" rodam antes do DOMContentLoaded, então já está pronto na inicialização. -->
+<script type="module">
+    import { carregarCargas, salvarCargas } from './js/modules/importador/cargas-store.js';
+    window.cargasStore = { carregarCargas, salvarCargas };
+</script>
 </body>
 </html>

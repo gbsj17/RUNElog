@@ -1,4 +1,4 @@
-const CACHE_NAME = 'runelog-v2';
+const CACHE_NAME = 'runelog-v3';
 
 const ASSETS = [
   './',
@@ -6,6 +6,7 @@ const ASSETS = [
   './assets/css/style.css',
   './assets/images/icon.png',
   './js/app.js',
+  './js/config/supabase-keys.js',
   './js/config/supabase-config.js',
   './js/auth/auth.js',
   './js/modules/log/log-core.js',
@@ -16,7 +17,9 @@ const ASSETS = [
   './js/modules/admin/admin-planos.js',
   './js/modules/empresa/gestao-equipe.js',
   './js/modules/motoristas/motorista.js',
-  './js/modules/representantes/representante.js'
+  './js/modules/representantes/representante.js',
+  './import-cargas.html',
+  './js/modules/importador/cargas-store.js'
 ];
 
 self.addEventListener('install', (event) => {
