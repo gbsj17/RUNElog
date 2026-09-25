@@ -272,6 +272,14 @@
                         <span id="badgeTotalCidadesRota" class="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md border border-slate-200">0 Cidades</span>
                     </div>
 
+                    <!-- Filtro: busca por código de cliente, cidade ou praça/rota montada -->
+                    <div class="px-2.5 pt-2 pb-1 bg-white border-b border-slate-100 shrink-0">
+                        <div class="relative">
+                            <i class="fa-solid fa-magnifying-glass text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px]"></i>
+                            <input type="text" id="inputFiltroParadasRota" oninput="filtrarParadasRota(this.value)" placeholder="Buscar por código, cidade ou rota..." class="w-full pl-7 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#152e50] focus:bg-white transition">
+                        </div>
+                    </div>
+
                     <!-- Lista com rolagem independente -->
                     <div id="listaCidadesRotaCorpo" class="p-2.5 overflow-y-auto flex-1 space-y-2">
                         <!-- Injetado via JS -->
@@ -511,6 +519,16 @@
         function jsArg(valor) {
             return esc(JSON.stringify(String(valor ?? '')));
         }
+
+        // Ordenação padrão de itens (alfabética por descrição do produto) - usada
+        // em todo lugar que lista itens: impressão do pedido, "Itens Agrupados" e
+        // "Itens por Rota", pra manter o mesmo critério em qualquer visualização.
+        function ordenarItensPorDescricao(itens) {
+            return (itens || []).slice().sort((a, b) =>
+                String(a.descricao || '').localeCompare(String(b.descricao || ''), 'pt-BR', { sensitivity: 'base' })
+            );
+        }
+        window.ordenarItensPorDescricao = ordenarItensPorDescricao;
 
         let bancoCargasGlobal = {};
         window.bancoCargasGlobal = bancoCargasGlobal;
@@ -1618,22 +1636,31 @@
         // uma funcao separada. Nao ha crase (`) em lugar nenhum deste bloco.
         // ---------------------------------------------------------------
 
-        function pedidoImpressaoEstilos() {
-            return '* { box-sizing: border-box; }'
+        function pedidoImpressaoEstilos(fontUrl) {
+            // Handel Gothic D Bold: mesma fonte da marca usada em outras telas
+            // (ex.: cotação de frete). A janela do pedido é um documento à parte
+            // (Blob), então não herda o CSS do app - precisa do próprio @font-face,
+            // com URL absoluta (um caminho relativo não resolveria a partir de uma
+            // blob: URL, que não tem estrutura de pasta).
+            return '@font-face { font-family: "Handel Gothic D"; src: url("' + fontUrl + '") format("opentype"); font-weight: bold; font-style: normal; font-display: swap; }'
+                + '* { box-sizing: border-box; }'
                 + 'body { font-family: Arial, Helvetica, sans-serif; color: #1e293b; margin: 0; background: #f1f5f9; }'
                 + '.folha { max-width: 720px; margin: 24px auto; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.12); }'
-                + '.cabecalho { background: #152e50; color: #fff; padding: 20px 24px; border-bottom: 4px solid #fac043; display: flex; justify-content: space-between; align-items: center; gap: 12px; }'
-                + '.cabecalho h1 { margin: 0; font-size: 22px; letter-spacing: 2px; color: #fac043; font-style: italic; }'
-                + '.cabecalho p { margin: 2px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #cbd5e1; font-weight: bold; }'
+                + '.cabecalho { background: #152e50; color: #fff; padding: 14px 20px; border-bottom: 4px solid #fac043; display: flex; justify-content: space-between; align-items: center; gap: 12px; }'
+                + '.cabecalho h1 { margin: 0; font-family: "Handel Gothic D", Arial, sans-serif; font-size: 20px; letter-spacing: 2px; color: #fac043; font-style: italic; }'
+                + '.cabecalho p { margin: 2px 0 0; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #cbd5e1; font-weight: bold; }'
+                + '.cabecalho-direita { display: flex; align-items: center; gap: 12px; }'
                 + '.cabecalho .pedido-tag { text-align: right; }'
-                + '.cabecalho .pedido-tag span { display: block; font-size: 10px; text-transform: uppercase; color: #fac043; font-weight: bold; letter-spacing: 1px; }'
-                + '.cabecalho .pedido-tag strong { font-size: 20px; }'
-                + '.bloco { padding: 18px 24px; border-bottom: 1px solid #e2e8f0; }'
+                + '.cabecalho .pedido-tag span { display: block; font-size: 9px; text-transform: uppercase; color: #fac043; font-weight: bold; letter-spacing: 1px; }'
+                + '.cabecalho .pedido-tag strong { font-size: 18px; }'
+                + '.btn-imprimir { background: rgba(255,255,255,0.12); border: none; color: #fac043; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; shrink: 0; }'
+                + '.btn-imprimir:hover { background: #fac043; color: #152e50; }'
+                + '.bloco { padding: 10px 20px; border-bottom: 1px solid #e2e8f0; }'
                 + '.bloco:last-of-type { border-bottom: none; }'
-                + '.bloco h2 { margin: 0 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; font-weight: bold; }'
-                + '.linha-dados { display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 13px; }'
-                + '.linha-dados div { min-width: 200px; }'
-                + '.linha-dados strong { display: block; font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: bold; }'
+                + '.bloco h2 { margin: 0 0 6px; font-family: "Handel Gothic D", Arial, sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; font-weight: bold; }'
+                + '.linha-dados { display: flex; flex-wrap: wrap; gap: 3px 16px; font-size: 11px; }'
+                + '.linha-dados div { min-width: 140px; }'
+                + '.linha-dados strong { display: block; font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: bold; }'
                 + 'table { width: 100%; border-collapse: collapse; font-size: 12px; }'
                 + 'thead th { text-align: left; background: #f8fafc; color: #64748b; text-transform: uppercase; font-size: 10px; padding: 8px 6px; border-bottom: 2px solid #e2e8f0; }'
                 + 'tbody td { padding: 8px 6px; border-bottom: 1px solid #e2e8f0; }'
@@ -1644,28 +1671,35 @@
                 + '.total-final strong { font-size: 20px; color: #152e50; }'
                 + '.obs { font-size: 11px; color: #475569; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; }'
                 + '.obs p { margin: 2px 0; }'
-                + '.acoes { text-align: center; padding: 16px; }'
-                + '.acoes button { background: #152e50; color: #fac043; border: none; padding: 10px 22px; border-radius: 10px; font-weight: bold; font-size: 13px; cursor: pointer; }'
-                + '@media print { body { background: #fff; } .folha { margin: 0; max-width: 100%; box-shadow: none; border-radius: 0; } .acoes { display: none; } }';
+                + '@media print { body { background: #fff; } .folha { margin: 0; max-width: 100%; box-shadow: none; border-radius: 0; } .btn-imprimir { display: none; } }';
         }
 
         function pedidoImpressaoCabecalho(pedidoAlvo) {
+            // Ícone de impressora em SVG inline (não dá pra depender do FontAwesome
+            // do app principal aqui - esta janela é um documento à parte, sem os
+            // links/CSS do import-cargas.html).
+            const iconeImprimir = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><path d="M6 14h12v8H6z"></path></svg>';
             return '<div class="cabecalho">'
                 + '<div>'
                 + '<h1>FIBRASOL</h1>'
                 + '<p>Gestor de Cargas &amp; Relatórios WinThor</p>'
                 + '</div>'
+                + '<div class="cabecalho-direita">'
                 + '<div class="pedido-tag">'
                 + '<span>Pedido</span>'
                 + '<strong>' + esc(pedidoAlvo.numeroPedido) + '</strong>'
                 + '</div>'
+                + '<button type="button" class="btn-imprimir" onclick="window.print()" title="Imprimir">' + iconeImprimir + '</button>'
+                + '</div>'
                 + '</div>';
         }
 
-        function pedidoImpressaoBlocoCliente(clienteDono, pracaEfetiva) {
+        // Cliente + Dados do Pedido num bloco só, mais compacto (fontes e
+        // espaçamento menores) em vez de duas seções separadas e espaçosas.
+        function pedidoImpressaoBlocoClienteEPedido(clienteDono, pracaEfetiva, pedidoAlvo) {
             const endereco = esc([clienteDono.endereco, clienteDono.bairro].filter(Boolean).join(' - ') || '-');
             return '<div class="bloco">'
-                + '<h2>Cliente</h2>'
+                + '<h2>Cliente &amp; Pedido</h2>'
                 + '<div class="linha-dados">'
                 + '<div><strong>Código</strong>' + esc(clienteDono.codigo) + '</div>'
                 + '<div><strong>Nome</strong>' + esc(clienteDono.nome) + '</div>'
@@ -1673,14 +1707,6 @@
                 + '<div><strong>Telefone</strong>' + esc(clienteDono.telefone || '-') + '</div>'
                 + '<div><strong>Endereço</strong>' + endereco + '</div>'
                 + '<div><strong>Entrega</strong>' + esc(pracaEfetiva) + '</div>'
-                + '</div>'
-                + '</div>';
-        }
-
-        function pedidoImpressaoBlocoDados(pedidoAlvo) {
-            return '<div class="bloco">'
-                + '<h2>Dados do Pedido</h2>'
-                + '<div class="linha-dados">'
                 + '<div><strong>Data</strong>' + esc(pedidoAlvo.dataDigitacao || '-') + '</div>'
                 + '<div><strong>RCA</strong>' + esc(pedidoAlvo.rca || '-') + '</div>'
                 + '<div><strong>Plano de Pagamento</strong>' + esc(pedidoAlvo.planoPagamento || '-') + '</div>'
@@ -1699,9 +1725,10 @@
         }
 
         function pedidoImpressaoBlocoItens(itens) {
+            const itensOrdenados = ordenarItensPorDescricao(itens);
             let linhas = '';
-            for (let i = 0; i < itens.length; i++) {
-                linhas += pedidoImpressaoLinhaItem(itens[i]);
+            for (let i = 0; i < itensOrdenados.length; i++) {
+                linhas += pedidoImpressaoLinhaItem(itensOrdenados[i]);
             }
             return '<div class="bloco">'
                 + '<h2>Itens</h2>'
@@ -1761,20 +1788,23 @@
             (pedidoAlvo.obsEntrega || []).forEach(o => linhasObs.push('ENTREGA: ' + esc(o)));
             (pedidoAlvo.obsGerais || []).forEach(o => linhasObs.push('GERAL: ' + esc(o)));
 
+            // URL absoluta da fonte da marca - resolvida a partir da localização
+            // desta página (import-cargas.html), já que a janela do pedido é um
+            // documento Blob à parte e um caminho relativo não teria como resolver.
+            const fontUrl = new URL('assets/fonts/Handel Gothic D Bold.otf', window.location.href).href;
+
             // Monta o documento em pedacos pequenos, um array + join no final -
             // em vez de um unico template literal gigante.
             const partes = [];
             partes.push('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">');
             partes.push('<title>Pedido ' + esc(pedidoAlvo.numeroPedido) + ' - FIBRASOL</title>');
-            partes.push('<style>' + pedidoImpressaoEstilos() + '</style>');
+            partes.push('<style>' + pedidoImpressaoEstilos(fontUrl) + '</style>');
             partes.push('</head><body><div class="folha">');
             partes.push(pedidoImpressaoCabecalho(pedidoAlvo));
-            partes.push(pedidoImpressaoBlocoCliente(clienteDono, pracaEfetiva));
-            partes.push(pedidoImpressaoBlocoDados(pedidoAlvo));
+            partes.push(pedidoImpressaoBlocoClienteEPedido(clienteDono, pracaEfetiva, pedidoAlvo));
             partes.push(pedidoImpressaoBlocoItens(pedidoAlvo.itens || []));
             partes.push(pedidoImpressaoBlocoObs(linhasObs));
             partes.push(pedidoImpressaoTotal(totalPedido));
-            partes.push('<div class="acoes"><button onclick="window.print()">Imprimir</button></div>');
             partes.push('</div></body></html>');
 
             const htmlPedido = partes.join('');
@@ -2350,7 +2380,7 @@
                     });
                 });
 
-                const listaOrdenada = Object.values(mapaItens).sort((a, b) => b.quantidade - a.quantidade);
+                const listaOrdenada = ordenarItensPorDescricao(Object.values(mapaItens));
 
                 let html = `
                     <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
@@ -2414,7 +2444,7 @@
                             <div class="p-3 bg-white divide-y divide-slate-100 text-xs">
                     `;
 
-                    Object.values(dados.itens).forEach(it => {
+                    ordenarItensPorDescricao(Object.values(dados.itens)).forEach(it => {
                         html += `
                             <div class="py-1.5 flex justify-between items-center">
                                 <span class="text-slate-700"><strong>${esc(it.codigo)}</strong> - ${esc(it.descricao)}</span>
@@ -2914,14 +2944,25 @@
 
             const isAtiva = window.cidadeRotaAtiva === cidade;
 
+            // Texto de busca do card: cidade + código/nome de cada cliente + praça
+            // de entrega de cada pedido (a "rota montada" desse pedido, quando já
+            // foi definida uma praça diferente da cidade padrão do cliente).
+            const termosBusca = [cidade];
+            clientesDaCidade.forEach(c => {
+                termosBusca.push(c.codigo, c.nome);
+                (c.pedidos || []).forEach(p => { if (p.pracaEntrega) termosBusca.push(p.pracaEntrega); });
+            });
+            const textoBusca = esc(termosBusca.filter(Boolean).join(' ').toLowerCase());
+
             html += `
-                <div 
+                <div
                     draggable="true"
                     ondragstart="iniciarArrastoCidade(event, ${index})"
                     ondragover="permitirSoltarCidade(event)"
                     ondragleave="sairArrastoCidade(event)"
                     ondrop="soltarCidade(event, ${index})"
-                    onclick="selecionarCidadeRota(${jsArg(cidade)})" 
+                    onclick="selecionarCidadeRota(${jsArg(cidade)})"
+                    data-busca-parada="${textoBusca}"
                     class="p-2.5 rounded-xl border transition cursor-grab active:cursor-grabbing mb-2 select-none ${isAtiva ? 'bg-amber-50 border-amber-400 shadow-xs ring-1 ring-amber-400/30' : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
                 >
                     <div class="flex items-center justify-between">
@@ -2945,7 +2986,24 @@
         });
 
         container.innerHTML = html;
+
+        // Reaplica o filtro ativo (se houver) depois de reconstruir a lista -
+        // sem isso, qualquer re-render (arrastar pra reordenar, selecionar uma
+        // praça) desfaria a busca em andamento.
+        const inputFiltro = document.getElementById('inputFiltroParadasRota');
+        if (inputFiltro && inputFiltro.value) filtrarParadasRota(inputFiltro.value);
     }
+
+    // Filtra os cards de "Ordem das Paradas" sem alterar a lista/índices usados
+    // no drag-and-drop - só esconde via CSS os que não combinam com a busca.
+    function filtrarParadasRota(termo) {
+        const termoNormalizado = String(termo || '').trim().toLowerCase();
+        document.querySelectorAll('#listaCidadesRotaCorpo [data-busca-parada]').forEach(card => {
+            const combina = !termoNormalizado || card.dataset.buscaParada.includes(termoNormalizado);
+            card.classList.toggle('hidden', !combina);
+        });
+    }
+    window.filtrarParadasRota = filtrarParadasRota;
 
     function iniciarArrastoCidade(e, index) {
         indiceArrastadoCidade = index;
