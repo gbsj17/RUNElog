@@ -1488,6 +1488,12 @@
             document.getElementById('detalheCargaPedidos').innerText = carga.totalPedidosCount;
             renderizarClientesDaCarga(carga);
 
+            // Precisa remover 'painel-visivel' ao mesmo tempo que adiciona
+            // 'painel-oculto': como as duas classes definem opacity/transform e
+            // 'painel-visivel' vem depois no CSS, deixar as duas juntas faz ela
+            // sempre vencer e a opacidade nunca sai de 1 - por isso a "transição"
+            // não transicionava nada, só ficava 200ms parada e cortava seco.
+            secaoGrid.classList.remove('painel-visivel');
             secaoGrid.classList.add('painel-oculto');
             setTimeout(() => {
                 secaoGrid.classList.add('hidden');
@@ -1511,6 +1517,9 @@
             const headerFiltro = document.getElementById('headerFiltroWrapper');
             const btnVoltar = document.getElementById('btnVoltarGrid');
 
+            // Mesmo motivo do visualizarCarga(): tem que sair junto com o remove
+            // de 'painel-visivel', senão ela continua vencendo e nada anima.
+            secaoDetalhe.classList.remove('painel-visivel');
             secaoDetalhe.classList.add('painel-oculto');
             setTimeout(() => {
                 secaoDetalhe.classList.add('hidden');
