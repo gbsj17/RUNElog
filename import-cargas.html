@@ -1601,6 +1601,167 @@
         window.editarPracaEntregaPedido = editarPracaEntregaPedido;
 
         // ---------------------------------------------------------------
+        // TODO 13.1.1: ABRIR UM PEDIDO EM JANELA SEPARADA (ESTILO VIA/NOTA)
+        // ---------------------------------------------------------------
+        function imprimirPedido(numeroPedido) {
+            const idCarga = window.cargaAtivaId;
+            const carga = bancoCargasGlobal[idCarga];
+            if (!carga || !carga.clientes) return;
+
+            let pedidoAlvo = null;
+            let clienteDono = null;
+            for (const cli of Object.values(carga.clientes)) {
+                const ped = (cli.pedidos || []).find(p => String(p.numeroPedido) === String(numeroPedido));
+                if (ped) { pedidoAlvo = ped; clienteDono = cli; break; }
+            }
+            if (!pedidoAlvo || !clienteDono) return;
+
+            const cidadePadrao = [clienteDono.cidade, clienteDono.uf].filter(Boolean).join(' - ') || 'CIDADE NÃO INFORMADA';
+            const pracaEfetiva = pedidoAlvo.pracaEntrega || cidadePadrao;
+            const totalPedido = (pedidoAlvo.itens || []).reduce((acc, item) => acc + item.valorTotalSemSt, 0);
+
+            const linhasItens = (pedidoAlvo.itens || []).map(item => `
+                <tr>
+                    <td>${esc(item.codigo)}</td>
+                    <td>${esc(item.descricao)}</td>
+                    <td class="col-center">${esc(item.quantidade)}</td>
+                    <td class="col-right">${formatarMoeda(item.precoUnitario)}</td>
+                    <td class="col-right">${formatarMoeda(item.valorTotalSemSt)}</td>
+                </tr>
+            `).join('');
+
+            const linhasObs = [];
+            if (pedidoAlvo.obs01) linhasObs.push(`OBS01: ${esc(pedidoAlvo.obs01)}`);
+            if (pedidoAlvo.obs02) linhasObs.push(`OBS02: ${esc(pedidoAlvo.obs02)}`);
+            if (pedidoAlvo.obs03) linhasObs.push(`OBS03: ${esc(pedidoAlvo.obs03)}`);
+            (pedidoAlvo.obsEntrega || []).forEach(o => linhasObs.push(`ENTREGA: ${esc(o)}`));
+            (pedidoAlvo.obsGerais || []).forEach(o => linhasObs.push(`GERAL: ${esc(o)}`));
+
+            const janela = window.open('', '_blank', 'width=860,height=1000');
+            if (!janela) {
+                if (typeof exibirToast === 'function') {
+                    exibirToast('O navegador bloqueou a janela. Libere pop-ups pra este site e tente de novo.', 'Pop-up bloqueado', 'erro');
+                }
+                return;
+            }
+
+            janela.document.write(`
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                <meta charset="UTF-8">
+                <title>Pedido ${esc(pedidoAlvo.numeroPedido)} - FIBRASOL</title>
+                <style>
+                    * { box-sizing: border-box; }
+                    body { font-family: Arial, Helvetica, sans-serif; color: #1e293b; margin: 0; background: #f1f5f9; }
+                    .folha { max-width: 720px; margin: 24px auto; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+                    .cabecalho { background: #152e50; color: #fff; padding: 20px 24px; border-bottom: 4px solid #fac043; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+                    .cabecalho h1 { margin: 0; font-size: 22px; letter-spacing: 2px; color: #fac043; font-style: italic; }
+                    .cabecalho p { margin: 2px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #cbd5e1; font-weight: bold; }
+                    .cabecalho .pedido-tag { text-align: right; }
+                    .cabecalho .pedido-tag span { display: block; font-size: 10px; text-transform: uppercase; color: #fac043; font-weight: bold; letter-spacing: 1px; }
+                    .cabecalho .pedido-tag strong { font-size: 20px; }
+                    .bloco { padding: 18px 24px; border-bottom: 1px solid #e2e8f0; }
+                    .bloco:last-of-type { border-bottom: none; }
+                    .bloco h2 { margin: 0 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; font-weight: bold; }
+                    .linha-dados { display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 13px; }
+                    .linha-dados div { min-width: 200px; }
+                    .linha-dados strong { display: block; font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: bold; }
+                    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                    thead th { text-align: left; background: #f8fafc; color: #64748b; text-transform: uppercase; font-size: 10px; padding: 8px 6px; border-bottom: 2px solid #e2e8f0; }
+                    tbody td { padding: 8px 6px; border-bottom: 1px solid #e2e8f0; }
+                    .col-center { text-align: center; }
+                    .col-right { text-align: right; }
+                    .total-final { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 16px 24px; background: #f8fafc; }
+                    .total-final span { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold; }
+                    .total-final strong { font-size: 20px; color: #152e50; }
+                    .obs { font-size: 11px; color: #475569; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; }
+                    .obs p { margin: 2px 0; }
+                    .acoes { text-align: center; padding: 16px; }
+                    .acoes button { background: #152e50; color: #fac043; border: none; padding: 10px 22px; border-radius: 10px; font-weight: bold; font-size: 13px; cursor: pointer; }
+                    @media print {
+                        body { background: #fff; }
+                        .folha { margin: 0; max-width: 100%; box-shadow: none; border-radius: 0; }
+                        .acoes { display: none; }
+                    }
+                </style>
+                </head>
+                <body>
+                    <div class="folha">
+                        <div class="cabecalho">
+                            <div>
+                                <h1>FIBRASOL</h1>
+                                <p>Gestor de Cargas &amp; Relatórios WinThor</p>
+                            </div>
+                            <div class="pedido-tag">
+                                <span>Pedido</span>
+                                <strong>${esc(pedidoAlvo.numeroPedido)}</strong>
+                            </div>
+                        </div>
+
+                        <div class="bloco">
+                            <h2>Cliente</h2>
+                            <div class="linha-dados">
+                                <div><strong>Código</strong>${esc(clienteDono.codigo)}</div>
+                                <div><strong>Nome</strong>${esc(clienteDono.nome)}</div>
+                                <div><strong>CNPJ</strong>${esc(clienteDono.cnpj || '-')}</div>
+                                <div><strong>Telefone</strong>${esc(clienteDono.telefone || '-')}</div>
+                                <div><strong>Endereço</strong>${esc([clienteDono.endereco, clienteDono.bairro].filter(Boolean).join(' - ') || '-')}</div>
+                                <div><strong>Entrega</strong>${esc(pracaEfetiva)}</div>
+                            </div>
+                        </div>
+
+                        <div class="bloco">
+                            <h2>Dados do Pedido</h2>
+                            <div class="linha-dados">
+                                <div><strong>Data</strong>${esc(pedidoAlvo.dataDigitacao || '-')}</div>
+                                <div><strong>RCA</strong>${esc(pedidoAlvo.rca || '-')}</div>
+                                <div><strong>Plano de Pagamento</strong>${esc(pedidoAlvo.planoPagamento || '-')}</div>
+                            </div>
+                        </div>
+
+                        <div class="bloco">
+                            <h2>Itens</h2>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Descrição do Produto</th>
+                                        <th class="col-center">Qtd.</th>
+                                        <th class="col-right">Valor Unit.</th>
+                                        <th class="col-right">Valor Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${linhasItens}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        ${linhasObs.length ? `
+                        <div class="bloco">
+                            <h2>Observações</h2>
+                            <div class="obs">${linhasObs.map(l => `<p>${l}</p>`).join('')}</div>
+                        </div>
+                        ` : ''}
+
+                        <div class="total-final">
+                            <span>Total do Pedido (sem ST)</span>
+                            <strong>${formatarMoeda(totalPedido)}</strong>
+                        </div>
+
+                        <div class="acoes">
+                            <button onclick="window.print()">Imprimir</button>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+            janela.document.close();
+        }
+        window.imprimirPedido = imprimirPedido;
+
+        // ---------------------------------------------------------------
         // TODO 13.2 RENDERIZAÇÃO DOS CLIENTES E PEDIDOS (LAYOUT ALINHADO)
         // ---------------------------------------------------------------
         
@@ -1732,6 +1893,9 @@
                                     <div class="flex items-center gap-2">
                                         <span class="bg-[#152e50] text-white font-bold text-[10px] px-2 py-1 rounded shadow-xs">PEDIDO</span>
                                         <span class="font-black text-slate-800 text-sm tracking-wide">${esc(pedido.numeroPedido)}</span>
+                                        <button onclick="imprimirPedido(${jsArg(pedido.numeroPedido)})" title="Abrir este pedido em janela separada" class="w-6 h-6 rounded-md bg-white border border-slate-300 hover:bg-[#152e50] hover:border-[#152e50] hover:text-[#fac043] text-slate-500 flex items-center justify-center transition cursor-pointer">
+                                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                        </button>
                                     </div>
 
                                     <!-- Badges informativos (Praça de Entrega, Data, RCA, Plano de Pagamento) -->
