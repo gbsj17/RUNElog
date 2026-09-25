@@ -152,6 +152,7 @@
                     numeroCarga: cargoNumber,
                     stops: stops,
                     rawUrl: rawInput,
+                    companyId: window.currentCompanyId,
                     createdAt: nowTime,
                     startedAt: nowTime,
                     finishedAt: null,

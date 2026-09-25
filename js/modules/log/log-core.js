@@ -74,6 +74,15 @@ window.iniciarPainelAdmin = function() {
     window.alternarAbalog('rotas', 'none');
 };
 
+// Esconde itens do sidebar que a empresa logada não tem liberado (RUNEmaster > Funções & Planos).
+window.aplicarFeaturesDaEmpresa = function() {
+    const features = window.companyFeatures || { fretes: true, rotasProdutos: true };
+    const navFretes = document.getElementById('nav-fretes');
+    const navRotasProdutos = document.getElementById('nav-rotas-produtos');
+    if (navFretes) navFretes.classList.toggle('hidden', features.fretes === false);
+    if (navRotasProdutos) navRotasProdutos.classList.toggle('hidden', features.rotasProdutos === false);
+};
+
 window.alternarAbalog = (tab, direction = 'none') => {
     window.logCurrentTab = tab;
     
@@ -141,6 +150,11 @@ window.alternarAbalog = (tab, direction = 'none') => {
             window.renderizarTabelaProdutos();
         }
     }
+
+    // Reaplica o gating de funções da empresa: o loop acima reescreve o className
+    // inteiro dos botões do sidebar, o que apagaria a classe "hidden" aplicada por
+    // aplicarFeaturesDaEmpresa() se não fosse refeita a cada troca de aba.
+    if (window.aplicarFeaturesDaEmpresa) window.aplicarFeaturesDaEmpresa();
 };
 
 // -----------------------------------------------------
@@ -294,7 +308,7 @@ window.abrirModalNovoMotorista = function() {
             return false;
         }
 
-        const novoDriver = { name, cpf, phone, pin, createdAt: Date.now() };
+        const novoDriver = { name, cpf, phone, pin, companyId: window.currentCompanyId, createdAt: Date.now() };
 
         if (window.useFirebase) {
             const { error } = await window.db.from('drivers').insert(novoDriver);
@@ -527,7 +541,7 @@ window.abrirModalNovoRep = function() {
             return false;
         }
 
-        const novoRep = { name, cpf, phone, pin, createdAt: Date.now() };
+        const novoRep = { name, cpf, phone, pin, companyId: window.currentCompanyId, createdAt: Date.now() };
 
         if (window.useFirebase) {
             const { error } = await window.db.from('representatives').insert(novoRep);

@@ -1,8 +1,25 @@
 {
-  "currentVersion": "v1.2.2",
+  "currentVersion": "v2.0.0",
   "patches": [
     {
-      "_comentario_titulo": "=== PATCH v1.2.2 (ATUAL) ===",
+      "_comentario_titulo": "=== PATCH v2.0.0 (ATUAL) ===",
+      "id": "patch-200",
+      "version": "v2.0.0",
+      "badge": "Novo",
+      "title": "Migração para Supabase e Lançamento do RUNEmaster (Multi-Tenant SaaS)",
+      "details": [
+        "<strong>Troca de Backend:</strong> O sistema deixou de usar Firebase/Firestore e passou a rodar 100% sobre Supabase (Postgres), mantendo o mesmo comportamento em tempo real (cadastros, rotas e status sincronizam instantaneamente entre os painéis) e o fallback local para uso offline.",
+        "<strong>RUNEmaster (Novo Painel):</strong> Criado o painel do dono da plataforma, com login isolado (tabela própria, separado dos usuários das empresas clientes), de onde é possível cadastrar empresas, liberar ou bloquear módulos por cliente e acompanhar métricas agregadas de toda a operação.",
+        "<strong>Arquitetura Multi-Empresa:</strong> O sistema deixou de ser exclusivo da Fibrasol e passou a suportar múltiplas empresas clientes isoladas entre si (motoristas, representantes, rotas e usuários agora pertencem a uma empresa específica). A Fibrasol foi migrada automaticamente como a primeira empresa cadastrada, sem perda de nenhum dado.",
+        "<strong>Liberação de Funções por Empresa:</strong> Módulos como \"Gestão de Fretes Terceirizados\" e \"Gestão de Rotas e Produtos\" agora podem ser ativados ou desativados individualmente por empresa diretamente pelo RUNEmaster, escondendo automaticamente do menu quando desligados.",
+        "<strong>Cadastro Completo de Empresas:</strong> Novo formulário de cliente com Razão Social, CNPJ (com máscara e validação real dos dígitos verificadores) e endereço completo com preenchimento automático de Logradouro/Bairro/Cidade/UF ao digitar o CEP.",
+        "<strong>Gestão Comercial de Planos:</strong> Seletor de planos (Básico, Profissional, Corporativo ou Personalizado) com sugestão automática de valor e módulos inclusos, além de um card de resumo da assinatura mostrando plano, módulos e valor contratado (mensal ou anual) de cada cliente.",
+        "<strong>Paridade Visual e Navegação Mobile no RUNEmaster:</strong> O novo painel ganhou o mesmo menu lateral retrátil do painel administrativo e uma barra de navegação inferior para uso fluido em celulares, no mesmo padrão do restante do aplicativo.",
+        "<strong>Correção de Cadastro:</strong> Corrigido um problema em que novos motoristas e representantes cadastrados não eram salvos permanentemente no banco de dados, dependendo apenas da memória da sessão."
+      ]
+    },
+    {
+      "_comentario_titulo": "=== PATCH v1.2.2 ===",
       "id": "patch-122",
       "version": "v1.2.2",
       "badge": "Novo",

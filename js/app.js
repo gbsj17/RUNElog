@@ -2,7 +2,7 @@
 // TODO: BLOCO 7.5.1: PATCH NOTES & VERSÕES DINÂMICAS
 // =======================================================
 
-let globalLatestVersion = 'v1.3.0';
+let globalLatestVersion = 'v2.0.0';
 
 // Busca e renderiza o patch-notes.json dinamicamente sem travar o app
 window.carregarPatchNotesDinamico = async function() {
@@ -14,7 +14,7 @@ window.carregarPatchNotesDinamico = async function() {
         
         const data = await response.json();
         const patchesList = data.patches || [];
-        globalLatestVersion = patchesList.length > 0 ? patchesList[0].version : 'v1.3.0';
+        globalLatestVersion = patchesList.length > 0 ? patchesList[0].version : 'v2.0.0';
 
         if (!window.CURRENT_VERSION) {
             window.CURRENT_VERSION = globalLatestVersion;
@@ -124,21 +124,22 @@ window.togglePatch = (patchId) => {
 
 window.startAdminListeners = function() {
     if (window.useFirebase) {
+        const companyFilter = { companyId: window.currentCompanyId };
         if (!window.unsubDrivers) window.unsubDrivers = window.subscribeTable('drivers', data => {
             window.allDrivers = data;
             if (window.currentUserRole === 'admin') {
                 if (window.renderlogDriversList) window.renderlogDriversList();
                 if (window.renderAdminDashboard) window.renderAdminDashboard();
             }
-        });
+        }, companyFilter);
         if (!window.unsubReps) window.unsubReps = window.subscribeTable('representatives', data => {
             window.allReps = data;
             if (window.currentUserRole === 'admin' && window.renderlogRepsList) window.renderlogRepsList();
-        });
+        }, companyFilter);
         if (!window.unsubAdmins) window.unsubAdmins = window.subscribeTable('admins', data => {
             window.allAdmins = data;
             if (window.currentUserRole === 'admin' && window.renderloglogsList) window.renderloglogsList();
-        });
+        }, companyFilter);
     } else {
         window.unsubDrivers = LocalDb.subscribe('drivers', data => { 
             window.allDrivers = data; 
@@ -173,7 +174,7 @@ window.startDriverListeners = function() {
         if (!window.unsubRoutes) window.unsubRoutes = window.subscribeTable('routes', data => {
             window.allRoutes = data;
             if (window.currentUserRole === 'driver' && window.renderDriverDashboard) window.renderDriverDashboard();
-        });
+        }, { companyId: window.currentCompanyId });
     } else {
         window.unsubRoutes = LocalDb.subscribe('routes', data => { 
             window.allRoutes = data; 
@@ -187,7 +188,7 @@ window.startRepListeners = function() {
         if (!window.unsubRoutes) window.unsubRoutes = window.subscribeTable('routes', data => {
             window.allRoutes = data;
             if (window.currentUserRole === 'representative' && window.renderRepDashboard) window.renderRepDashboard();
-        });
+        }, { companyId: window.currentCompanyId });
     } else {
         window.unsubRoutes = LocalDb.subscribe('routes', data => { 
             window.allRoutes = data; 
@@ -311,9 +312,16 @@ function verificarSessaoSalva() {
     window.currentUserRole = session.role;
     window.currentDriverId = session.driverId;
     window.currentRepId = session.repId;
+    window.currentCompanyId = session.companyId || null;
 
-    carregarDadosIniciais(() => {
+    if (window.currentUserRole === 'master') {
+        if (window.iniciarPainelMaster) window.iniciarPainelMaster();
+        return;
+    }
+
+    carregarDadosIniciais(async () => {
         if (window.currentUserRole === 'admin' && window.iniciarPainelAdmin) {
+            if (window.carregarFeaturesDaEmpresaLogada) await window.carregarFeaturesDaEmpresaLogada();
             window.iniciarPainelAdmin();
         } else if (window.currentUserRole === 'driver' && window.iniciarPainelMotorista) {
             const driver = window.allDrivers.find(d => d.id === window.currentDriverId);
@@ -327,6 +335,10 @@ function verificarSessaoSalva() {
 
 function carregarDadosIniciais(callback) {
     if (window.useFirebase) {
+        // Antes do login, window.currentCompanyId é undefined e o filtro vira no-op
+        // (precisa buscar em todas as empresas pra achar quem está logando).
+        // Depois de restaurar sessão, currentCompanyId já vem preenchido e escopa certo.
+        const companyFilter = { companyId: window.currentCompanyId };
         window.subscribeTable('drivers', data => {
             window.allDrivers = data;
             if (window.currentUserRole === 'admin') {
@@ -334,19 +346,19 @@ function carregarDadosIniciais(callback) {
                 if (window.renderAdminDashboard) window.renderAdminDashboard();
             }
             if (callback) callback();
-        });
+        }, companyFilter);
         window.subscribeTable('representatives', data => {
             window.allReps = data;
             if (window.currentUserRole === 'admin' && window.renderlogRepsList) window.renderlogRepsList();
-        });
+        }, companyFilter);
         window.subscribeTable('admins', async data => {
             window.allAdmins = data;
-            if (window.allAdmins.length === 0) {
+            if (window.allAdmins.length === 0 && window.currentCompanyId) {
                 const legacyUser = JSON.parse(localStorage.getItem('app_admin_settings') || '{"username": "gbsj17", "password": "1234"}');
-                await window.db.from('admins').insert({ name: legacyUser.username, pin: legacyUser.password, createdAt: Date.now() });
+                await window.db.from('admins').insert({ name: legacyUser.username, pin: legacyUser.password, companyId: window.currentCompanyId, createdAt: Date.now() });
             }
             if (window.currentUserRole === 'admin' && window.renderloglogsList) window.renderloglogsList();
-        });
+        }, companyFilter);
         window.subscribeTable('routes', data => {
             window.allRoutes = data;
             if (window.currentUserRole === 'admin') {
@@ -358,7 +370,7 @@ function carregarDadosIniciais(callback) {
             } else if (window.currentUserRole === 'driver') {
                 if (window.renderDriverDashboard) window.renderDriverDashboard();
             }
-        });
+        }, companyFilter);
     } else {
         window.allDrivers = LocalDb.get('drivers');
         window.allReps = LocalDb.get('representatives');

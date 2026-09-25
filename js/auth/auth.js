@@ -206,7 +206,8 @@ window.esconderTodasTelas = () => {
         'screenUnifiedLogin',
         'dashboardAdmin',
         'dashboardDriver',
-        'dashboardRepresentative'
+        'dashboardRepresentative',
+        'dashboardMaster'
     ];
     
     telas.forEach(id => {
@@ -264,9 +265,17 @@ window.realizarLoginUnificado = async (e) => {
 
     // 3. APÓS O DELAY, REALIZA A VALIDAÇÃO DOS DADOS DE ACESSO
 
-    // Fallback Master de Emergência
+    // Fallback de Emergência do Admin Padrão da Fibrasol (NÃO é o RUNEmaster)
     if ((typedName === 'gbsj17' || typedName === 'adm_gbsj17') && (typedPin === '1234' || typedPin === 'admin')) {
         window.currentUserRole = 'admin';
+        window.currentCompanyId = null;
+        if (window.useFirebase && window.db) {
+            try {
+                const { data: admRow } = await window.db.from('admins').select('companyId').ilike('name', typedName).limit(1).maybeSingle();
+                if (admRow) window.currentCompanyId = admRow.companyId;
+            } catch (e) {}
+        }
+        await carregarFeaturesDaEmpresaLogada();
         salvarSessao();
         if (window.iniciarPainelAdmin) window.iniciarPainelAdmin();
         document.getElementById('unifiedPinInput').value = '';
@@ -278,6 +287,26 @@ window.realizarLoginUnificado = async (e) => {
     // Busca Remota Direta no Supabase (Garante login se o estado local ainda não carregou)
     if (window.useFirebase && window.db) {
         try {
+            // RUNEmaster (dono da plataforma) — checado primeiro, tabela isolada dos clientes
+            const { data: masterRows } = await window.db.from('master_users').select('*');
+            let masterFound = null;
+            (masterRows || []).forEach(data => {
+                if ((data.name?.toLowerCase() === typedName || data.id === typedName) && String(data.pin) === typedPin) {
+                    masterFound = data;
+                }
+            });
+
+            if (masterFound) {
+                window.currentUserRole = 'master';
+                window.currentCompanyId = null;
+                salvarSessao();
+                if (window.iniciarPainelMaster) window.iniciarPainelMaster();
+                document.getElementById('unifiedPinInput').value = '';
+                restaurarBotao();
+                window.showToast(`Bem-vindo ao RUNEmaster, ${masterFound.name}!`, "success");
+                return;
+            }
+
             // Admins
             const { data: admRows } = await window.db.from('admins').select('*');
             let admFound = null;
@@ -289,6 +318,8 @@ window.realizarLoginUnificado = async (e) => {
 
             if (admFound) {
                 window.currentUserRole = 'admin';
+                window.currentCompanyId = admFound.companyId || null;
+                await carregarFeaturesDaEmpresaLogada();
                 salvarSessao();
                 if (window.iniciarPainelAdmin) window.iniciarPainelAdmin();
                 document.getElementById('unifiedPinInput').value = '';
@@ -309,6 +340,7 @@ window.realizarLoginUnificado = async (e) => {
             if (drvFound) {
                 window.currentUserRole = 'driver';
                 window.currentDriverId = drvFound.id;
+                window.currentCompanyId = drvFound.companyId || null;
                 salvarSessao();
                 if (window.iniciarPainelMotorista) window.iniciarPainelMotorista(drvFound);
                 document.getElementById('unifiedPinInput').value = '';
@@ -329,6 +361,7 @@ window.realizarLoginUnificado = async (e) => {
             if (repFound) {
                 window.currentUserRole = 'representative';
                 window.currentRepId = repFound.id;
+                window.currentCompanyId = repFound.companyId || null;
                 salvarSessao();
                 if (window.iniciarPainelRepresentante) window.iniciarPainelRepresentante(repFound);
                 document.getElementById('unifiedPinInput').value = '';
@@ -347,6 +380,8 @@ window.realizarLoginUnificado = async (e) => {
     const foundAdmin = (window.allAdmins || []).find(a => (a.name || '').toLowerCase() === typedName && (a.pin || '').toString() === typedPin);
     if (foundAdmin || (typedName === legacyAdmin.username.toLowerCase() && typedPin === legacyAdmin.password)) {
         window.currentUserRole = 'admin';
+        window.currentCompanyId = foundAdmin?.companyId || null;
+        await carregarFeaturesDaEmpresaLogada();
         salvarSessao();
         if (window.iniciarPainelAdmin) window.iniciarPainelAdmin();
         document.getElementById('unifiedPinInput').value = '';
@@ -358,6 +393,7 @@ window.realizarLoginUnificado = async (e) => {
     if (foundDriver) {
         window.currentUserRole = 'driver';
         window.currentDriverId = foundDriver.id;
+        window.currentCompanyId = foundDriver.companyId || null;
         salvarSessao();
         if (window.iniciarPainelMotorista) window.iniciarPainelMotorista(foundDriver);
         document.getElementById('unifiedPinInput').value = '';
@@ -369,6 +405,7 @@ window.realizarLoginUnificado = async (e) => {
     if (foundRep) {
         window.currentUserRole = 'representative';
         window.currentRepId = foundRep.id;
+        window.currentCompanyId = foundRep.companyId || null;
         salvarSessao();
         if (window.iniciarPainelRepresentante) window.iniciarPainelRepresentante(foundRep);
         document.getElementById('unifiedPinInput').value = '';
@@ -385,8 +422,20 @@ function salvarSessao() {
     localStorage.setItem('app_session', JSON.stringify({
         role: window.currentUserRole,
         driverId: window.currentDriverId,
-        repId: window.currentRepId
+        repId: window.currentRepId,
+        companyId: window.currentCompanyId || null
     }));
+}
+
+// Busca as feature flags da empresa do admin logado (controla itens do sidebar).
+// Sem companyId (login antigo/legado sem empresa vinculada), libera tudo por padrão.
+window.carregarFeaturesDaEmpresaLogada = async function() {
+    window.companyFeatures = { fretes: true, rotasProdutos: true };
+    if (!window.useFirebase || !window.db || !window.currentCompanyId) return;
+    try {
+        const { data } = await window.db.from('companies').select('features').eq('id', window.currentCompanyId).maybeSingle();
+        if (data?.features) window.companyFeatures = data.features;
+    } catch (e) {}
 }
 
 window.fazerLogout = () => {
@@ -395,11 +444,14 @@ window.fazerLogout = () => {
     window.currentUserRole = null;
     window.currentDriverId = null;
     window.currentRepId = null;
-    
+    window.currentCompanyId = null;
+    window.companyFeatures = null;
+
     if (window.unsubDrivers) window.unsubDrivers();
     if (window.unsubReps) window.unsubReps();
     if (window.unsubRoutes) window.unsubRoutes();
     if (window.unsubAdmins) window.unsubAdmins();
+    if (window.unsubCompanies) window.unsubCompanies();
 
     window.mostrarTelaComAnimacao('screenInitial');
     window.showToast("Sessão encerrada com sucesso");

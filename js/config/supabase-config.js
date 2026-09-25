@@ -15,7 +15,7 @@ window.db = null;
 window.useFirebase = false;
 window.appId = "rune-byte-logistics-v1";
 
-window.CURRENT_VERSION = localStorage.getItem('app_installed_version') || 'v1.3.0';
+window.CURRENT_VERSION = localStorage.getItem('app_installed_version') || 'v2.0.0';
 
 const SUPABASE_URL = "https://edehvqofgbnrviztkyrn.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_wClFpvvuwNQuQ7XZg86xdA_sqZ2ip-h";
@@ -116,11 +116,17 @@ window.addEventListener('offline', () => { window.atualizarStatusConexao(false);
 // ----------------------------------------------------------------
 let subscribeTableCounter = 0;
 
-window.subscribeTable = function(table, callback) {
+// `filters`: objeto simples { coluna: valor } aplicado com .eq() no select inicial e
+// como filtro do Realtime (ex.: { companyId: window.currentCompanyId }). Omitido ou com
+// valores nulos/undefined, não filtra nada — usado pelo RUNEmaster, que enxerga tudo.
+window.subscribeTable = function(table, callback, filters) {
     let cancelled = false;
+    const activeFilters = Object.entries(filters || {}).filter(([, v]) => v !== null && v !== undefined);
 
     const fetchAndEmit = async () => {
-        const { data, error } = await window.db.from(table).select('*');
+        let query = window.db.from(table).select('*');
+        activeFilters.forEach(([col, val]) => { query = query.eq(col, val); });
+        const { data, error } = await query;
         if (cancelled) return;
         if (error) {
             console.error(`Erro ao ler tabela "${table}":`, error);
@@ -134,9 +140,13 @@ window.subscribeTable = function(table, callback) {
     // Nome único por assinatura: evita colisão quando a mesma tabela é
     // assinada mais de uma vez (ex.: carregarDadosIniciais + startAdminListeners).
     const channelName = `table-${table}-${++subscribeTableCounter}`;
+    const postgresChangesConfig = { event: '*', schema: 'public', table };
+    if (activeFilters.length > 0) {
+        postgresChangesConfig.filter = activeFilters.map(([col, val]) => `${col}=eq.${val}`).join(',');
+    }
     const channel = window.db
         .channel(channelName)
-        .on('postgres_changes', { event: '*', schema: 'public', table }, fetchAndEmit)
+        .on('postgres_changes', postgresChangesConfig, fetchAndEmit)
         .subscribe();
 
     return () => {
@@ -184,6 +194,9 @@ window.unsubDrivers = null;
 window.unsubReps = null;
 window.unsubRoutes = null;
 window.unsubAdmins = null;
+window.unsubCompanies = null;
+window.currentCompanyId = null;
+window.companyFeatures = null;
 
 window.notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
