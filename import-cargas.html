@@ -47,6 +47,9 @@
             opacity: 1;
             transform: translateY(0);
         }
+        #containerGridCargas {
+            transition: opacity 0.15s ease-in-out;
+        }
         .accordion-conteudo {
             transition: max-height 0.35s ease-in-out, opacity 0.25s ease-in-out;
             overflow: hidden;
@@ -1072,7 +1075,18 @@
             document.getElementById('btnAbaJequie')?.classList.add('active-pilula');
         }
 
-        renderizarGridCargas();
+        // Esmaece a grade antes de trocar o conteúdo em vez de simplesmente
+        // trocar o HTML na hora - evitava um "salto" seco na tela ao mudar de aba.
+        const container = document.getElementById('containerGridCargas');
+        if (container) {
+            container.style.opacity = '0';
+            setTimeout(() => {
+                renderizarGridCargas();
+                requestAnimationFrame(() => { container.style.opacity = '1'; });
+            }, 130);
+        } else {
+            renderizarGridCargas();
+        }
     }
     window.filtrarAba = filtrarAba;
 
