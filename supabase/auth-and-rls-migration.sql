@@ -19,6 +19,12 @@
 --     empresa (companyId) do usuário autenticado.
 -- ==========================================================================
 
+-- No Supabase, pgcrypto normalmente já vem instalada no schema "extensions",
+-- não em "public" — por isso crypt()/gen_salt() sem qualificar dão "does not
+-- exist" mesmo com a extensão presente. As funções abaixo que usam essas
+-- funções (_runelog_create_auth_user, _runelog_set_auth_password) por isso
+-- incluem "extensions" no próprio search_path fixo delas.
+create extension if not exists pgcrypto with schema extensions;
 create extension if not exists pgcrypto;
 
 alter table admins add column if not exists "authUserId" uuid unique;
@@ -40,7 +46,7 @@ create or replace function public._runelog_create_auth_user(p_email text, p_pass
 returns uuid
 language plpgsql
 security definer
-set search_path = auth, public
+set search_path = auth, public, extensions
 as $$
 declare
   new_id uuid := gen_random_uuid();
@@ -49,16 +55,19 @@ begin
   select instance_id into inst_id from auth.users limit 1;
   if inst_id is null then inst_id := '00000000-0000-0000-0000-000000000000'; end if;
 
+  -- "confirmed_at" não entra na lista: em versões recentes do Supabase é
+  -- coluna gerada (calculada a partir de email_confirmed_at), e inserir
+  -- valor nela dá erro 428C9.
   insert into auth.users
     (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
      raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
      confirmation_token, recovery_token, email_change, email_change_token_new,
-     is_super_admin, confirmed_at)
+     is_super_admin)
   values
     (new_id, inst_id, 'authenticated', 'authenticated', p_email,
      crypt(p_password, gen_salt('bf')), now(),
      '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now(),
-     '', '', '', '', false, now());
+     '', '', '', '', false);
 
   insert into auth.identities
     (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
@@ -74,7 +83,7 @@ create or replace function public._runelog_set_auth_password(p_auth_user_id uuid
 returns void
 language sql
 security definer
-set search_path = auth, public
+set search_path = auth, public, extensions
 as $$
   update auth.users
   set encrypted_password = crypt(p_new_password, gen_salt('bf')), updated_at = now()
