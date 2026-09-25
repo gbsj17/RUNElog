@@ -55,16 +55,19 @@ begin
   select instance_id into inst_id from auth.users limit 1;
   if inst_id is null then inst_id := '00000000-0000-0000-0000-000000000000'; end if;
 
+  -- "confirmed_at" não entra na lista: em versões recentes do Supabase é
+  -- coluna gerada (calculada a partir de email_confirmed_at), e inserir
+  -- valor nela dá erro 428C9.
   insert into auth.users
     (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
      raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
      confirmation_token, recovery_token, email_change, email_change_token_new,
-     is_super_admin, confirmed_at)
+     is_super_admin)
   values
     (new_id, inst_id, 'authenticated', 'authenticated', p_email,
      crypt(p_password, gen_salt('bf')), now(),
      '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now(),
-     '', '', '', '', false, now());
+     '', '', '', '', false);
 
   insert into auth.identities
     (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
