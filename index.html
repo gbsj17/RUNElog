@@ -668,18 +668,21 @@
             <!-- ========================================== -->
              
             <main class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-[2px] pb-16 sm:pb-4">
-                <div class="max-w-7xl mx-auto w-full space-y-[2px]">
+                <!-- ========================================== -->
+                <!-- TODO 4-C0: Seção Importador de Cargas       -->
+                <!-- Ferramenta standalone (import-cargas.html), rodando isolada num  -->
+                <!-- iframe para não colidir com funções globais do app principal     -->
+                <!-- (ex.: fecharModalConfirmacao existe nos dois com lógica diferente). -->
+                <!-- Carregada só na primeira vez que a aba é aberta (lazy-load).      -->
+                <!-- Fica fora do wrapper max-w-7xl abaixo, de propósito: a ferramenta -->
+                <!-- já tem seu próprio cabeçalho/chrome, então usa a área útil toda   -->
+                <!-- em vez de ficar encaixotada como os outros módulos.               -->
+                <!-- ========================================== -->
+                <div id="contentImportador" class="hidden -mx-3 sm:-mx-4 -mt-3 sm:-mt-4">
+                    <iframe id="iframeImportador" title="Importador de Cargas" class="w-full block bg-white" style="height: calc(100vh - 90px); min-height: 600px; border: none;"></iframe>
+                </div>
 
-                    <!-- ========================================== -->
-                    <!-- TODO 4-C0: Seção Importador de Cargas       -->
-                    <!-- Ferramenta standalone (import-cargas.html), rodando isolada num  -->
-                    <!-- iframe para não colidir com funções globais do app principal     -->
-                    <!-- (ex.: fecharModalConfirmacao existe nos dois com lógica diferente). -->
-                    <!-- Carregada só na primeira vez que a aba é aberta (lazy-load).      -->
-                    <!-- ========================================== -->
-                    <div id="contentImportador" class="hidden space-y-4">
-                        <iframe id="iframeImportador" title="Importador de Cargas" class="w-full rounded-2xl border border-slate-200 shadow-sm bg-white" style="height: calc(100vh - 150px); min-height: 600px;"></iframe>
-                    </div>
+                <div class="max-w-7xl mx-auto w-full space-y-[2px]">
 
                     <!-- ========================================== -->
                     <!-- TODO 4-C1: Seção Gestão de Rotas            -->
