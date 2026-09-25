@@ -339,8 +339,20 @@
                     <span class="flex items-center gap-1.5"><i class="fa-solid fa-receipt text-[#152e50]"></i> Total de Pedidos: <strong id="detalheCargaPedidos" class="text-[#152e50]">0</strong></span>
                 </div>
 
-                <!-- BARRA DE AÇÕES (3 BOTÕES DE OPERAÇÃO + EXPANDIR/RECOLHER) -->
+                <!-- BARRA DE AÇÕES (BUSCA + ORDENAÇÃO + 3 BOTÕES DE OPERAÇÃO + EXPANDIR/RECOLHER) -->
                 <div class="flex flex-wrap items-center gap-2">
+                    <!-- Busca: código de cliente, cidade ou rota montada -->
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px]"></i>
+                        <input type="text" id="inputFiltroClientesCarga" oninput="filtrarClientesCarga(this.value)" placeholder="Buscar por código, cidade ou rota..." class="pl-7 pr-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 placeholder-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-[#152e50] shadow-xs transition w-44 focus:w-56">
+                    </div>
+
+                    <!-- Ordenação: alterna Código -> Cidade -> Rota a cada clique -->
+                    <button id="btnOrdemClientesCarga" onclick="alternarOrdemClientesCarga()" title="Alternar critério de ordenação dos clientes" class="px-3 py-1.5 bg-white hover:bg-[#152e50] text-[#152e50] hover:text-[#fac043] font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs border border-slate-200 cursor-pointer">
+                        <i class="fa-solid fa-arrow-down-a-z text-amber-500"></i>
+                        <span>Ordenar por: <span id="lblOrdemClientesCarga">Código</span></span>
+                    </button>
+
                     <!-- Botão 01: Montar / Editar Rota -->
                     <button id="btnMontarRota" onclick="abrirTelaMontagemRota()" title="Montar, visualizar e editar sequência da rota" class="px-3 py-1.5 bg-white hover:bg-[#152e50] text-[#152e50] hover:text-[#fac043] font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs border border-slate-200 cursor-pointer">
                         <i class="fa-solid fa-route text-amber-500"></i>
@@ -368,13 +380,6 @@
             </div>
         </div>
 
-        <!-- Filtro: busca por código de cliente, cidade ou rota montada -->
-        <div class="pt-3 pb-1">
-            <div class="relative max-w-md">
-                <i class="fa-solid fa-magnifying-glass text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 text-xs"></i>
-                <input type="text" id="inputFiltroClientesCarga" oninput="filtrarClientesCarga(this.value)" placeholder="Buscar por código do cliente, cidade ou rota..." class="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#152e50] shadow-xs transition">
-            </div>
-        </div>
 
         <!-- CONTAINER ONDE OS CARDS DE CLIENTES E PEDIDOS SERÃO INJETADOS -->
         <div id="containerClientesCarga" class="space-y-4 pt-2">
@@ -1842,11 +1847,49 @@
         // TODO 13.2 RENDERIZAÇÃO DOS CLIENTES E PEDIDOS (LAYOUT ALINHADO)
         // ---------------------------------------------------------------
         
+        // Critério de ordenação da lista de clientes do detalhe da carga -
+        // alterna entre 'codigo', 'cidade' e 'rota' pelo botão "Ordenar por".
+        window.criterioOrdemClientesCarga = window.criterioOrdemClientesCarga || 'codigo';
+
+        function obterClientesOrdenados(carga) {
+            const chaveOrdem = (cliente) => {
+                if (window.criterioOrdemClientesCarga === 'cidade') {
+                    return [cliente.cidade, cliente.uf].filter(Boolean).join(' - ') || 'CIDADE NÃO INFORMADA';
+                }
+                if (window.criterioOrdemClientesCarga === 'rota') {
+                    // "Rota montada" no nível do cliente: a praça de entrega já
+                    // ajustada manualmente em algum dos pedidos dele, ou a cidade
+                    // padrão quando nenhum pedido teve a praça alterada.
+                    const pracaAjustada = (cliente.pedidos || []).map(p => p.pracaEntrega).find(Boolean);
+                    return pracaAjustada || [cliente.cidade, cliente.uf].filter(Boolean).join(' - ') || 'CIDADE NÃO INFORMADA';
+                }
+                return String(cliente.codigo || '');
+            };
+
+            return Object.values(carga.clientes).sort((a, b) =>
+                String(chaveOrdem(a)).localeCompare(String(chaveOrdem(b)), 'pt-BR', { numeric: true, sensitivity: 'base' })
+            );
+        }
+
+        function alternarOrdemClientesCarga() {
+            const ordem = ['codigo', 'cidade', 'rota'];
+            const atual = ordem.indexOf(window.criterioOrdemClientesCarga);
+            window.criterioOrdemClientesCarga = ordem[(atual + 1) % ordem.length];
+
+            const rotulos = { codigo: 'Código', cidade: 'Cidade', rota: 'Rota' };
+            const lbl = document.getElementById('lblOrdemClientesCarga');
+            if (lbl) lbl.innerText = rotulos[window.criterioOrdemClientesCarga];
+
+            const carga = bancoCargasGlobal[window.cargaAtivaId];
+            if (carga) renderizarClientesDaCarga(carga);
+        }
+        window.alternarOrdemClientesCarga = alternarOrdemClientesCarga;
+
         function renderizarClientesDaCarga(carga) {
             const container = document.getElementById('containerClientesCarga');
             let htmlClientes = '';
 
-            Object.values(carga.clientes).forEach(cliente => {
+            obterClientesOrdenados(carga).forEach(cliente => {
                 let htmlPedidosDoCliente = '';
                 let valorTotalClienteSemSt = 0;
                 
