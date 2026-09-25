@@ -360,16 +360,10 @@
                         <span>Montar / Editar Rota</span>
                     </button>
 
-                    <!-- Botão 02: Itens por Rota -->
-                    <button id="btnItensPorRota" onclick="abrirModalItensPorRota()" title="Visualizar itens organizados pela sequência de entrega" class="px-3 py-1.5 bg-white hover:bg-[#152e50] text-[#152e50] hover:text-[#fac043] font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs border border-slate-200 cursor-pointer">
-                        <i class="fa-solid fa-map-location-dot text-amber-500"></i>
-                        <span>Itens por Rota</span>
-                    </button>
-
-                    <!-- Botão 03: Itens Agrupados -->
-                    <button id="btnItensAgrupados" onclick="abrirModalItensAgrupados()" title="Visualizar consolidação total de produtos por código" class="px-3 py-1.5 bg-white hover:bg-[#152e50] text-[#152e50] hover:text-[#fac043] font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs border border-slate-200 cursor-pointer">
+                    <!-- Botão único: abre o modal de itens (que já tem as abas Rota/Agrupados internamente) -->
+                    <button id="btnVerItens" onclick="abrirModalItensPorRota()" title="Visualizar itens por rota ou agrupados por código" class="px-3 py-1.5 bg-white hover:bg-[#152e50] text-[#152e50] hover:text-[#fac043] font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs border border-slate-200 cursor-pointer">
                         <i class="fa-solid fa-boxes-stacked text-amber-500"></i>
-                        <span>Itens Agrupados</span>
+                        <span>Ver Itens</span>
                     </button>
 
                     <!-- BOTÃO MESTRE DE EXPANDIR / RECOLHER TODOS -->
