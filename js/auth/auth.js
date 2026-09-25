@@ -160,14 +160,7 @@ window.salvarNovaSenhaPessoal = async (e) => {
     
     let collectionName, userObj;
     if (window.currentUserRole === 'admin') {
-        const legacyUser = JSON.parse(localStorage.getItem('app_admin_settings') || '{"username": "gbsj17", "password": "1234"}');
         userObj = (window.allAdmins || []).find(a => (a.pin || '').toString() === atual);
-        if (!userObj && atual === legacyUser.password) {
-            legacyUser.password = nova;
-            localStorage.setItem('app_admin_settings', JSON.stringify(legacyUser));
-            window.fecharModalTrocaSenhaPessoal();
-            return window.showToast("Senha do Administrador Padrão alterada com sucesso!", "success");
-        }
         collectionName = 'admins';
     } else if (window.currentUserRole === 'driver') {
         userObj = (window.allDrivers || []).find(d => d.id === window.currentDriverId);
@@ -264,25 +257,6 @@ window.realizarLoginUnificado = async (e) => {
 
     // 3. APÓS O DELAY, REALIZA A VALIDAÇÃO DOS DADOS DE ACESSO
 
-    // Fallback de Emergência do Admin Padrão da Fibrasol (NÃO é o RUNEmaster)
-    if ((typedName === 'gbsj17' || typedName === 'adm_gbsj17') && (typedPin === '1234' || typedPin === 'admin')) {
-        window.currentUserRole = 'admin';
-        window.currentCompanyId = null;
-        if (window.useFirebase && window.db) {
-            try {
-                const { data: admRow } = await window.db.from('admins').select('companyId').ilike('name', typedName).limit(1).maybeSingle();
-                if (admRow) window.currentCompanyId = admRow.companyId;
-            } catch (e) {}
-        }
-        await carregarFeaturesDaEmpresaLogada();
-        salvarSessao();
-        if (window.iniciarPainelAdmin) window.iniciarPainelAdmin();
-        document.getElementById('unifiedPinInput').value = '';
-        restaurarBotao();
-        window.showToast("Acesso Master liberado!", "success");
-        return;
-    }
-
     // Busca Remota Direta no Supabase (Garante login se o estado local ainda não carregou)
     if (window.useFirebase && window.db) {
         try {
@@ -375,9 +349,8 @@ window.realizarLoginUnificado = async (e) => {
     }
 
     // Busca nos Arrays Locais (LocalStorage / Fallback)
-    const legacyAdmin = JSON.parse(localStorage.getItem('app_admin_settings') || '{"username": "gbsj17", "password": "1234"}');
     const foundAdmin = (window.allAdmins || []).find(a => (a.name || '').toLowerCase() === typedName && (a.pin || '').toString() === typedPin);
-    if (foundAdmin || (typedName === legacyAdmin.username.toLowerCase() && typedPin === legacyAdmin.password)) {
+    if (foundAdmin) {
         window.currentUserRole = 'admin';
         window.currentCompanyId = foundAdmin?.companyId || null;
         await carregarFeaturesDaEmpresaLogada();
