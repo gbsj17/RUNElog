@@ -1637,15 +1637,7 @@
             (pedidoAlvo.obsEntrega || []).forEach(o => linhasObs.push(`ENTREGA: ${esc(o)}`));
             (pedidoAlvo.obsGerais || []).forEach(o => linhasObs.push(`GERAL: ${esc(o)}`));
 
-            const janela = window.open('', '_blank', 'width=860,height=1000');
-            if (!janela) {
-                if (typeof exibirToast === 'function') {
-                    exibirToast('O navegador bloqueou a janela. Libere pop-ups pra este site e tente de novo.', 'Pop-up bloqueado', 'erro');
-                }
-                return;
-            }
-
-            janela.document.write(`
+            const htmlPedido = `
                 <!DOCTYPE html>
                 <html lang="pt-BR">
                 <head>
@@ -1756,8 +1748,26 @@
                     </div>
                 </body>
                 </html>
-            `);
-            janela.document.close();
+            `;
+
+            // Blob + URL.createObjectURL em vez de window.open('') + document.write():
+            // document.write() é uma API antiga e removida/restrita em vários
+            // navegadores (inclusive relatos de falha no Edge) quando chamada logo
+            // após abrir a janela - o Blob evita isso por completo, é só um link
+            // normal que o navegador carrega como qualquer outra página.
+            const blob = new Blob([htmlPedido], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const janela = window.open(url, '_blank', 'width=860,height=1000');
+
+            if (!janela) {
+                URL.revokeObjectURL(url);
+                if (typeof exibirToast === 'function') {
+                    exibirToast('O navegador bloqueou a janela. Libere pop-ups pra este site e tente de novo.', 'Pop-up bloqueado', 'erro');
+                }
+                return;
+            }
+
+            setTimeout(() => URL.revokeObjectURL(url), 30000);
         }
         window.imprimirPedido = imprimirPedido;
 
