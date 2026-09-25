@@ -3,6 +3,7 @@
 // ==========================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./supabase-keys.js";
 
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
@@ -16,9 +17,6 @@ window.useFirebase = false;
 window.appId = "rune-byte-logistics-v1";
 
 window.CURRENT_VERSION = localStorage.getItem('app_installed_version') || 'v2.0.0';
-
-const SUPABASE_URL = "https://edehvqofgbnrviztkyrn.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_wClFpvvuwNQuQ7XZg86xdA_sqZ2ip-h";
 
 window.solicitarPermissaoNotificacoes = function() {
     if ("Notification" in window && Notification.permission === "default") {

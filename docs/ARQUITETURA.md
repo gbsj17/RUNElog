@@ -28,6 +28,7 @@ Tabelas (ver [`supabase/schema.sql`](../supabase/schema.sql) para o DDL completo
 | `drivers` | Por empresa | Motoristas. |
 | `representatives` | Por empresa | Representantes comerciais. |
 | `routes` | Por empresa | Cargas/rotas, com `stops` e `representantes` como colunas `jsonb`. |
+| `import_cargas` | Por empresa (só admin/master) | Cargas do Importador de Cargas (`import-cargas.html`): uma linha por carga, com o conteúdo em `dados` (jsonb). DDL e RLS em [`supabase/import-cargas-migration.sql`](../supabase/import-cargas-migration.sql); acesso pelo front em `js/modules/importador/cargas-store.js`. |
 | `settings` | Legado | Doc único de fallback do admin padrão (pré-Supabase); baixo uso hoje. |
 
 Todas as tabelas "por empresa" têm uma coluna `companyId` (uuid, FK pra `companies.id`). Uma
