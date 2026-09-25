@@ -201,30 +201,16 @@ window.startRepListeners = function() {
 // TODO: BLOCO 7.5.3: INICIALIZAÇÃO, SPLASH SCREEN E SESSÕES
 // =======================================================
 
+// Sem Supabase configurado (fallback local), cria uma conta admin inicial com PIN
+// aleatório — nunca um usuário/senha previsível — e avisa o dono no console.
 async function inicializarContaAdminPadrao() {
-    let configAdminLegacy = JSON.parse(localStorage.getItem('app_admin_settings') || '{"username": "gbsj17", "password": "1234"}');
-    if (window.useFirebase) {
-        try {
-            const { data: settingsRow } = await window.db.from('settings').select('value').eq('key', 'admin').maybeSingle();
-            if (settingsRow) configAdminLegacy = settingsRow.value;
-        } catch(e){}
-    }
-    if (!window.useFirebase) {
-        const admins = LocalDb.get('admins');
-        if (admins.length === 0) {
-            admins.push({ id: 'adm_default', name: configAdminLegacy.username, pin: configAdminLegacy.password, createdAt: Date.now() });
-            LocalDb.set('admins', admins);
-        }
-    }
-}
-
-async function inicializarContaJrPadrao() {
-    if (!window.useFirebase) {
-        const drivers = LocalDb.get('drivers');
-        if (!drivers.some(d => d.name.toLowerCase() === 'jr')) {
-            drivers.push({ id: 'drv_jr_default', name: 'Jr', pin: '1234', createdAt: Date.now() });
-            LocalDb.set('drivers', drivers);
-        }
+    if (window.useFirebase) return;
+    const admins = LocalDb.get('admins');
+    if (admins.length === 0) {
+        const pinInicial = String(Math.floor(1000 + Math.random() * 9000));
+        admins.push({ id: 'adm_default', name: 'admin', pin: pinInicial, createdAt: Date.now() });
+        LocalDb.set('admins', admins);
+        console.warn(`RUNElog: conta admin inicial criada — usuário "admin", PIN ${pinInicial}. Troque assim que possível.`);
     }
 }
 
@@ -255,7 +241,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     try {
         if (window.solicitarPermissaoNotificacoes) window.solicitarPermissaoNotificacoes();
         await inicializarContaAdminPadrao();
-        await inicializarContaJrPadrao();
         atualizarBadgeConexao();
         atualizarTextosVersaoGerais();
 
@@ -353,10 +338,6 @@ function carregarDadosIniciais(callback) {
         }, companyFilter);
         window.subscribeTable('admins', async data => {
             window.allAdmins = data;
-            if (window.allAdmins.length === 0 && window.currentCompanyId) {
-                const legacyUser = JSON.parse(localStorage.getItem('app_admin_settings') || '{"username": "gbsj17", "password": "1234"}');
-                await window.db.from('admins').insert({ name: legacyUser.username, pin: legacyUser.password, companyId: window.currentCompanyId, createdAt: Date.now() });
-            }
             if (window.currentUserRole === 'admin' && window.renderloglogsList) window.renderloglogsList();
         }, companyFilter);
         window.subscribeTable('routes', data => {

@@ -60,14 +60,19 @@ isolada das demais.
      Security com política de acesso aberto (equivalente ao Firestore em modo teste) e liga o
      Realtime. Idempotente — pode rodar de novo sem erro.
    - [`supabase/backfill-fibrasol.sql`](supabase/backfill-fibrasol.sql) — roda **uma única vez**,
-     cria a empresa "Fibrasol" e vincula a ela os dados já existentes, além de criar um login
-     RUNEmaster de teste (`master` / `9090` — troque depois).
+     cria a empresa "Fibrasol" e vincula a ela os dados já existentes, além de criar o login
+     RUNEmaster inicial com um PIN aleatório de 6 dígitos (impresso no resultado da query —
+     anote e troque pelo painel assim que logar).
 
 ⚠️ **Nota de segurança consciente:** o isolamento de dados entre empresas é feito por filtro
 `companyId` nas consultas do client, não por política de Row Level Security no banco (a anon key
 tem acesso de leitura/escrita a todas as tabelas). Isso é aceitável para o estágio atual do
 produto, mas antes de operar dados sensíveis de clientes reais em produção, vale evoluir para
 Supabase Auth + RLS por tenant.
+
+**Já corrigido:** o login não tem mais porta dos fundos nem PINs padrão fixos (`gbsj17`/`1234`,
+motorista `Jr`/`1234`). Se essas credenciais chegaram a rodar em produção, troque os PINs
+correspondentes no banco — elas já devem ser consideradas expostas.
 
 ---
 
