@@ -76,37 +76,18 @@
 </head>
 <body class="text-slate-800 p-4 sm:p-6 pb-24">
 
+    <!-- Input de arquivo oculto, sempre presente no documento (fora do wrapper -->
+    <!-- que esconde/mostra entre a grade e o detalhe). O botão que o aciona   -->
+    <!-- mora no cabeçalho do RUNElog, fora deste iframe (mesma origem, então  -->
+    <!-- ele chama iframe.contentDocument.getElementById('inputXlsx').click()). -->
+    <input type="file" id="inputXlsx" accept=".xlsx, .xls" class="hidden" onchange="processarArquivoXlsx(event)">
+
     <!-- ========================================================= -->
     <!-- TODO 02: CABEÇALHO DA INTERFACE E BUSCA TRAVADOS (STICKY) -->
     <!-- ========================================================= -->
 
-    <div class="sticky top-0 z-50 bg-slate-100/95 backdrop-blur-md pt-3 pb-2 mb-4">
+    <div id="headerFiltroWrapper" class="sticky top-0 z-50 bg-slate-100/95 backdrop-blur-md pt-3 pb-2 mb-4">
         <div class="max-w-7xl mx-auto space-y-3">
-            
-            <!-- CABEÇALHO AZUL FIXO -->
-            <header class="flex items-center justify-between bg-[#152e50] p-4 rounded-2xl shadow-md text-white">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#fac043]">
-                        <i class="fa-solid fa-truck-ramp-box text-lg"></i>
-                    </div>
-                    <div>
-                        <h1 class="font-handel text-lg leading-tight text-[#fac043] italic tracking-wider">FIBRASOL</h1>
-                        <p class="text-xs text-slate-300 font-semibold uppercase">Gestor de Cargas & Relatórios WinThor</p>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-3">
-                    <button id="btnVoltarGrid" onclick="mostrarGridCargas()" class="hidden px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-lg text-xs transition flex items-center gap-2">
-                        <i class="fa-solid fa-arrow-left"></i> Voltar pras Cargas
-                    </button>
-
-                    <label class="px-4 py-2 bg-[#fac043] text-[#152e50] font-bold rounded-lg text-xs shadow-sm hover:brightness-105 transition cursor-pointer flex items-center gap-2">
-                        <i class="fa-solid fa-file-excel"></i>
-                        <span>Importar Planilha XLSX</span>
-                        <input type="file" id="inputXlsx" accept=".xlsx, .xls" class="hidden" onchange="processarArquivoXlsx(event)">
-                    </label>
-                </div>
-            </header>
 
             <!-- CARD BRANCO DE BUSCA E O MENUZÃO DE ABAS (OCULTADO NA VISUALIZAÇÃO DA CARGA) -->
             <div id="cardBuscaGrid" class="flex flex-col space-y-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm transition-all duration-300">
@@ -176,7 +157,7 @@
         <div id="containerGridCargas" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div class="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 text-xs italic">
                 <i class="fa-solid fa-folder-open text-4xl mb-3 text-slate-300 block"></i>
-                Nenhuma planilha importada no momento.<br>Clique no botão <strong>"Importar Planilha XLSX"</strong> acima para carregar as cargas.
+                Nenhuma planilha importada no momento.<br>Clique no botão <strong>"Importar Dados"</strong> no topo da tela para carregar as cargas.
             </div>
         </div>
     </section>
@@ -320,12 +301,18 @@
     <!-- =================================================== -->
 
     <section id="secaoDetalheCarga" class="space-y-4 hidden painel-transicao painel-oculto">
-        <!-- BANNER DE RESUMO FIXO NO TOPO LOGO ABAIXO DO CABEÇALHO AZUL -->
-        <div class="sticky top-[84px] z-40 bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden transition-all">
+        <!-- BANNER DE RESUMO FIXO NO TOPO (agora o próprio topo da página, já que -->
+        <!-- o cabeçalho FIBRASOL foi removido e o wrapper de busca some nesta view) -->
+        <div class="sticky top-0 z-40 bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden transition-all">
             <div class="bg-[#152e50] p-4 border-b-4 border-[#fac043] flex flex-wrap justify-between items-center text-white gap-4">
-                <div>
-                    <span class="text-[10px] uppercase font-bold text-[#fac043]">DETALHAMENTO DO CARREGAMENTO</span>
-                    <h2 id="detalheCargaNum" class="text-2xl font-black">Carga: -</h2>
+                <div class="flex items-center gap-3">
+                    <button id="btnVoltarGrid" onclick="mostrarGridCargas()" title="Voltar pras Cargas" class="hidden shrink-0 w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 text-[#fac043] transition flex items-center justify-center">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-[#fac043]">DETALHAMENTO DO CARREGAMENTO</span>
+                        <h2 id="detalheCargaNum" class="text-2xl font-black">Carga: -</h2>
+                    </div>
                 </div>
                 <div class="text-right">
                     <span class="text-[10px] uppercase font-bold text-slate-300">VALOR TOTAL DA CARGA (SEM ST)</span>
@@ -1463,10 +1450,10 @@
 
             const secaoGrid = document.getElementById('secaoGridCargas');
             const secaoDetalhe = document.getElementById('secaoDetalheCarga');
-            const cardBusca = document.getElementById('cardBuscaGrid');
+            const headerFiltro = document.getElementById('headerFiltroWrapper');
             const btnVoltar = document.getElementById('btnVoltarGrid');
 
-            if (cardBusca) cardBusca.classList.add('hidden');
+            if (headerFiltro) headerFiltro.classList.add('hidden');
             if (btnVoltar) btnVoltar.classList.remove('hidden');
 
             window.todosExpandidosState = false;
@@ -1500,15 +1487,15 @@
             window.cargaAtivaId = null;
             const secaoGrid = document.getElementById('secaoGridCargas');
             const secaoDetalhe = document.getElementById('secaoDetalheCarga');
-            const cardBusca = document.getElementById('cardBuscaGrid');
+            const headerFiltro = document.getElementById('headerFiltroWrapper');
             const btnVoltar = document.getElementById('btnVoltarGrid');
 
             secaoDetalhe.classList.add('painel-oculto');
             setTimeout(() => {
                 secaoDetalhe.classList.add('hidden');
                 secaoGrid.classList.remove('hidden');
-                
-                if (cardBusca) cardBusca.classList.remove('hidden');
+
+                if (headerFiltro) headerFiltro.classList.remove('hidden');
                 if (btnVoltar) btnVoltar.classList.add('hidden');
 
                 setTimeout(() => {

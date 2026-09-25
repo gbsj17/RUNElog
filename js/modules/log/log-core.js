@@ -138,6 +138,9 @@ window.alternarAbalog = (tab, direction = 'none') => {
     const hIcon = document.getElementById('logHeaderMobileIcon');
     if (hIcon) hIcon.className = `fa-solid ${currentInfo.icon}`;
 
+    const btnImportarDados = document.getElementById('btnImportarDadosHeader');
+    if (btnImportarDados) btnImportarDados.classList.toggle('hidden', tab !== 'importador');
+
     if (tab === 'importador') {
         // Lazy-load: só carrega o iframe na primeira vez que a aba é aberta,
         // pra não pagar o custo de XLSX/Leaflet em toda sessão do admin.
@@ -165,6 +168,16 @@ window.alternarAbalog = (tab, direction = 'none') => {
     // inteiro dos botões do sidebar, o que apagaria a classe "hidden" aplicada por
     // aplicarFeaturesDaEmpresa() se não fosse refeita a cada troca de aba.
     if (window.aplicarFeaturesDaEmpresa) window.aplicarFeaturesDaEmpresa();
+};
+
+// Aciona o input de arquivo do Importador de Cargas, que vive dentro do
+// iframe (mesma origem, então dá pra alcançar o contentDocument direto).
+// O botão que chama isso mora no cabeçalho do RUNElog, fora do iframe -
+// o próprio Importador não tem mais um botão de importar visível.
+window.dispararImportacaoCargas = function() {
+    const iframe = document.getElementById('iframeImportador');
+    const input = iframe?.contentDocument?.getElementById('inputXlsx');
+    if (input) input.click();
 };
 
 // -----------------------------------------------------
