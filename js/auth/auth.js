@@ -132,7 +132,6 @@ function ativarModoAtualizacaoDisponivel() {
     if (btn && text && icon) {
         btn.className = "bg-[#fac043] hover:brightness-95 active:scale-95 text-slate-900 text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-[#fac043]/30 transition-all duration-300 animate-pulse";
         text.classList.remove('hidden');
-        icon.classList.add('animate-spin');
     }
 }
 
