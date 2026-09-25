@@ -158,16 +158,19 @@ window.salvarNovaSenhaPessoal = async (e) => {
 
     if (nova !== confirma) return window.showToast("A nova senha e a confirmação não coincidem.", "error");
     
-    let collectionName, userObj;
+    let collectionName, userObj, rpcRole;
     if (window.currentUserRole === 'admin') {
-        userObj = (window.allAdmins || []).find(a => (a.pin || '').toString() === atual);
+        userObj = (window.allAdmins || []).find(a => a.id === window.currentAdminId);
         collectionName = 'admins';
+        rpcRole = 'admin';
     } else if (window.currentUserRole === 'driver') {
         userObj = (window.allDrivers || []).find(d => d.id === window.currentDriverId);
         collectionName = 'drivers';
+        rpcRole = 'driver';
     } else if (window.currentUserRole === 'representative') {
         userObj = (window.allReps || []).find(r => r.id === window.currentRepId);
         collectionName = 'representatives';
+        rpcRole = 'representative';
     }
 
     if (!userObj || (userObj.pin || '').toString() !== atual) {
@@ -175,7 +178,7 @@ window.salvarNovaSenhaPessoal = async (e) => {
     }
 
     if (window.useFirebase) {
-        const { error } = await window.db.from(collectionName).update({ pin: nova }).eq('id', userObj.id);
+        const { error } = await window.db.rpc('set_member_pin', { p_role: rpcRole, p_id: userObj.id, p_new_pin: nova });
         if (error) {
             return window.showToast("Erro ao salvar no banco: " + error.message, "error");
         }
@@ -257,94 +260,50 @@ window.realizarLoginUnificado = async (e) => {
 
     // 3. APÓS O DELAY, REALIZA A VALIDAÇÃO DOS DADOS DE ACESSO
 
-    // Busca Remota Direta no Supabase (Garante login se o estado local ainda não carregou)
+    // Login via Supabase Auth: descobre o e-mail técnico do usuário e autentica
+    // de verdade (a senha é validada pelo próprio Supabase, nunca no navegador).
     if (window.useFirebase && window.db) {
         try {
-            // RUNEmaster (dono da plataforma) — checado primeiro, tabela isolada dos clientes
-            const { data: masterRows } = await window.db.from('master_users').select('*');
-            let masterFound = null;
-            (masterRows || []).forEach(data => {
-                if ((data.name?.toLowerCase() === typedName || data.id === typedName) && String(data.pin) === typedPin) {
-                    masterFound = data;
+            const { data: email } = await window.db.rpc('login_email_for', { p_name: typedName });
+
+            if (email) {
+                const { error: signInError } = await window.db.auth.signInWithPassword({ email, password: typedPin });
+
+                if (!signInError) {
+                    const { data: profileRows } = await window.db.rpc('current_profile');
+                    const perfil = Array.isArray(profileRows) ? profileRows[0] : profileRows;
+
+                    if (perfil?.role) {
+                        window.currentUserRole = perfil.role;
+                        window.currentCompanyId = perfil.companyId || null;
+                        if (perfil.role === 'driver') window.currentDriverId = perfil.id;
+                        if (perfil.role === 'representative') window.currentRepId = perfil.id;
+                        if (perfil.role === 'admin') window.currentAdminId = perfil.id;
+
+                        if (perfil.role === 'master') {
+                            salvarSessao();
+                            if (window.iniciarPainelMaster) window.iniciarPainelMaster();
+                        } else if (perfil.role === 'admin') {
+                            await carregarFeaturesDaEmpresaLogada();
+                            salvarSessao();
+                            if (window.iniciarPainelAdmin) window.iniciarPainelAdmin();
+                        } else if (perfil.role === 'driver') {
+                            salvarSessao();
+                            if (window.iniciarPainelMotorista) window.iniciarPainelMotorista({ id: perfil.id, name: perfil.name });
+                        } else if (perfil.role === 'representative') {
+                            salvarSessao();
+                            if (window.iniciarPainelRepresentante) window.iniciarPainelRepresentante({ id: perfil.id, name: perfil.name });
+                        }
+
+                        document.getElementById('unifiedPinInput').value = '';
+                        restaurarBotao();
+                        window.showToast(`Bem-vindo, ${perfil.name}!`, "success");
+                        return;
+                    }
                 }
-            });
-
-            if (masterFound) {
-                window.currentUserRole = 'master';
-                window.currentCompanyId = null;
-                salvarSessao();
-                if (window.iniciarPainelMaster) window.iniciarPainelMaster();
-                document.getElementById('unifiedPinInput').value = '';
-                restaurarBotao();
-                window.showToast(`Bem-vindo ao RUNEmaster, ${masterFound.name}!`, "success");
-                return;
             }
-
-            // Admins
-            const { data: admRows } = await window.db.from('admins').select('*');
-            let admFound = null;
-            (admRows || []).forEach(data => {
-                if ((data.name?.toLowerCase() === typedName || data.id === typedName) && String(data.pin) === typedPin) {
-                    admFound = data;
-                }
-            });
-
-            if (admFound) {
-                window.currentUserRole = 'admin';
-                window.currentCompanyId = admFound.companyId || null;
-                await carregarFeaturesDaEmpresaLogada();
-                salvarSessao();
-                if (window.iniciarPainelAdmin) window.iniciarPainelAdmin();
-                document.getElementById('unifiedPinInput').value = '';
-                restaurarBotao();
-                window.showToast(`Bem-vindo, ${admFound.name}!`, "success");
-                return;
-            }
-
-            // Motoristas
-            const { data: drvRows } = await window.db.from('drivers').select('*');
-            let drvFound = null;
-            (drvRows || []).forEach(data => {
-                if ((data.name?.toLowerCase() === typedName || data.id === typedName) && String(data.pin) === typedPin) {
-                    drvFound = data;
-                }
-            });
-
-            if (drvFound) {
-                window.currentUserRole = 'driver';
-                window.currentDriverId = drvFound.id;
-                window.currentCompanyId = drvFound.companyId || null;
-                salvarSessao();
-                if (window.iniciarPainelMotorista) window.iniciarPainelMotorista(drvFound);
-                document.getElementById('unifiedPinInput').value = '';
-                restaurarBotao();
-                window.showToast(`Bem-vindo, ${drvFound.name}!`, "success");
-                return;
-            }
-
-            // Representantes
-            const { data: repRows } = await window.db.from('representatives').select('*');
-            let repFound = null;
-            (repRows || []).forEach(data => {
-                if ((data.name?.toLowerCase() === typedName || data.id === typedName) && String(data.pin) === typedPin) {
-                    repFound = data;
-                }
-            });
-
-            if (repFound) {
-                window.currentUserRole = 'representative';
-                window.currentRepId = repFound.id;
-                window.currentCompanyId = repFound.companyId || null;
-                salvarSessao();
-                if (window.iniciarPainelRepresentante) window.iniciarPainelRepresentante(repFound);
-                document.getElementById('unifiedPinInput').value = '';
-                restaurarBotao();
-                window.showToast(`Bem-vindo, ${repFound.name}!`, "success");
-                return;
-            }
-
         } catch (err) {
-            console.error("Erro na busca remota do login:", err);
+            console.error("Erro no login via Supabase Auth:", err);
         }
     }
 
@@ -391,10 +350,13 @@ window.realizarLoginUnificado = async (e) => {
 };
 
 function salvarSessao() {
+    // Cache só pra UI abrir o painel certo instantaneamente ao recarregar a página.
+    // Quem garante o acesso de verdade é a sessão do Supabase Auth (JWT) + RLS no banco.
     localStorage.setItem('app_session', JSON.stringify({
         role: window.currentUserRole,
         driverId: window.currentDriverId,
         repId: window.currentRepId,
+        adminId: window.currentAdminId,
         companyId: window.currentCompanyId || null
     }));
 }
@@ -410,12 +372,16 @@ window.carregarFeaturesDaEmpresaLogada = async function() {
     } catch (e) {}
 }
 
-window.fazerLogout = () => {
+window.fazerLogout = async () => {
     window.fecharModalConfig();
+    if (window.useFirebase && window.db) {
+        try { await window.db.auth.signOut(); } catch (e) {}
+    }
     localStorage.removeItem('app_session');
     window.currentUserRole = null;
     window.currentDriverId = null;
     window.currentRepId = null;
+    window.currentAdminId = null;
     window.currentCompanyId = null;
     window.companyFeatures = null;
 

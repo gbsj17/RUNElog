@@ -63,16 +63,22 @@ isolada das demais.
      cria a empresa "Fibrasol" e vincula a ela os dados já existentes, além de criar o login
      RUNEmaster inicial com um PIN aleatório de 6 dígitos (impresso no resultado da query —
      anote e troque pelo painel assim que logar).
+   - [`supabase/auth-and-rls-migration.sql`](supabase/auth-and-rls-migration.sql) — migra o login
+     pra Supabase Auth de verdade e troca as políticas de RLS abertas por políticas escopadas por
+     empresa. Tem instruções de teste no topo do arquivo — leia antes de rodar.
 
-⚠️ **Nota de segurança consciente:** o isolamento de dados entre empresas é feito por filtro
-`companyId` nas consultas do client, não por política de Row Level Security no banco (a anon key
-tem acesso de leitura/escrita a todas as tabelas). Isso é aceitável para o estágio atual do
-produto, mas antes de operar dados sensíveis de clientes reais em produção, vale evoluir para
-Supabase Auth + RLS por tenant.
+✅ **Isolamento de dados por empresa:** as políticas de Row Level Security agora checam a empresa
+do usuário autenticado (via Supabase Auth), não mais um filtro só no client. Ver
+[`supabase/auth-and-rls-migration.sql`](supabase/auth-and-rls-migration.sql) para o script e
+[`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) para como funciona por baixo do capô.
 
 **Já corrigido:** o login não tem mais porta dos fundos nem PINs padrão fixos (`gbsj17`/`1234`,
 motorista `Jr`/`1234`). Se essas credenciais chegaram a rodar em produção, troque os PINs
 correspondentes no banco — elas já devem ser consideradas expostas.
+
+**Cadastrando o primeiro admin de uma empresa:** não existe (ainda) uma tela de gestão de equipe
+pra isso. Rode no SQL Editor:
+`select public.bootstrap_admin('Nome da Empresa', 'nome_do_admin', 'PIN_inicial');`
 
 ---
 

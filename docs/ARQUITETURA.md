@@ -34,28 +34,36 @@ Todas as tabelas "por empresa" têm uma coluna `companyId` (uuid, FK pra `compan
 linha sem `companyId` (ex.: dados anteriores à migração multi-tenant que não passaram pelo
 backfill) fica "órfã" e não aparece pra nenhum admin de empresa — só o master a vê, sem filtro.
 
-**Isolamento de tenant é feito no client, não no banco.** As policies de RLS são
-`for all using (true)` (acesso aberto pra anon key). Ver a nota de segurança no README.
+**Isolamento de tenant é feito no banco, via RLS de verdade** (ver
+[`supabase/auth-and-rls-migration.sql`](../supabase/auth-and-rls-migration.sql)). O login usa o
+Supabase Auth por baixo (e-mail técnico gerado a partir do nome + o PIN como senha) — quem decide
+se uma linha é visível/editável é o Postgres, checando o `companyId` do usuário autenticado via
+`auth.uid()`, não mais um filtro só no client. A função `public.current_profile()` é quem resolve
+role + `companyId` a partir do `auth.uid()` da sessão. Criação/edição/remoção de admins, motoristas
+e representantes passam por RPCs (`create_team_member`, `set_member_pin`, `delete_team_member`) em
+vez de INSERT/UPDATE/DELETE direto nas tabelas, porque elas também precisam manter o login
+(`auth.users`) sincronizado.
 
 ## 3. Fluxo de login (`js/auth/auth.js`)
 
-`realizarLoginUnificado` tenta, em sequência, até achar um usuário com nome+PIN batendo:
+`realizarLoginUnificado` (com Supabase configurado):
 
-1. **Backdoor de emergência** (`gbsj17`/`1234` ou `adm_gbsj17`/`admin`) — vira `admin` da empresa
-   que tiver um registro com esse nome em `admins` (consulta rápida por `companyId`); se não achar
-   nenhuma, fica sem empresa (`currentCompanyId = null`, enxerga tudo — só deve acontecer antes de
-   qualquer backfill rodar).
-2. `master_users` — vira role `master`, abre o RUNEmaster.
-3. `admins` — vira role `admin`, guarda `companyId` do registro, carrega `companyFeatures` da
-   empresa (pra esconder itens de menu desligados).
-4. `drivers` — vira role `driver`, guarda `companyId`.
-5. `representatives` — vira role `representative`, guarda `companyId`.
-6. Fallback pros arrays locais (`window.allAdmins` etc.) quando offline/`useFirebase` é falso.
+1. Chama a RPC `login_email_for(nome)`, que procura o nome em `master_users`, `admins`, `drivers`
+   e `representatives` (nessa ordem) e devolve o e-mail técnico correspondente — nunca o PIN.
+2. Chama `window.db.auth.signInWithPassword({ email, password: pinDigitado })`. Quem valida a
+   senha é o Supabase Auth; o app nunca compara PIN em texto puro.
+3. Se autenticou, chama a RPC `current_profile()`, que resolve `role`/`companyId`/`id`/`name` a
+   partir do `auth.uid()` da sessão — nunca do que o client alega.
+4. Guarda esses dados em `window.currentUserRole`/`currentCompanyId`/etc. e abre o painel certo.
+   Pra admin, `carregarFeaturesDaEmpresaLogada()` busca `companyFeatures` da empresa.
+5. Sem Supabase (fallback local/offline), continua comparando nome+PIN nos arrays locais
+   (`window.allAdmins` etc.) — só usado quando `useFirebase` é falso.
 
-A sessão persiste em `localStorage.app_session` como
-`{ role, driverId, repId, companyId }`. Ao restaurar sessão (`app.js:verificarSessaoSalva`), o
-`companyId` volta do localStorage e, pra admin, `companyFeatures` é recarregado do Supabase antes
-de abrir o painel — sem isso, o gating de menu ficaria destravado até o próximo login manual.
+A sessão real é a do Supabase Auth (JWT em `localStorage`, gerenciado pelo próprio SDK).
+`localStorage.app_session` (`{ role, driverId, repId, adminId, companyId }`) é só um cache pra UI
+abrir o painel certo na hora, sem esperar um round-trip — ao restaurar (`app.js:verificarSessaoSalva`),
+o app revalida com `window.db.auth.getSession()` + `current_profile()` antes de confiar nesse
+cache; se não houver sessão válida no Supabase, volta pra tela de login.
 
 ## 4. Tempo real (`window.subscribeTable`)
 

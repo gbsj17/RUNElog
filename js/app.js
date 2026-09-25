@@ -286,7 +286,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }, intervalTime);
 });
 
-function verificarSessaoSalva() {
+async function verificarSessaoSalva() {
     const session = JSON.parse(localStorage.getItem('app_session') || "null");
     if (!session) {
         carregarDadosIniciais();
@@ -294,9 +294,40 @@ function verificarSessaoSalva() {
         return;
     }
 
+    // Com Supabase, o cache local só serve de atalho de UI — quem manda é a
+    // sessão de verdade do Supabase Auth. Sem uma sessão válida ali, não há
+    // como o RLS liberar nada, então volta pra tela de login.
+    if (window.useFirebase && window.db) {
+        try {
+            const { data: { session: authSession } } = await window.db.auth.getSession();
+            if (!authSession) {
+                localStorage.removeItem('app_session');
+                carregarDadosIniciais();
+                if (window.mostrarTelaComAnimacao) window.mostrarTelaComAnimacao('screenInitial');
+                return;
+            }
+            const { data: profileRows } = await window.db.rpc('current_profile');
+            const perfil = Array.isArray(profileRows) ? profileRows[0] : profileRows;
+            if (!perfil?.role) {
+                localStorage.removeItem('app_session');
+                carregarDadosIniciais();
+                if (window.mostrarTelaComAnimacao) window.mostrarTelaComAnimacao('screenInitial');
+                return;
+            }
+            session.role = perfil.role;
+            session.companyId = perfil.companyId || null;
+            if (perfil.role === 'driver') session.driverId = perfil.id;
+            if (perfil.role === 'representative') session.repId = perfil.id;
+            if (perfil.role === 'admin') session.adminId = perfil.id;
+        } catch (e) {
+            console.error("Erro ao revalidar sessão do Supabase Auth:", e);
+        }
+    }
+
     window.currentUserRole = session.role;
     window.currentDriverId = session.driverId;
     window.currentRepId = session.repId;
+    window.currentAdminId = session.adminId;
     window.currentCompanyId = session.companyId || null;
 
     if (window.currentUserRole === 'master') {
