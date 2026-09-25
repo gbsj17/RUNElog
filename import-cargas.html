@@ -1262,7 +1262,7 @@
         chavesCargas.forEach(idCarga => {
             const carga = bancoCargasGlobal[idCarga];
             const qtdClientes = Object.keys(carga.clientes).length;
-            const qtdCidades = carga.cidades.size;
+            const qtdCidades = obterListaCidadesCarga(carga).length;
             const ehMontada = !!carga.montada;
 
             const textoStatus = ehMontada ? 'Montado' : 'Aguardando';
@@ -1413,7 +1413,7 @@
         let html = '';
         cargasAguardando.forEach(carga => {
             const totalClientes = Object.keys(carga.clientes || {}).length;
-            const totalCidades = carga.cidades ? (carga.cidades.size || carga.cidades.length || 0) : 0;
+            const totalCidades = obterListaCidadesCarga(carga).length;
             const valorFormatado = typeof formatarMoeda === 'function' ? formatarMoeda(carga.valorTotalSemSt || 0) : `R$ ${carga.valorTotalSemSt || 0}`;
 
             html += `
@@ -1517,7 +1517,7 @@
             document.getElementById('detalheCargaNum').innerText = `${carga.numeroCarga}`;
             document.getElementById('detalheCargaValor').innerText = formatarMoeda(carga.valorTotalSemSt);
             document.getElementById('detalheCargaEntregas').innerText = Object.keys(carga.clientes).length;
-            document.getElementById('detalheCargaCidades').innerText = carga.cidades.size;
+            document.getElementById('detalheCargaCidades').innerText = obterListaCidadesCarga(carga).length;
             document.getElementById('detalheCargaPedidos').innerText = carga.totalPedidosCount;
             renderizarClientesDaCarga(carga);
 
@@ -1893,6 +1893,17 @@
 
             const carga = bancoCargasGlobal[window.cargaAtivaId];
             if (carga) renderizarClientesDaCarga(carga);
+
+            // "Rota" sem a carga ainda montada: sem uma ordem definitiva salva,
+            // cai pra ordem de descoberta das cidades na importação (mesma que
+            // "Ordem das Paradas" mostraria antes de qualquer reordenação) - o
+            // botão avisa isso no title em vez de fingir que já é a rota final.
+            const btn = document.getElementById('btnOrdemClientesCarga');
+            if (btn) {
+                btn.title = (window.criterioOrdemClientesCarga === 'rota' && carga && !carga.montada)
+                    ? 'Rota ainda não concluída - usando a ordem de importação até "Concluir Rota" ser clicado'
+                    : 'Alternar critério de ordenação dos clientes';
+            }
         }
         window.alternarOrdemClientesCarga = alternarOrdemClientesCarga;
 
@@ -3020,6 +3031,11 @@
             return;
         }
 
+        // Rota concluída ("Carga Montada") trava o arrastar-e-soltar: a ordem
+        // salva é tratada como definitiva e só volta a ser editável depois que o
+        // usuário clica em "Editar" (habilitarEdicaoRota, que zera carga.montada).
+        const rotaBloqueada = !!carga.montada;
+
         let html = '';
         listaCidades.forEach((cidade, index) => {
             const clientesDaCidade = obterClientesPorCidade(carga, cidade);
@@ -3047,19 +3063,20 @@
 
             html += `
                 <div
-                    draggable="true"
-                    ondragstart="iniciarArrastoCidade(event, ${index})"
-                    ondragover="permitirSoltarCidade(event)"
-                    ondragleave="sairArrastoCidade(event)"
-                    ondrop="soltarCidade(event, ${index})"
+                    draggable="${rotaBloqueada ? 'false' : 'true'}"
+                    ondragstart="${rotaBloqueada ? '' : 'iniciarArrastoCidade(event, ' + index + ')'}"
+                    ondragover="${rotaBloqueada ? '' : 'permitirSoltarCidade(event)'}"
+                    ondragleave="${rotaBloqueada ? '' : 'sairArrastoCidade(event)'}"
+                    ondrop="${rotaBloqueada ? '' : 'soltarCidade(event, ' + index + ')'}"
                     onclick="selecionarCidadeRota(${jsArg(cidade)})"
                     data-busca-parada="${textoBusca}"
-                    class="p-2.5 rounded-xl border transition cursor-grab active:cursor-grabbing mb-2 select-none ${isAtiva ? 'bg-amber-50 border-amber-400 shadow-xs ring-1 ring-amber-400/30' : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
+                    title="${rotaBloqueada ? 'Rota concluída - clique em \\"Editar\\" para reordenar' : 'Arraste para reordenar'}"
+                    class="p-2.5 rounded-xl border transition mb-2 select-none ${rotaBloqueada ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} ${isAtiva ? 'bg-amber-50 border-amber-400 shadow-xs ring-1 ring-amber-400/30' : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
                 >
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="text-slate-300 hover:text-slate-500 mr-0.5">
-                                <i class="fa-solid fa-grip-vertical text-xs"></i>
+                            <span class="${rotaBloqueada ? 'text-slate-200' : 'text-slate-300 hover:text-slate-500'} mr-0.5">
+                                <i class="fa-solid ${rotaBloqueada ? 'fa-lock' : 'fa-grip-vertical'} text-xs"></i>
                             </span>
                             <span class="w-5 h-5 rounded-full bg-[#152e50] text-[#fac043] font-bold text-[10px] flex items-center justify-center shrink-0">
                                 ${index + 1}
