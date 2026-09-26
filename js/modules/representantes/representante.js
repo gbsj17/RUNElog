@@ -208,6 +208,87 @@ window.renderRepDashboard = function() {
     if (statusAndamento) statusAndamento.innerText = countEmAndamento;
     if (statusProximas) statusProximas.innerText = countProximasConclusao;
 
+    // Ranking de cidades: mesma lógica do dashboard do Admin (log-core.js),
+    // só que escopada às cargas que este representante acompanha.
+    const citiesRankingElem = document.getElementById('repCitiesRankingList');
+    if (citiesRankingElem) {
+        const cityCounts = {};
+        [...allMyTrackedActive, ...allMyTrackedArchived].forEach(r => {
+            const entregas = window.obterParadasValidas ? window.obterParadasValidas(r.stops) : (r.stops || []);
+            entregas.forEach(stop => {
+                let cityName = (stop.textoOriginal || stop.texto || '').trim();
+                cityName = cityName.replace(/ - Iniciar Rota/gi, '').replace(/ - Finalizar Rota/gi, '').trim();
+                if (cityName && cityName.toLowerCase() !== 'iniciar rota' && cityName.toLowerCase() !== 'finalizar rota') {
+                    cityCounts[cityName] = (cityCounts[cityName] || 0) + 1;
+                }
+            });
+        });
+
+        const sortedCities = Object.entries(cityCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        if (sortedCities.length === 0) {
+            citiesRankingElem.innerHTML = `<p class="text-xs text-slate-500 italic">Nenhuma cidade registrada ainda.</p>`;
+        } else {
+            const maxCount = sortedCities[0][1] || 1;
+            citiesRankingElem.innerHTML = sortedCities.map(([cityName, count], index) => `
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-semibold">
+                        <span class="text-[#152e50]"><strong class="text-[#fac043]">${index + 1}º</strong> ${cityName}</span>
+                        <span class="text-[#152e50] font-bold">${count} ocorrência(s)</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-1.5">
+                        <div class="bg-[#152e50] h-1.5 rounded-full transition-all duration-500" style="width: ${Math.round((count / maxCount) * 100)}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    // Comparativo de entregas concluídas: mês atual x mês anterior.
+    const comparativoElem = document.getElementById('repComparativoMeses');
+    if (comparativoElem) {
+        const agora = new Date();
+        const mesAtualIdx = agora.getMonth();
+        const anoAtual = agora.getFullYear();
+        const dataMesAnterior = new Date(anoAtual, mesAtualIdx - 1, 1);
+        const mesAnteriorIdx = dataMesAnterior.getMonth();
+        const anoMesAnterior = dataMesAnterior.getFullYear();
+
+        const contarNoMes = (mes, ano) => allMyTrackedArchived.filter(r => {
+            if (!r.finishedAt) return false;
+            const d = new Date(r.finishedAt);
+            return d.getMonth() === mes && d.getFullYear() === ano;
+        }).length;
+
+        const concluidasMesAtual = contarNoMes(mesAtualIdx, anoAtual);
+        const concluidasMesAnterior = contarNoMes(mesAnteriorIdx, anoMesAnterior);
+
+        if (concluidasMesAtual === 0 && concluidasMesAnterior === 0) {
+            comparativoElem.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-2">Nenhuma carga concluída ainda para comparar.</p>`;
+        } else {
+            const maxBarra = Math.max(concluidasMesAtual, concluidasMesAnterior, 1);
+            comparativoElem.innerHTML = `
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-semibold">
+                        <span class="text-[#152e50]">Mês Atual</span>
+                        <span class="text-[#152e50] font-bold">${concluidasMesAtual} carga(s)</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2">
+                        <div class="bg-[#152e50] h-2 rounded-full transition-all duration-500" style="width: ${Math.round((concluidasMesAtual / maxBarra) * 100)}%"></div>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-semibold">
+                        <span class="text-slate-500">Mês Anterior</span>
+                        <span class="text-slate-500 font-bold">${concluidasMesAnterior} carga(s)</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2">
+                        <div class="bg-slate-400 h-2 rounded-full transition-all duration-500" style="width: ${Math.round((concluidasMesAnterior / maxBarra) * 100)}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
     const noRoutesDiv = document.getElementById('repNoRoutes');
 
     const inicioList = document.getElementById('repInicioActiveList');

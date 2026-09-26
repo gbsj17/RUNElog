@@ -28,6 +28,52 @@ window.renderDriverDashboard = function() {
     const monthlyCargosElem = document.getElementById('driverMonthlyCargosSummary');
     if (monthlyCargosElem) monthlyCargosElem.innerText = monthlyRoutes.length;
 
+    // Resumo do Mês: roda sempre (independe de ter rota ativa agora), por
+    // isso fica antes do "return" antecipado de quando não há rota ativa.
+    let entregasConcluidasMes = 0;
+    let entregasTotaisMes = 0;
+    let kmEstimadoMes = 0;
+    monthlyRoutes.forEach(r => {
+        const entregas = window.obterParadasValidas ? window.obterParadasValidas(r.stops) : (r.stops || []);
+        entregasConcluidasMes += entregas.filter(s => s.concluido).length;
+        entregasTotaisMes += entregas.length;
+        kmEstimadoMes += entregas.length * 45;
+    });
+    const taxaConclusaoMes = entregasTotaisMes > 0 ? Math.round((entregasConcluidasMes / entregasTotaisMes) * 100) : 0;
+
+    const monthlyDeliveriesElem = document.getElementById('driverMonthlyDeliveries');
+    const monthlyRateElem = document.getElementById('driverMonthlyRate');
+    const monthlyKmElem = document.getElementById('driverMonthlyKm');
+    if (monthlyDeliveriesElem) monthlyDeliveriesElem.innerText = entregasConcluidasMes;
+    if (monthlyRateElem) monthlyRateElem.innerText = `${taxaConclusaoMes}%`;
+    if (monthlyKmElem) monthlyKmElem.innerText = `${kmEstimadoMes.toLocaleString('pt-BR')} km`;
+
+    const historyListElem = document.getElementById('driverHistoryList');
+    if (historyListElem) {
+        const rotasConcluidas = myRoutes
+            .filter(r => r.status === 'archived' && r.finishedAt)
+            .sort((a, b) => b.finishedAt - a.finishedAt)
+            .slice(0, 5);
+
+        if (rotasConcluidas.length === 0) {
+            historyListElem.innerHTML = `<p class="text-xs text-slate-500 italic p-3 text-center bg-slate-50 rounded-xl border border-slate-100">Nenhuma rota concluída no histórico ainda.</p>`;
+        } else {
+            historyListElem.innerHTML = rotasConcluidas.map(r => {
+                const entregas = window.obterParadasValidas ? window.obterParadasValidas(r.stops) : (r.stops || []);
+                const dataFmt = window.formatarDataHora ? window.formatarDataHora(r.finishedAt) : new Date(r.finishedAt).toLocaleDateString('pt-BR');
+                return `
+                    <div class="flex items-center justify-between gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-bold text-slate-700 truncate">${r.numeroCarga ? `Carga: ${r.numeroCarga}` : 'Rota concluída'}</p>
+                            <p class="text-[11px] text-slate-400">${dataFmt}</p>
+                        </div>
+                        <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 shrink-0">${entregas.length} cidade(s)</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
     const noRouteDiv = document.getElementById('driverNoRoute');
     const activeRouteDiv = document.getElementById('driverActiveRoute');
     

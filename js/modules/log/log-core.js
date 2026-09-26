@@ -736,6 +736,58 @@ window.renderAdminDashboard = () => {
     });
     if (proximasElem) proximasElem.innerText = proximasConclusao;
 
+    const comparativoElem = document.getElementById('dashComparativoMeses');
+    if (comparativoElem) {
+        const agora = new Date();
+        const mesAtualIdx = agora.getMonth();
+        const anoAtual = agora.getFullYear();
+        const dataMesAnterior = new Date(anoAtual, mesAtualIdx - 1, 1);
+        const mesAnteriorIdx = dataMesAnterior.getMonth();
+        const anoMesAnterior = dataMesAnterior.getFullYear();
+
+        const rotasConcluidas = (window.allRoutes || []).filter(r => r.status === 'archived' && r.finishedAt);
+        const contarNoMes = (mes, ano) => rotasConcluidas.filter(r => {
+            const d = new Date(r.finishedAt);
+            return d.getMonth() === mes && d.getFullYear() === ano;
+        }).length;
+
+        const concluidasMesAtual = contarNoMes(mesAtualIdx, anoAtual);
+        const concluidasMesAnterior = contarNoMes(mesAnteriorIdx, anoMesAnterior);
+
+        if (concluidasMesAtual === 0 && concluidasMesAnterior === 0) {
+            comparativoElem.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-2">Nenhuma rota concluída ainda para comparar.</p>`;
+        } else {
+            const maxBarra = Math.max(concluidasMesAtual, concluidasMesAnterior, 1);
+            const variacao = concluidasMesAnterior > 0
+                ? Math.round(((concluidasMesAtual - concluidasMesAnterior) / concluidasMesAnterior) * 100)
+                : null;
+            const tendenciaHtml = variacao === null
+                ? ''
+                : `<span class="text-[11px] font-bold ${variacao >= 0 ? 'text-emerald-600' : 'text-rose-600'} ml-2"><i class="fa-solid ${variacao >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'} mr-1"></i>${variacao >= 0 ? '+' : ''}${variacao}%</span>`;
+
+            comparativoElem.innerHTML = `
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-semibold">
+                        <span class="text-[#152e50]">Mês Atual ${tendenciaHtml}</span>
+                        <span class="text-[#152e50] font-bold">${concluidasMesAtual} rota(s)</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2">
+                        <div class="bg-[#152e50] h-2 rounded-full transition-all duration-500" style="width: ${Math.round((concluidasMesAtual / maxBarra) * 100)}%"></div>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-semibold">
+                        <span class="text-slate-500">Mês Anterior</span>
+                        <span class="text-slate-500 font-bold">${concluidasMesAnterior} rota(s)</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2">
+                        <div class="bg-slate-400 h-2 rounded-full transition-all duration-500" style="width: ${Math.round((concluidasMesAnterior / maxBarra) * 100)}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
     let cityCounts = {};
     let totalCidadesAtendidas = 0;
 

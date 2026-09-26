@@ -859,6 +859,16 @@
                         <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
                             <div class="border-b border-slate-100 pb-2">
                                 <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-chart-column text-[#152e50]"></i> Rotas Concluídas: Mês Atual x Mês Anterior
+                                </h3>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Comparativo de volume de entregas finalizadas</p>
+                            </div>
+                            <div id="dashComparativoMeses" class="space-y-3 pt-1"></div>
+                        </div>
+
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                            <div class="border-b border-slate-100 pb-2">
+                                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
                                     <i class="fa-solid fa-trophy text-[#152e50]"></i> Cidades com maior demanda
                                 </h3>
                                 <p class="text-[11px] text-slate-500 mt-0.5">Frequência de aparição nas rotas</p>
@@ -1203,6 +1213,39 @@
                 </div>
                 <div id="driverStopsList" class="space-y-2.5"></div>
             </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                <div class="border-b border-slate-100 pb-2">
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-chart-simple text-emerald-600"></i> Resumo do Mês
+                    </h3>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Seu desempenho no mês atual</p>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Entregas</p>
+                        <p id="driverMonthlyDeliveries" class="text-base font-extrabold text-slate-800 mt-0.5">0</p>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Conclusão</p>
+                        <p id="driverMonthlyRate" class="text-base font-extrabold text-slate-800 mt-0.5">0%</p>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Km Estimados</p>
+                        <p id="driverMonthlyKm" class="text-base font-extrabold text-slate-800 mt-0.5">0 km</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                <div class="border-b border-slate-100 pb-2">
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i> Histórico de Rotas
+                    </h3>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Últimas rotas concluídas</p>
+                </div>
+                <div id="driverHistoryList" class="space-y-2"></div>
+            </div>
         </main>
     </div>
 
@@ -1276,6 +1319,25 @@
                             <i class="fa-solid fa-hourglass-half text-sm"></i>
                         </div>
                     </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                    <div class="border-b border-slate-100 pb-2">
+                        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-trophy text-[#152e50]"></i> Cidades Mais Atendidas
+                        </h3>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Nas suas cargas acompanhadas</p>
+                    </div>
+                    <div id="repCitiesRankingList" class="space-y-2 pt-1"></div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                    <div class="border-b border-slate-100 pb-2">
+                        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-chart-column text-[#152e50]"></i> Entregas: Mês Atual x Mês Anterior
+                        </h3>
+                    </div>
+                    <div id="repComparativoMeses" class="space-y-3 pt-1"></div>
                 </div>
 
                 <div class="space-y-3 pt-2">
