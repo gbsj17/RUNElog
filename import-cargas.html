@@ -658,6 +658,15 @@
                 if (temDados && typeof renderizarGridCargas === 'function') {
                     renderizarGridCargas();
                 }
+
+                // "Nova Janela" (destacarJanelaRota) navega pra essa mesma URL com
+                // ?janelaRota=<id> em vez de abrir um documento em branco - assim
+                // que os dados carregam, abre direto a tela de roteirização dessa
+                // carga específica.
+                const idJanelaRota = new URLSearchParams(window.location.search).get('janelaRota');
+                if (idJanelaRota && window.bancoCargasGlobal[idJanelaRota] && typeof abrirTelaMontagemRota === 'function') {
+                    abrirTelaMontagemRota(idJanelaRota);
+                }
             });
         });
 
@@ -3497,138 +3506,31 @@
     // -------------------------------------------------------------------------
     // ABRIR EM JANELA DESTACADA COM FUNÇÕES E MAPA OPERACIONAIS
     // -------------------------------------------------------------------------
-    // A janela é um clone do modal, então tem seu PRÓPRIO document e sua própria
-    // instância do Leaflet. Antes, os cards de cidade/botões dessa janela ainda
-    // chamavam as funções de renderização "cruas" (sem ctx), que sempre liam e
-    // escreviam no document da página principal (escondido nesse momento) - por
-    // isso arrastar/reordenar, "Editar" e "Concluir Rota" pareciam não fazer
-    // nada dentro da janela destacada. Agora tudo passa por ctxPop.
+    // Uma janela aberta com window.open('', ...) fica presa em "about:blank" -
+    // não existe truque de JS (history.replaceState, <meta referrer>) que faça
+    // o navegador enviar um Referer que passe na política de uso dos tiles do
+    // OpenStreetMap a partir dali; o bloqueio continuava sempre. A correção de
+    // verdade é fazer a janela navegar de verdade para a MESMA página (mesma
+    // origem/URL real), com um parâmetro na query string dizendo qual carga
+    // abrir. Isso também resolve de graça o problema de arrastar-e-soltar/
+    // Editar/Salvar não funcionarem lá dentro: é literalmente a mesma página,
+    // rodando seu próprio script do zero, sem nenhum clone de DOM entre
+    // documentos diferentes. Ver o handler de "?janelaRota=" no
+    // DOMContentLoaded mais abaixo.
     function destacarJanelaRota() {
         const idCarga = window.cargaRotaAtivaId;
-        if (!idCarga || !window.bancoCargasGlobal) return;
-        const carga = window.bancoCargasGlobal[idCarga];
-        if (!carga) return;
+        if (!idCarga) return;
 
-        const modalOriginal = document.getElementById('modalMontagemRota');
-        if (!modalOriginal) return;
+        const urlBase = window.location.href.split('#')[0].split('?')[0];
+        const urlJanela = urlBase + '?janelaRota=' + encodeURIComponent(idCarga);
 
-        const win = window.open('', 'JanelaRota_' + idCarga, 'width=1300,height=850,menubar=no,toolbar=no,location=no,status=no,resizable=yes');
+        const win = window.open(urlJanela, 'JanelaRota_' + idCarga, 'width=1300,height=850,menubar=no,toolbar=no,location=no,status=no,resizable=yes');
         if (!win) {
             alert('Autorize os pop-ups para abrir a janela destacada.');
             return;
         }
 
-        win.document.title = 'Roteirização - Carga #' + (carga.numeroCarga || '');
-
-        // A janela abre em "about:blank" (sem URL real), então os pedidos de tile
-        // do OpenStreetMap saem sem Referer válido e o servidor os bloqueia
-        // ("Access blocked... tile usage policy"). Duas camadas de correção:
-        // (1) tenta igualar a URL da janela à da página principal via History API
-        // - nem todo navegador aceita isso pra uma janela about:blank recém-aberta;
-        // (2) uma tag <meta name="referrer"> força o Referer a ser pelo menos a
-        // origem real da página (não vazio/about:blank), que é o que os
-        // navegadores garantidamente respeitam - essa é a correção que realmente
-        // resolve o bloqueio quando (1) é ignorada pelo navegador.
-        try {
-            win.history.replaceState(null, '', window.location.href);
-        } catch (err) { /* navegador bloqueou a troca de URL - segue só com o meta abaixo */ }
-
-        const metaReferrer = win.document.createElement('meta');
-        metaReferrer.name = 'referrer';
-        metaReferrer.content = 'origin';
-        win.document.head.appendChild(metaReferrer);
-
-        Array.from(document.querySelectorAll('link[rel="stylesheet"], style')).forEach(no => {
-            win.document.head.appendChild(no.cloneNode(true));
-        });
-
-        win.document.body.className = 'bg-slate-100 p-0 m-0 h-screen w-screen overflow-hidden';
-
-        const cloneModal = modalOriginal.firstElementChild.cloneNode(true);
-        cloneModal.className = 'w-full h-full flex flex-col bg-slate-100 overflow-hidden rounded-none border-0';
-        win.document.body.appendChild(cloneModal);
-
         fecharModalMontagemRota();
-
-        let mapaPopInstancia = null;
-        const ctxPop = {
-            raiz: cloneModal,
-            obterMapa: () => mapaPopInstancia,
-            renderizarMapa: (lista) => renderizarMarcadoresPop(lista)
-        };
-
-        const btnFechar = cloneModal.querySelector('button[title="Fechar"]');
-        if (btnFechar) {
-            btnFechar.removeAttribute('onclick');
-            btnFechar.onclick = () => win.close();
-        }
-
-        const btnSalvar = cloneModal.querySelector('button[onclick*="salvarConclusaoRota"]');
-        if (btnSalvar) {
-            btnSalvar.removeAttribute('onclick');
-            btnSalvar.onclick = () => salvarConclusaoRota(ctxPop);
-        }
-
-        const btnEditar = cloneModal.querySelector('button[onclick*="habilitarEdicaoRota"]');
-        if (btnEditar) {
-            btnEditar.removeAttribute('onclick');
-            btnEditar.onclick = () => habilitarEdicaoRota(ctxPop);
-        }
-
-        const inputFiltroPop = cloneModal.querySelector('#inputFiltroParadasRota');
-        if (inputFiltroPop) {
-            inputFiltroPop.removeAttribute('oninput');
-            inputFiltroPop.oninput = () => filtrarParadasRota(inputFiltroPop.value, ctxPop);
-        }
-
-        const listaCidades = obterListaCidadesCarga(carga);
-
-        async function renderizarMarcadoresPop(lista) {
-            if (!mapaPopInstancia) return;
-
-            if (mapaPopInstancia._camadaMarkersPop) mapaPopInstancia.removeLayer(mapaPopInstancia._camadaMarkersPop);
-            if (mapaPopInstancia._camadaLinhasPop) mapaPopInstancia.removeLayer(mapaPopInstancia._camadaLinhasPop);
-
-            const camadaMarkers = window.L.layerGroup().addTo(mapaPopInstancia);
-            const camadaLinhas = window.L.layerGroup().addTo(mapaPopInstancia);
-            mapaPopInstancia._camadaMarkersPop = camadaMarkers;
-            mapaPopInstancia._camadaLinhasPop = camadaLinhas;
-
-            const coordenadas = await Promise.all(lista.map(c => buscarCoordenadasCidade(c)));
-            const paradas = [];
-            coordenadas.forEach((coords, i) => {
-                if (!coords) return;
-                paradas.push({ coords, cidade: lista[i], index: i });
-                const iconCustom = window.L.divIcon({
-                    className: 'marker-rota-container',
-                    html: `<div class="w-8 h-8 rounded-full bg-[#152e50] border-2 border-[#fac043] text-[#fac043] font-black text-xs flex items-center justify-center shadow-lg cursor-pointer">${i + 1}</div>`,
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 16]
-                });
-                const marker = window.L.marker(coords, { icon: iconCustom }).addTo(camadaMarkers);
-                marker.on('click', () => selecionarCidadeRota(lista[i], ctxPop));
-            });
-
-            if (paradas.length > 1) {
-                const pts = paradas.map(p => p.coords);
-                window.L.polyline(pts, { color: '#152e50', weight: 6, opacity: 0.85 }).addTo(camadaLinhas);
-                window.L.polyline(pts, { color: '#fac043', weight: 3.5, opacity: 1 }).addTo(camadaLinhas);
-                mapaPopInstancia.fitBounds(pts, { padding: [40, 40] });
-            } else if (paradas.length === 1) {
-                mapaPopInstancia.setView(paradas[0].coords, 12);
-            }
-        }
-
-        const elementoMapa = cloneModal.querySelector('#mapaRota');
-        if (elementoMapa && window.L) {
-            elementoMapa.id = 'mapaRotaPop_' + idCarga;
-            mapaPopInstancia = window.L.map(elementoMapa, { zoomControl: true, attributionControl: false }).setView([-13.8576, -40.0827], 8);
-            window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(mapaPopInstancia);
-            renderizarMarcadoresPop(listaCidades);
-        }
-
-        renderizarCidadesRota(carga, ctxPop);
-        if (listaCidades.length > 0) selecionarCidadeRota(listaCidades[0], ctxPop);
     }
     window.destacarJanelaRota = destacarJanelaRota;
 </script>
