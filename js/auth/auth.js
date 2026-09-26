@@ -35,35 +35,31 @@ window.showToast = function(message, type = 'info') {
 };
 
 // Gerenciamento de Navegação (Botão Voltar do Android)
+//
+// Isso existe só pra impedir que o botão físico de "voltar" do Android feche
+// o app (o PWA não tem outra tela pra voltar). Qualquer navegação de volta no
+// histórico - botão físico do Android, botão "voltar" do mouse, Alt+Seta -
+// dispara o mesmo evento popstate, sem jeito de diferenciar a origem. Por
+// isso esse handler NUNCA pode derrubar a sessão: ele só fecha um modal
+// aberto (se houver) e sempre recoloca o mesmo estado no histórico, mantendo
+// o usuário exatamente na tela e no perfil em que já estava. O logoff de
+// verdade só acontece via window.fazerLogout(), chamado por um clique
+// explícito no botão de sair.
 window.history.pushState({ page: 'app_fibrasol_root' }, '', window.location.href);
 window.addEventListener('popstate', (event) => {
     const modalsAbertos = [
-        'modalConfig', 'modalTrocaSenhaPessoal', 'modalMultiReps', 
-        'pwaInstallGuideModal', 'confirmModal', 'modalEditPassword', 
+        'modalConfig', 'modalTrocaSenhaPessoal', 'modalMultiReps',
+        'pwaInstallGuideModal', 'confirmModal', 'modalEditPassword',
         'modalAssignRep', 'modalViewRoute'
     ];
-    let fechouAlgum = false;
     modalsAbertos.forEach(modalId => {
         const el = document.getElementById(modalId);
         if (el && !el.classList.contains('hidden')) {
             el.classList.add('hidden');
-            fechouAlgum = true;
         }
     });
 
-    if (fechouAlgum) {
-        window.history.pushState({ page: 'app_fibrasol_root' }, '', window.location.href);
-        return;
-    }
-
-    if (window.currentUserRole || window.selectedRoleForLogin) {
-        window.currentUserRole = null;
-        window.selectedRoleForLogin = null;
-        window.mostrarTelaComAnimacao('screenInitial');
-        window.history.pushState({ page: 'app_fibrasol_root' }, '', window.location.href);
-    } else {
-        window.history.pushState({ page: 'app_fibrasol_root' }, '', window.location.href);
-    }
+    window.history.pushState({ page: 'app_fibrasol_root' }, '', window.location.href);
 });
 
 window.abrirModalConfig = () => {
