@@ -125,6 +125,10 @@
             const d = new Date(timestamp);
             return `${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}`;
         }
+        // Exposta em window: motorista.js e representante.js já chamam
+        // window.formatarDataHora com fallback, mas sem isso o fallback
+        // era sempre usado (datas nunca apareciam nos cards deles).
+        window.formatarDataHora = formatarDataHora;
 
 
         // ----------------------------------------------------
@@ -308,9 +312,9 @@
         // ----------------------------------------------------------------------
         // TODO: BLOCO 7.3-5E1: RENDERIZAÇÃO DE ROTAS ATIVAS
         // ----------------------------------------------------------------------
-        window.renderAdminRoutesList = () => {
-            const list = document.getElementById('adminRoutesList');
-            const summaryText = document.getElementById('adminActiveCountSummary');
+        window.renderlogRoutesList = () => {
+            const list = document.getElementById('logRoutesList');
+            const summaryText = document.getElementById('logActiveCountSummary');
             const searchTerm = (document.getElementById('searchRoutesInput')?.value || '').toLowerCase().trim();
             if (!list) return;
             list.innerHTML = '';
@@ -395,9 +399,9 @@
         // --------------------------------------------------------------------
         // TODO: BLOCO 7.3-5E2: RENDERIZAÇÃO DE ROTAS ARQUIVADAS E RESUMO MENSAL
         // --------------------------------------------------------------------
-        window.renderAdminArchivedRoutesList = () => {
-            const list = document.getElementById('adminArchivedRoutesList');
-            const summaryContainer = document.getElementById('adminArchivedSummary');
+        window.renderlogArchivedRoutesList = () => {
+            const list = document.getElementById('logArchivedRoutesList');
+            const summaryContainer = document.getElementById('logArchivedSummary');
             const searchTerm = (document.getElementById('searchArchivedRoutesInput')?.value || '').toLowerCase().trim();
             
             if (!list || !summaryContainer) return;
@@ -478,7 +482,7 @@
         // --------------------------------------------------------------------
         // TODO: BLOCO 7.3-5E3: EXCLUSÃO DE CARGAS FINALIZADAS
         // --------------------------------------------------------------------
-        window.apagarCargasSelecionadasAdmin = async () => {
+        window.apagarCargasSelecionadaslog = async () => {
             const checkboxes = document.querySelectorAll('.checkbox-carga-finalizada:checked');
             if (checkboxes.length === 0) {
                 return showToast("Selecione ao menos uma carga na lista de finalizadas para apagar.", "error");
@@ -512,7 +516,7 @@
                     LocalDb.set('routes', routes);
                 }
                 showToast("Carga(s) excluída(s) com sucesso!", "success");
-                renderAdminArchivedRoutesList();
+                renderlogArchivedRoutesList();
                 renderAdminDashboard();
             });
         };
@@ -586,8 +590,8 @@
                     if (idx !== -1) { routes[idx].status = 'archived'; routes[idx].finishedAt = nowTime; LocalDb.set('routes', routes); }
                 }
                 showToast("Rota encerrada e movida para finalizadas.", "success");
-                renderAdminRoutesList();
-                renderAdminArchivedRoutesList();
+                renderlogRoutesList();
+                renderlogArchivedRoutesList();
                 renderAdminDashboard();
             });
         };  
