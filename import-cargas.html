@@ -3468,6 +3468,14 @@
 
         win.document.title = 'Roteirização - Carga #' + (carga.numeroCarga || '');
 
+        // A janela abre em "about:blank" (sem URL real), então os pedidos de tile
+        // do OpenStreetMap saem sem Referer válido e o servidor os bloqueia
+        // ("Access blocked... tile usage policy"). Igualar a URL da janela à da
+        // página principal (mesma origem, então permitido) resolve isso.
+        try {
+            win.history.replaceState(null, '', window.location.href);
+        } catch (err) { /* navegador bloqueou a troca de URL - segue sem isso */ }
+
         Array.from(document.querySelectorAll('link[rel="stylesheet"], style')).forEach(no => {
             win.document.head.appendChild(no.cloneNode(true));
         });
