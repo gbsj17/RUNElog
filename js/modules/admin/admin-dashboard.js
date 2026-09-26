@@ -21,6 +21,10 @@ window.startMasterListeners = function() {
         window.allDrivers = data;
         if (window.renderMasterMetrics) window.renderMasterMetrics();
     });
+    if (!window.unsubAdmins) window.unsubAdmins = window.subscribeTable('admins', data => {
+        window.allAdmins = data;
+        if (window.renderCompaniesList) window.renderCompaniesList();
+    });
     if (!window.unsubRoutes) window.unsubRoutes = window.subscribeTable('routes', data => {
         window.allRoutes = data;
         if (window.renderMasterMetrics) window.renderMasterMetrics();

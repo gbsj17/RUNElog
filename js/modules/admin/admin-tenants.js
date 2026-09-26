@@ -187,7 +187,7 @@ window.abrirModalNovaEmpresa = function() {
             return false;
         }
 
-        const { error } = await window.db.from('companies').insert({
+        const { data, error } = await window.db.from('companies').insert({
             name,
             razaoSocial,
             cnpj,
@@ -204,13 +204,62 @@ window.abrirModalNovaEmpresa = function() {
             status: 'active',
             features: PLANOS_CATALOGO[plan]?.features || { fretes: true, rotasProdutos: true },
             createdAt: Date.now()
-        });
+        }).select('id, name').single();
 
         if (error) {
             if (window.showToast) window.showToast("Erro ao criar empresa: " + error.message, "error");
             return false;
         }
 
+        // Empresa criada, mas sem login algum ainda — encadeia direto pro
+        // cadastro do Admin dela, pra não deixar o master ter que caçar
+        // esse passo em outro lugar (ou pior, não existir botão nenhum).
+        if (data?.id) {
+            setTimeout(() => window.abrirModalNovoAdminEmpresa(data.id, data.name), 350);
+        }
+
+        return true;
+    });
+};
+
+// Cria o login do Admin de uma empresa (nova ou já existente). É a única
+// forma, hoje, de dar acesso a uma empresa sem entrar direto no Supabase:
+// bootstrap_admin() existe no banco mas não tem grant pro app chamar.
+window.abrirModalNovoAdminEmpresa = function(companyId, companyName) {
+    const html = `
+        <div class="space-y-3">
+            <p class="text-xs font-bold text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                <i class="fa-solid fa-building mr-1.5 text-[#152e50]"></i> Empresa: ${companyName || '—'}
+            </p>
+            <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Nome do Admin *</label>
+                <input type="text" id="modalCompanyAdminName" placeholder="Ex: Carlos Mendes" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#152e50] outline-none">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">PIN / Senha de Acesso</label>
+                <input type="text" id="modalCompanyAdminPin" placeholder="Ex: 1234 (Gerado se vazio)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+            </div>
+        </div>
+    `;
+
+    window.abrirModalPersistente(`Criar Admin${companyName ? ' — ' + companyName : ''}`, html, async () => {
+        const name = document.getElementById('modalCompanyAdminName')?.value.trim();
+        const pin = document.getElementById('modalCompanyAdminPin')?.value.trim() || Math.floor(1000 + Math.random() * 9000).toString();
+
+        if (!name) {
+            alert("Preencha o nome do Admin.");
+            return false;
+        }
+
+        const { error } = await window.db.rpc('create_team_member', {
+            p_role: 'admin', p_name: name, p_pin: pin, p_cpf: null, p_phone: null, p_company_id: companyId
+        });
+        if (error) {
+            if (window.showToast) window.showToast("Erro ao criar Admin: " + error.message, "error");
+            return false;
+        }
+
+        if (window.showToast) window.showToast(`Admin "${name}" criado. PIN: ${pin}`, "success");
         return true;
     });
 };
@@ -227,7 +276,13 @@ window.renderCompaniesList = function() {
         return;
     }
 
-    container.innerHTML = companies.map(c => `
+    container.innerHTML = companies.map(c => {
+        const admins = (window.allAdmins || []).filter(a => a.companyId === c.id);
+        const adminsHtml = admins.length === 0
+            ? `<p class="text-[11px] text-amber-600 font-bold mt-1.5"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Sem Admin cadastrado</p>`
+            : `<p class="text-[11px] text-emerald-700 font-medium mt-1.5"><i class="fa-solid fa-user-shield mr-1.5 text-[#152e50]"></i> Admin: ${admins.map(a => a.name).join(', ')}</p>`;
+
+        return `
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-3">
             <div>
                 <div class="flex items-center justify-between">
@@ -238,14 +293,19 @@ window.renderCompaniesList = function() {
                 ${c.cnpj ? `<p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-id-card mr-1.5 text-[#152e50]"></i> ${c.cnpj}</p>` : ''}
                 ${c.cidade ? `<p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-location-dot mr-1.5 text-[#152e50]"></i> ${c.cidade}${c.uf ? '/' + c.uf : ''}</p>` : ''}
                 <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-tag mr-1.5 text-[#152e50]"></i> Plano: ${c.plan || 'básico'}</p>
+                ${adminsHtml}
             </div>
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button onclick="abrirModalNovoAdminEmpresa('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" class="text-[#152e50] hover:bg-[#152e50]/5 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer">
+                    <i class="fa-solid fa-user-plus"></i> Criar Admin
+                </button>
                 <button onclick="alternarStatusEmpresa('${c.id}')" class="text-slate-600 hover:bg-slate-50 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer">
                     <i class="fa-solid fa-power-off"></i> ${c.status === 'active' ? 'Suspender' : 'Reativar'}
                 </button>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 };
 
 window.alternarStatusEmpresa = async function(companyId) {
