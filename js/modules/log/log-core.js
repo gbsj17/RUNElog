@@ -237,6 +237,62 @@ window.fecharModalPersistente = function() {
     if (modal) modal.classList.add('hidden');
 };
 
+// --------------------------------------------------------------------
+// GERENCIAR CREDENCIAIS: reseta o PIN de um motorista/representante/
+// membro de logística direto do card dele, usando a mesma RPC
+// set_member_pin que a troca de senha pessoal (auth.js) já usa.
+// --------------------------------------------------------------------
+window.abrirModalEditarSenha = function(userId, userType, userName) {
+    const display = document.getElementById('editUserDisplay');
+    if (display) display.innerText = userName || 'Usuário';
+    const idInput = document.getElementById('editUserId');
+    const typeInput = document.getElementById('editUserType');
+    const pinInput = document.getElementById('newPasswordInput');
+    if (idInput) idInput.value = userId;
+    if (typeInput) typeInput.value = userType;
+    if (pinInput) pinInput.value = '';
+    document.getElementById('modalEditPassword')?.classList.remove('hidden');
+};
+
+window.fecharModalEditarSenha = function() {
+    document.getElementById('modalEditPassword')?.classList.add('hidden');
+    const pinInput = document.getElementById('newPasswordInput');
+    if (pinInput) pinInput.value = '';
+};
+
+window.salvarNovaSenha = async function() {
+    const userId = document.getElementById('editUserId')?.value;
+    const userType = document.getElementById('editUserType')?.value;
+    const novaSenha = document.getElementById('newPasswordInput')?.value.trim();
+
+    if (!userId || !userType) return;
+    if (!novaSenha) {
+        if (window.showToast) window.showToast("Digite a nova senha/PIN.", "error");
+        return;
+    }
+
+    const collectionByType = { driver: 'drivers', representative: 'representatives', logistics: 'logistics_users', admin: 'admins' };
+    const collectionName = collectionByType[userType];
+
+    if (window.useFirebase) {
+        const { error } = await window.db.rpc('set_member_pin', { p_role: userType, p_id: userId, p_new_pin: novaSenha });
+        if (error) {
+            if (window.showToast) window.showToast("Erro ao alterar senha: " + error.message, "error");
+            return;
+        }
+    } else if (collectionName) {
+        const list = window.LocalDb.get(collectionName);
+        const idx = list.findIndex(item => item.id === userId);
+        if (idx !== -1) {
+            list[idx].pin = novaSenha;
+            window.LocalDb.set(collectionName, list);
+        }
+    }
+
+    window.fecharModalEditarSenha();
+    if (window.showToast) window.showToast("Senha alterada com sucesso!", "success");
+};
+
 window.executarSalvarComSplash = async function() {
     if (window.currentSaveCallback) {
         const dadosValidos = await window.currentSaveCallback();
@@ -379,6 +435,9 @@ window.renderlogDriversList = function() {
                 <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-phone mr-1.5 text-[#152e50]"></i> Tel: ${d.phone || 'Não informado'}</p>
             </div>
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button onclick="abrirModalEditarSenha('${d.id}', 'driver', '${(d.name || '').replace(/'/g, "\\'")}')" class="text-[#152e50] hover:bg-[#152e50]/5 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer" title="Editar Senha">
+                    <i class="fa-solid fa-key"></i> Senha
+                </button>
                 <button onclick="removerMotorista('${d.id}')" class="text-rose-500 hover:bg-rose-50 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer" title="Remover">
                     <i class="fa-solid fa-trash-can"></i> Excluir
                 </button>
@@ -468,6 +527,9 @@ window.renderlogLogisticsList = function() {
                 <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-phone mr-1.5 text-[#152e50]"></i> Tel: ${l.phone || 'Não informado'}</p>
             </div>
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button onclick="abrirModalEditarSenha('${l.id}', 'logistics', '${(l.name || '').replace(/'/g, "\\'")}')" class="text-[#152e50] hover:bg-[#152e50]/5 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer" title="Editar Senha">
+                    <i class="fa-solid fa-key"></i> Senha
+                </button>
                 <button onclick="removerLogistica('${l.id}')" class="text-rose-500 hover:bg-rose-50 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer" title="Remover">
                     <i class="fa-solid fa-trash-can"></i> Excluir
                 </button>
@@ -701,6 +763,9 @@ window.renderlogRepsList = function() {
                 <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-phone mr-1.5 text-[#152e50]"></i> Tel: ${r.phone || 'Não informado'}</p>
             </div>
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button onclick="abrirModalEditarSenha('${r.id}', 'representative', '${(r.name || '').replace(/'/g, "\\'")}')" class="text-[#152e50] hover:bg-[#152e50]/5 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer" title="Editar Senha">
+                    <i class="fa-solid fa-key"></i> Senha
+                </button>
                 <button onclick="removerRepresentante('${r.id}')" class="text-rose-500 hover:bg-rose-50 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer" title="Remover">
                     <i class="fa-solid fa-trash-can"></i> Excluir
                 </button>
