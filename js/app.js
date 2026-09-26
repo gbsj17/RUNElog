@@ -122,11 +122,12 @@ window.togglePatch = (patchId) => {
 // TODO: BLOCO 7.5.2: LISTENERS E TEMPO REAL
 // =======================================================
 
-// Admin e Logística compartilham o mesmo painel operacional (dashboardAdmin):
-// cadastro de motoristas/representantes/frota, rotas e fretes. Só quem
-// gerencia empresas/planos (Master) e quem cria Admins fica de fora.
+// Painel operacional (dashboardAdmin/log-core.js) é EXCLUSIVO da Logística
+// agora — cadastro de motoristas/representantes/frota, rotas e fretes.
+// Admin tem tela própria (dashboardAdminGestao/gestao-equipe.js) e não entra
+// mais aqui; só quem gerencia empresas/planos (Master) também fica de fora.
 window.ehPainelOperacional = function() {
-    return window.currentUserRole === 'admin' || window.currentUserRole === 'logistics';
+    return window.currentUserRole === 'logistics';
 };
 
 window.startAdminListeners = function() {
@@ -145,7 +146,6 @@ window.startAdminListeners = function() {
         }, companyFilter);
         if (!window.unsubAdmins) window.unsubAdmins = window.subscribeTable('admins', data => {
             window.allAdmins = data;
-            if (window.currentUserRole === 'admin' && window.renderloglogsList) window.renderloglogsList();
         }, companyFilter);
         if (!window.unsubLogistics) window.unsubLogistics = window.subscribeTable('logistics_users', data => {
             window.allLogistics = data;
@@ -175,7 +175,6 @@ window.startAdminListeners = function() {
         });
         window.unsubAdmins = LocalDb.subscribe('admins', data => {
             window.allAdmins = data;
-            if(window.currentUserRole === 'admin' && window.renderloglogsList) window.renderloglogsList();
         });
         window.unsubLogistics = LocalDb.subscribe('logistics_users', data => {
             window.allLogistics = data;
@@ -366,10 +365,19 @@ async function verificarSessaoSalva() {
         return;
     }
 
+    // Admin tem tela e listeners próprios (gestao-equipe.js) — não passa
+    // pelo carregarDadosIniciais()/startAdminListeners() daqui, que agora
+    // são exclusivos do fluxo operacional da Logística.
+    if (window.currentUserRole === 'admin') {
+        if (window.carregarFeaturesDaEmpresaLogada) await window.carregarFeaturesDaEmpresaLogada();
+        if (window.iniciarPainelAdminGestao) window.iniciarPainelAdminGestao();
+        return;
+    }
+
     carregarDadosIniciais(async () => {
-        if (window.ehPainelOperacional() && window.iniciarPainelAdmin) {
+        if (window.ehPainelOperacional() && window.iniciarPainelLogistica) {
             if (window.carregarFeaturesDaEmpresaLogada) await window.carregarFeaturesDaEmpresaLogada();
-            window.iniciarPainelAdmin();
+            window.iniciarPainelLogistica();
         } else if (window.currentUserRole === 'driver' && window.iniciarPainelMotorista) {
             const driver = window.allDrivers.find(d => d.id === window.currentDriverId);
             window.iniciarPainelMotorista(driver || { id: window.currentDriverId, name: 'Motorista' });
@@ -400,7 +408,6 @@ function carregarDadosIniciais(callback) {
         }, companyFilter);
         window.subscribeTable('admins', async data => {
             window.allAdmins = data;
-            if (window.currentUserRole === 'admin' && window.renderloglogsList) window.renderloglogsList();
         }, companyFilter);
         window.subscribeTable('logistics_users', data => {
             window.allLogistics = data;

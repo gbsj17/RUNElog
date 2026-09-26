@@ -200,6 +200,7 @@ window.esconderTodasTelas = () => {
         'screenInitial',
         'screenUnifiedLogin',
         'dashboardAdmin',
+        'dashboardAdminGestao',
         'dashboardDriver',
         'dashboardRepresentative',
         'dashboardMaster'
@@ -284,10 +285,14 @@ window.realizarLoginUnificado = async (e) => {
                         if (perfil.role === 'master') {
                             salvarSessao();
                             if (window.iniciarPainelMaster) window.iniciarPainelMaster();
-                        } else if (perfil.role === 'admin' || perfil.role === 'logistics') {
+                        } else if (perfil.role === 'admin') {
                             await carregarFeaturesDaEmpresaLogada();
                             salvarSessao();
-                            if (window.iniciarPainelAdmin) window.iniciarPainelAdmin();
+                            if (window.iniciarPainelAdminGestao) window.iniciarPainelAdminGestao();
+                        } else if (perfil.role === 'logistics') {
+                            await carregarFeaturesDaEmpresaLogada();
+                            salvarSessao();
+                            if (window.iniciarPainelLogistica) window.iniciarPainelLogistica();
                         } else if (perfil.role === 'driver') {
                             salvarSessao();
                             if (window.iniciarPainelMotorista) window.iniciarPainelMotorista({ id: perfil.id, name: perfil.name });
@@ -301,6 +306,15 @@ window.realizarLoginUnificado = async (e) => {
                         window.showToast(`Bem-vindo, ${perfil.name}!`, "success");
                         return;
                     }
+
+                    // Login/senha corretos (signInError é null), mas current_profile() não
+                    // devolveu nenhuma linha: só acontece se o usuário foi inativado (current_profile
+                    // agora exige active = true pra driver/representative/logistics). Credencial
+                    // certa, mas sem acesso — mensagem diferente de "usuário ou senha incorretos".
+                    await window.db.auth.signOut();
+                    restaurarBotao();
+                    window.showToast("Este acesso foi desativado. Fale com o administrador da empresa.", "error");
+                    return;
                 }
             }
         } catch (err) {
@@ -312,29 +326,30 @@ window.realizarLoginUnificado = async (e) => {
     const foundAdmin = (window.allAdmins || []).find(a => (a.name || '').toLowerCase() === typedName && (a.pin || '').toString() === typedPin);
     if (foundAdmin) {
         window.currentUserRole = 'admin';
+        window.currentAdminId = foundAdmin.id;
         window.currentCompanyId = foundAdmin?.companyId || null;
         await carregarFeaturesDaEmpresaLogada();
         salvarSessao();
-        if (window.iniciarPainelAdmin) window.iniciarPainelAdmin();
+        if (window.iniciarPainelAdminGestao) window.iniciarPainelAdminGestao();
         document.getElementById('unifiedPinInput').value = '';
         restaurarBotao();
         return;
     }
 
-    const foundLogistics = (window.allLogistics || []).find(l => (l.name || '').toLowerCase() === typedName && (l.pin || '').toString() === typedPin);
+    const foundLogistics = (window.allLogistics || []).find(l => (l.name || '').toLowerCase() === typedName && (l.pin || '').toString() === typedPin && l.active !== false);
     if (foundLogistics) {
         window.currentUserRole = 'logistics';
         window.currentLogisticsId = foundLogistics.id;
         window.currentCompanyId = foundLogistics?.companyId || null;
         await carregarFeaturesDaEmpresaLogada();
         salvarSessao();
-        if (window.iniciarPainelAdmin) window.iniciarPainelAdmin();
+        if (window.iniciarPainelLogistica) window.iniciarPainelLogistica();
         document.getElementById('unifiedPinInput').value = '';
         restaurarBotao();
         return;
     }
 
-    const foundDriver = (window.allDrivers || []).find(d => (d.name || '').toLowerCase() === typedName && (d.pin || '').toString() === typedPin);
+    const foundDriver = (window.allDrivers || []).find(d => (d.name || '').toLowerCase() === typedName && (d.pin || '').toString() === typedPin && d.active !== false);
     if (foundDriver) {
         window.currentUserRole = 'driver';
         window.currentDriverId = foundDriver.id;
@@ -346,7 +361,7 @@ window.realizarLoginUnificado = async (e) => {
         return;
     }
 
-    const foundRep = (window.allReps || []).find(r => (r.name || '').toLowerCase() === typedName && (r.pin || '').toString() === typedPin);
+    const foundRep = (window.allReps || []).find(r => (r.name || '').toLowerCase() === typedName && (r.pin || '').toString() === typedPin && r.active !== false);
     if (foundRep) {
         window.currentUserRole = 'representative';
         window.currentRepId = foundRep.id;
@@ -381,12 +396,23 @@ function salvarSessao() {
 window.carregarFeaturesDaEmpresaLogada = async function() {
     window.companyFeatures = { fretes: true, rotasProdutos: true };
     window.companyPlanLimits = null;
+    window.currentLogisticsPermissions = null;
     if (!window.useFirebase || !window.db || !window.currentCompanyId) return;
     try {
         const { data } = await window.db.from('companies').select('features, planLimits, plan').eq('id', window.currentCompanyId).maybeSingle();
         if (data?.features) window.companyFeatures = data.features;
         if (data?.planLimits) window.companyPlanLimits = data.planLimits;
+        if (data?.plan) window.companyPlan = data.plan;
     } catch (e) {}
+
+    // Permissões por módulo, só existem pra Logística — o Admin define quem
+    // vê Importador/Rotas/Fretes/Frota/Rotas & Produtos (gestao-equipe.js).
+    if (window.currentUserRole === 'logistics') {
+        try {
+            const { data: permissions } = await window.db.rpc('current_logistics_permissions');
+            window.currentLogisticsPermissions = permissions || null;
+        } catch (e) {}
+    }
 }
 
 window.fazerLogout = async () => {
@@ -403,12 +429,18 @@ window.fazerLogout = async () => {
     window.currentCompanyId = null;
     window.companyFeatures = null;
 
-    if (window.unsubDrivers) window.unsubDrivers();
-    if (window.unsubReps) window.unsubReps();
-    if (window.unsubRoutes) window.unsubRoutes();
-    if (window.unsubAdmins) window.unsubAdmins();
-    if (window.unsubLogistics) window.unsubLogistics();
-    if (window.unsubCompanies) window.unsubCompanies();
+    // Zera cada unsub depois de chamar: sem isso, o guard "if (!window.unsubX)"
+    // usado em startAdminListeners()/startAdminGestaoListeners()/startMasterListeners()
+    // pulava a nova inscrição ao logar de novo (com outro papel/empresa) na mesma aba,
+    // deixando a tela nova com dados vazios ou da sessão anterior.
+    if (window.unsubDrivers) { window.unsubDrivers(); window.unsubDrivers = null; }
+    if (window.unsubReps) { window.unsubReps(); window.unsubReps = null; }
+    if (window.unsubRoutes) { window.unsubRoutes(); window.unsubRoutes = null; }
+    if (window.unsubAdmins) { window.unsubAdmins(); window.unsubAdmins = null; }
+    if (window.unsubLogistics) { window.unsubLogistics(); window.unsubLogistics = null; }
+    if (window.unsubVehicles) { window.unsubVehicles(); window.unsubVehicles = null; }
+    if (window.unsubCompanies) { window.unsubCompanies(); window.unsubCompanies = null; }
+    if (window.unsubImportCargas) { window.unsubImportCargas(); window.unsubImportCargas = null; }
 
     window.mostrarTelaComAnimacao('screenInitial');
     window.showToast("Sessão encerrada com sucesso");

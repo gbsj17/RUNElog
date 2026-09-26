@@ -63,7 +63,10 @@ window.tratarSwipeLog = function() {
     }
 };
 
-window.iniciarPainelAdmin = function() {
+// Tela operacional exclusiva da Logística (Admin tem a própria, em
+// js/modules/empresa/gestao-equipe.js). Nome mantido "dashboardAdmin" só
+// no id do HTML por não valer a pena renomear todo o markup existente.
+window.iniciarPainelLogistica = function() {
     if (window.mostrarTelaComAnimacao) window.mostrarTelaComAnimacao('dashboardAdmin');
     if (window.startAdminListeners) window.startAdminListeners();
     if (window.renderlogDriversList) window.renderlogDriversList();
@@ -74,13 +77,30 @@ window.iniciarPainelAdmin = function() {
     window.alternarAbalog('rotas', 'none');
 };
 
-// Esconde itens do sidebar que a empresa logada não tem liberado (RUNEmaster > Funções & Planos).
+// Esconde itens do sidebar que a empresa logada não tem liberado (RUNEmaster > Funções & Planos)
+// E, pra Logística, os módulos que o Admin não liberou pra essa pessoa especificamente
+// (gestao-equipe.js > aba Permissões). É um filtro de UI (o que aparece no menu), não
+// uma trava de RLS — mesmo padrão já usado pras features por empresa.
 window.aplicarFeaturesDaEmpresa = function() {
     const features = window.companyFeatures || { fretes: true, rotasProdutos: true };
     const navFretes = document.getElementById('nav-fretes');
     const navRotasProdutos = document.getElementById('nav-rotas-produtos');
     if (navFretes) navFretes.classList.toggle('hidden', features.fretes === false);
     if (navRotasProdutos) navRotasProdutos.classList.toggle('hidden', features.rotasProdutos === false);
+
+    if (window.currentUserRole === 'logistics' && window.currentLogisticsPermissions) {
+        const perms = window.currentLogisticsPermissions;
+        const navMap = {
+            importador: document.getElementById('nav-importador'),
+            rotas: document.getElementById('nav-rotas'),
+            fretes: document.getElementById('nav-fretes'),
+            frota: document.getElementById('nav-frota'),
+            rotasProdutos: document.getElementById('nav-rotas-produtos')
+        };
+        Object.entries(navMap).forEach(([key, el]) => {
+            if (el && perms[key] === false) el.classList.add('hidden');
+        });
+    }
 };
 
 window.alternarAbalog = (tab, direction = 'none') => {
@@ -789,37 +809,6 @@ window.renderAdminDashboard = () => {
 
     // Consumo de licenças é informação de gestão do plano — só o Admin (e o
     // Master, no próprio painel dele) deve ver isso, nunca a Logística.
-    const cardLicencasElem = document.getElementById('cardLicencasUso');
-    if (cardLicencasElem) cardLicencasElem.classList.toggle('hidden', window.currentUserRole !== 'admin');
-
-    const licencasElem = document.getElementById('dashLicencasUso');
-    if (licencasElem && window.currentUserRole === 'admin' && window.calcularUsoLicencas && window.currentCompanyId) {
-        const uso = window.calcularUsoLicencas(window.currentCompanyId);
-        const limits = window.companyPlanLimits || {};
-        const labels = { admins: 'Admins', logistics: 'Logística', drivers: 'Motoristas', representatives: 'Representantes', vehicles: 'Veículos' };
-
-        licencasElem.innerHTML = Object.entries(labels).map(([key, label]) => {
-            const usado = uso[key] || 0;
-            const limite = limits[key] ?? 0;
-            const restante = limite - usado;
-            const esgotado = limite > 0 && restante <= 0;
-            const pertoDoLimite = limite > 0 && !esgotado && restante <= Math.max(1, Math.ceil(limite * 0.1));
-            const pct = limite > 0 ? Math.min(100, Math.round((usado / limite) * 100)) : 0;
-            const corBarra = esgotado ? 'bg-rose-500' : pertoDoLimite ? 'bg-amber-500' : 'bg-[#152e50]';
-            return `
-                <div class="space-y-1">
-                    <div class="flex justify-between text-[11px] font-semibold">
-                        <span class="text-slate-600">${label}</span>
-                        <span class="${esgotado ? 'text-rose-600' : pertoDoLimite ? 'text-amber-600' : 'text-slate-600'} font-bold">${usado}/${limite}</span>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-1.5">
-                        <div class="${corBarra} h-1.5 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
     const activeRoutes = (window.allRoutes || []).filter(r => r.status === 'active');
     activeCountElem.innerText = activeRoutes.length;
 

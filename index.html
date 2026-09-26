@@ -825,16 +825,6 @@
                     <!-- TODO 4-C3: Seção Dashboard & Métricas      -->
                     <!-- ========================================== -->
                     <div id="contentDashboard" class="hidden space-y-4">
-                        <div id="cardLicencasUso" class="hidden bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
-                            <div class="border-b border-slate-100 pb-2">
-                                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                                    <i class="fa-solid fa-id-badge text-[#152e50]"></i> Uso de Licenças do Plano
-                                </h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5">Quanto do plano contratado já está em uso</p>
-                            </div>
-                            <div id="dashLicencasUso" class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 pt-1"></div>
-                        </div>
-
                         <div class="grid grid-cols-2 gap-3">
                             <div class="bg-[#152e50] text-white p-4 sm:p-5 rounded-2xl shadow-sm flex items-center justify-between">
                                 <div>
@@ -1152,6 +1142,211 @@
                     <span>Planos</span>
                 </button>
                 <button id="mobileMasterTabMetricas" onclick="alternarAbaMaster('metricas')" class="flex flex-col items-center gap-1.5 text-[11px] font-medium text-slate-400">
+                    <i class="fa-solid fa-chart-line text-xl"></i>
+                    <span>Métricas</span>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TODO: Bloco 4-A: Painel de Gestão do Admin  -->
+    <!-- Tela EXCLUSIVA do Admin (js/modules/empresa/gestao-equipe.js).  -->
+    <!-- Não usa nada de log-core.js/log-rotas.js/log-fretes.js (esses    -->
+    <!-- são exclusivos da Logística) — só funções gerenciais: usuários,  -->
+    <!-- veículos, licenças, permissões e métricas de cadastro.           -->
+    <!-- ========================================== -->
+    <div id="dashboardAdminGestao" class="hidden h-screen flex overflow-hidden bg-slate-100 relative">
+        <aside id="mainAdminGestaoSidebar" class="hidden md:flex flex-col w-72 bg-[#152e50] text-white border-r border-[#0f223d] shrink-0 transition-all duration-300 relative">
+            <button onclick="alternarModoSidebarAdminGestao()" class="absolute -right-3 top-[17px] w-7 h-7 bg-[#fac043] hover:bg-[#e0ab3b] text-[#152e50] rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 z-30 cursor-pointer border-2 border-[#152e50]" title="Recolher/Expandir Menu">
+                <i id="sidebarToggleIconAdminGestao" class="fa-solid fa-chevron-left text-xs font-bold"></i>
+            </button>
+
+            <div class="p-4 flex items-center border-b border-white/10 h-16 min-h-[64px]">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#fac043] font-bold shrink-0 text-lg shadow-sm">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div class="sidebar-text-element transition-opacity duration-200">
+                        <h1 class="font-extrabold text-sm tracking-wide text-[#fac043] leading-none">RUNElog Admin</h1>
+                        <p class="text-[10px] text-slate-300 uppercase tracking-wider font-semibold mt-1">Gestão da Empresa</p>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 p-3 space-y-2 text-xs font-semibold overflow-x-hidden">
+                <button onclick="alternarAbaAdminGestao('usuarios')" id="nav-admgestao-usuarios" title="Usuários" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl bg-white/15 text-[#fac043] transition-all cursor-pointer">
+                    <i class="fa-solid fa-users text-lg w-6 text-center shrink-0"></i>
+                    <span class="sidebar-text-element whitespace-nowrap">Usuários</span>
+                </button>
+                <button onclick="alternarAbaAdminGestao('veiculos')" id="nav-admgestao-veiculos" title="Veículos" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
+                    <i class="fa-solid fa-truck text-lg w-6 text-center shrink-0"></i>
+                    <span class="sidebar-text-element whitespace-nowrap">Veículos</span>
+                </button>
+                <button onclick="alternarAbaAdminGestao('licencas')" id="nav-admgestao-licencas" title="Licenças" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
+                    <i class="fa-solid fa-id-badge text-lg w-6 text-center shrink-0"></i>
+                    <span class="sidebar-text-element whitespace-nowrap">Licenças</span>
+                </button>
+                <button onclick="alternarAbaAdminGestao('permissoes')" id="nav-admgestao-permissoes" title="Permissões" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
+                    <i class="fa-solid fa-lock text-lg w-6 text-center shrink-0"></i>
+                    <span class="sidebar-text-element whitespace-nowrap">Permissões</span>
+                </button>
+                <button onclick="alternarAbaAdminGestao('metricas')" id="nav-admgestao-metricas" title="Métricas" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer">
+                    <i class="fa-solid fa-chart-line text-lg w-6 text-center shrink-0"></i>
+                    <span class="sidebar-text-element whitespace-nowrap">Métricas</span>
+                </button>
+            </nav>
+
+            <div class="p-3 border-t border-white/10 space-y-1">
+                <button onclick="abrirModalConfig()" title="Opções do Sistema" class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-300 hover:bg-white/5 text-xs font-bold transition-all cursor-pointer">
+                    <i class="fa-solid fa-gear text-lg w-6 text-center shrink-0"></i>
+                    <span class="sidebar-text-element whitespace-nowrap">Configurações</span>
+                </button>
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm z-20">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-[#152e50] flex items-center justify-center">
+                        <i class="fa-solid fa-user-shield" style="color: #fac043 !important;"></i>
+                    </div>
+                    <div>
+                        <h2 id="admGestaoHeaderTitle" class="font-bold text-base sm:text-sm text-slate-900">Usuários</h2>
+                        <p id="admGestaoHeaderSubtitle" class="text-xs sm:text-[10px] text-slate-500">Cadastro, edição e ativação de usuários da empresa</p>
+                    </div>
+                </div>
+                <button onclick="fazerLogout()" class="text-xs font-bold text-slate-500 hover:text-rose-600 px-3 py-2 rounded-xl hover:bg-rose-50 transition-all cursor-pointer">
+                    <i class="fa-solid fa-right-from-bracket mr-1.5"></i> Sair
+                </button>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-[2px] pb-16 sm:pb-4">
+                <div class="max-w-7xl mx-auto w-full space-y-[2px]">
+
+                    <!-- ABA: USUÁRIOS -->
+                    <div id="contentAdmGestaoUsuarios" class="space-y-4">
+                        <div class="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 flex gap-2">
+                            <button onclick="mudarSubAbaAdmGestaoUsuarios('motoristas')" id="tabSubAdmGestaoMotoristas" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#152e50] text-[#fac043] shadow-sm transition-all text-center cursor-pointer">Motoristas</button>
+                            <button onclick="mudarSubAbaAdmGestaoUsuarios('representantes')" id="tabSubAdmGestaoRepresentantes" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer">Representantes</button>
+                            <button onclick="mudarSubAbaAdmGestaoUsuarios('logistica')" id="tabSubAdmGestaoLogistica" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer">Logística</button>
+                        </div>
+
+                        <div id="subAbaAdmGestaoMotoristasContent" class="space-y-4">
+                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-sm">Motoristas</h3>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">Cadastro, edição e ativação de acesso</p>
+                                </div>
+                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    <input type="text" id="searchAdmGestaoDriversInput" oninput="renderAdmGestaoMembros('driver')" placeholder="Buscar por nome..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
+                                    <button onclick="abrirModalAdmGestaoNovoMembro('driver')" class="px-3 py-2 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer">
+                                        <i class="fa-solid fa-user-plus"></i> Novo Motorista
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="admGestaoDriversList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                        </div>
+
+                        <div id="subAbaAdmGestaoRepresentantesContent" class="space-y-4 hidden">
+                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-sm">Representantes</h3>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">Cadastro, edição e ativação de acesso</p>
+                                </div>
+                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    <input type="text" id="searchAdmGestaoRepsInput" oninput="renderAdmGestaoMembros('representative')" placeholder="Buscar por nome..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
+                                    <button onclick="abrirModalAdmGestaoNovoMembro('representative')" class="px-3 py-2 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer">
+                                        <i class="fa-solid fa-user-plus"></i> Novo Representante
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="admGestaoRepsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                        </div>
+
+                        <div id="subAbaAdmGestaoLogisticaContent" class="space-y-4 hidden">
+                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-sm">Equipe de Logística</h3>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">Cadastro, edição e ativação de acesso</p>
+                                </div>
+                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    <input type="text" id="searchAdmGestaoLogisticsInput" oninput="renderAdmGestaoMembros('logistics')" placeholder="Buscar por nome..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
+                                    <button onclick="abrirModalAdmGestaoNovoMembro('logistics')" class="px-3 py-2 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer">
+                                        <i class="fa-solid fa-user-plus"></i> Novo Membro
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="admGestaoLogisticsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                        </div>
+                    </div>
+
+                    <!-- ABA: VEÍCULOS -->
+                    <div id="contentAdmGestaoVeiculos" class="space-y-4 hidden">
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">Frota de Veículos</h3>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Cadastro e edição dos veículos da empresa</p>
+                            </div>
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <input type="text" id="searchAdmGestaoVehiclesInput" oninput="renderAdmGestaoVehiclesList()" placeholder="Buscar por placa..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
+                                <button onclick="abrirModalAdmGestaoNovoVeiculo()" class="px-3 py-2 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer">
+                                    <i class="fa-solid fa-plus"></i> Novo Veículo
+                                </button>
+                            </div>
+                        </div>
+                        <div id="admGestaoVehiclesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                    </div>
+
+                    <!-- ABA: LICENÇAS -->
+                    <div id="contentAdmGestaoLicencas" class="space-y-4 hidden">
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                            <div class="border-b border-slate-100 pb-2">
+                                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-id-badge text-[#152e50]"></i> Uso de Licenças do Plano
+                                </h3>
+                                <p id="admGestaoLicencasPlano" class="text-[11px] text-slate-500 mt-0.5">Plano: —</p>
+                            </div>
+                            <div id="admGestaoLicencasUso" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 pt-1"></div>
+                        </div>
+                    </div>
+
+                    <!-- ABA: PERMISSÕES -->
+                    <div id="contentAdmGestaoPermissoes" class="space-y-4 hidden">
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-slate-800 text-sm">Acessos da Equipe de Logística</h3>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Escolha quais módulos operacionais cada pessoa da Logística pode ver</p>
+                        </div>
+                        <div id="admGestaoPermissoesList" class="space-y-3"></div>
+                    </div>
+
+                    <!-- ABA: MÉTRICAS -->
+                    <div id="contentAdmGestaoMetricas" class="space-y-4 hidden">
+                        <div id="admGestaoMetricasCards" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+                    </div>
+
+                </div>
+            </main>
+
+            <!-- BOTTOM NAV MOBILE -->
+            <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 flex items-center justify-around py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+                <button id="mobileAdmGestaoTabUsuarios" onclick="alternarAbaAdminGestao('usuarios')" class="flex flex-col items-center gap-1.5 text-[11px] font-bold text-[#152e50] bottom-nav-active">
+                    <i class="fa-solid fa-users text-xl"></i>
+                    <span>Usuários</span>
+                </button>
+                <button id="mobileAdmGestaoTabVeiculos" onclick="alternarAbaAdminGestao('veiculos')" class="flex flex-col items-center gap-1.5 text-[11px] font-medium text-slate-400">
+                    <i class="fa-solid fa-truck text-xl"></i>
+                    <span>Veículos</span>
+                </button>
+                <button id="mobileAdmGestaoTabLicencas" onclick="alternarAbaAdminGestao('licencas')" class="flex flex-col items-center gap-1.5 text-[11px] font-medium text-slate-400">
+                    <i class="fa-solid fa-id-badge text-xl"></i>
+                    <span>Licenças</span>
+                </button>
+                <button id="mobileAdmGestaoTabPermissoes" onclick="alternarAbaAdminGestao('permissoes')" class="flex flex-col items-center gap-1.5 text-[11px] font-medium text-slate-400">
+                    <i class="fa-solid fa-lock text-xl"></i>
+                    <span>Acessos</span>
+                </button>
+                <button id="mobileAdmGestaoTabMetricas" onclick="alternarAbaAdminGestao('metricas')" class="flex flex-col items-center gap-1.5 text-[11px] font-medium text-slate-400">
                     <i class="fa-solid fa-chart-line text-xl"></i>
                     <span>Métricas</span>
                 </button>

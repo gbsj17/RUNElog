@@ -1,8 +1,22 @@
 {
-  "currentVersion": "v2.0.2",
+  "currentVersion": "v2.0.3",
   "patches": [
     {
-      "_comentario_titulo": "=== PATCH v2.0.2 (ATUAL) ===",
+      "_comentario_titulo": "=== PATCH v2.0.3 (ATUAL) ===",
+      "id": "patch-203",
+      "version": "v2.0.3",
+      "badge": "Novo",
+      "title": "Painel Próprio do Admin (separado da Logística) + Ativar/Inativar Usuários e Permissões",
+      "details": [
+        "<strong>Painel do Admin, Separado da Logística:</strong> Admin deixou de cair na mesma tela operacional da Logística (rotas, fretes, importador) e ganhou um painel próprio, em arquivo isolado (js/modules/empresa/gestao-equipe.js), com Usuários, Veículos, Licenças, Permissões e Métricas.",
+        "<strong>Ativar/Inativar Usuário:</strong> Admin agora pode desativar o acesso de um Motorista, Representante ou membro de Logística sem excluir o cadastro — a pessoa perde o login imediatamente e recupera se for reativada.",
+        "<strong>Permissões por Pessoa da Logística:</strong> Admin escolhe, individualmente, quais módulos (Importador, Rotas, Fretes, Frota, Rotas & Produtos) cada pessoa da equipe de Logística enxerga no menu dela.",
+        "<strong>Licenças e Métricas no Lugar Certo:</strong> Uso de licenças e métricas de cadastro (não mais rotas/cidades) agora vivem só no painel do Admin.",
+        "<strong>Correção de Segurança:</strong> current_profile() (base de toda política de acesso do banco) agora exige que o usuário esteja ativo — um acesso desativado perde a permissão em tudo no mesmo instante, não só na tela."
+      ]
+    },
+    {
+      "_comentario_titulo": "=== PATCH v2.0.2 ===",
       "id": "patch-202",
       "version": "v2.0.2",
       "badge": "Novo",
