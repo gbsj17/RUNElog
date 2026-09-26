@@ -25,6 +25,20 @@ window.startMasterListeners = function() {
         window.allAdmins = data;
         if (window.renderCompaniesList) window.renderCompaniesList();
     });
+    // Reps/Logística/Veículos: sem filtro de empresa (o master vê todas),
+    // só pra calcular "licenças usadas" de cada empresa no card dela.
+    if (!window.unsubReps) window.unsubReps = window.subscribeTable('representatives', data => {
+        window.allReps = data;
+        if (window.renderCompaniesList) window.renderCompaniesList();
+    });
+    if (!window.unsubLogistics) window.unsubLogistics = window.subscribeTable('logistics_users', data => {
+        window.allLogistics = data;
+        if (window.renderCompaniesList) window.renderCompaniesList();
+    });
+    if (!window.unsubVehicles) window.unsubVehicles = window.subscribeTable('vehicles', data => {
+        window.allVehicles = data;
+        if (window.renderCompaniesList) window.renderCompaniesList();
+    });
     if (!window.unsubRoutes) window.unsubRoutes = window.subscribeTable('routes', data => {
         window.allRoutes = data;
         if (window.renderMasterMetrics) window.renderMasterMetrics();

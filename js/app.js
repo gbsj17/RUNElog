@@ -151,6 +151,10 @@ window.startAdminListeners = function() {
             window.allLogistics = data;
             if (window.ehPainelOperacional() && window.renderlogLogisticsList) window.renderlogLogisticsList();
         }, companyFilter);
+        if (!window.unsubVehicles) window.unsubVehicles = window.subscribeTable('vehicles', data => {
+            window.allVehicles = data;
+            if (window.ehPainelOperacional() && window.renderlogVehiclesList) window.renderlogVehiclesList();
+        }, companyFilter);
         if (!window.unsubImportCargas) window.unsubImportCargas = window.subscribeTable('import_cargas', data => {
             window.allImportCargas = data;
             if (window.ehPainelOperacional() && window.renderPainelFretes && window.fretesState?.viewModo === 'editor') {
@@ -176,6 +180,10 @@ window.startAdminListeners = function() {
         window.unsubLogistics = LocalDb.subscribe('logistics_users', data => {
             window.allLogistics = data;
             if (window.ehPainelOperacional() && window.renderlogLogisticsList) window.renderlogLogisticsList();
+        });
+        window.unsubVehicles = LocalDb.subscribe('vehicles', data => {
+            window.allVehicles = data;
+            if (window.ehPainelOperacional() && window.renderlogVehiclesList) window.renderlogVehiclesList();
         });
         window.unsubRoutes = LocalDb.subscribe('routes', data => {
             window.allRoutes = data;
@@ -398,6 +406,10 @@ function carregarDadosIniciais(callback) {
             window.allLogistics = data;
             if (window.ehPainelOperacional() && window.renderlogLogisticsList) window.renderlogLogisticsList();
         }, companyFilter);
+        window.subscribeTable('vehicles', data => {
+            window.allVehicles = data;
+            if (window.ehPainelOperacional() && window.renderlogVehiclesList) window.renderlogVehiclesList();
+        }, companyFilter);
         window.subscribeTable('routes', data => {
             window.allRoutes = data;
             if (window.ehPainelOperacional()) {
@@ -416,6 +428,7 @@ function carregarDadosIniciais(callback) {
         window.allRoutes = LocalDb.get('routes');
         window.allAdmins = LocalDb.get('admins');
         window.allLogistics = LocalDb.get('logistics_users');
+        window.allVehicles = LocalDb.get('vehicles');
         if (callback) callback();
     }
 }

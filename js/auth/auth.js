@@ -380,10 +380,12 @@ function salvarSessao() {
 // Sem companyId (login antigo/legado sem empresa vinculada), libera tudo por padrão.
 window.carregarFeaturesDaEmpresaLogada = async function() {
     window.companyFeatures = { fretes: true, rotasProdutos: true };
+    window.companyPlanLimits = null;
     if (!window.useFirebase || !window.db || !window.currentCompanyId) return;
     try {
-        const { data } = await window.db.from('companies').select('features').eq('id', window.currentCompanyId).maybeSingle();
+        const { data } = await window.db.from('companies').select('features, planLimits, plan').eq('id', window.currentCompanyId).maybeSingle();
         if (data?.features) window.companyFeatures = data.features;
+        if (data?.planLimits) window.companyPlanLimits = data.planLimits;
     } catch (e) {}
 }
 

@@ -2,14 +2,31 @@
 // RUNEmaster: cadastro e gestão de empresas clientes (tenants)
 // ==========================================================
 
-// Catálogo de planos: sugestão de valor/módulos ao escolher no cadastro.
-// Tudo continua editável depois (inclusive pro "Personalizado") — não é preço fixo.
+// Catálogo de planos: sugestão de valor/módulos/limites de licença ao
+// escolher no cadastro. Tudo continua editável depois (inclusive pro
+// "Personalizado") — não é preço nem limite fixo, é só o ponto de partida.
+// As chaves de "limits" batem com as usadas nas RPCs (create_team_member/
+// create_vehicle) pra checar licença disponível.
 const PLANOS_CATALOGO = {
-    basico:        { label: 'Básico',        valorSugerido: 149.90, features: { fretes: false, rotasProdutos: false } },
-    profissional:  { label: 'Profissional',  valorSugerido: 349.90, features: { fretes: true,  rotasProdutos: false } },
-    corporativo:   { label: 'Corporativo',   valorSugerido: 699.90, features: { fretes: true,  rotasProdutos: true  } },
-    personalizado: { label: 'Personalizado', valorSugerido: null,   features: { fretes: true,  rotasProdutos: true  } }
+    basico: {
+        label: 'Básico', valorSugerido: 149.90, features: { fretes: false, rotasProdutos: false },
+        limits: { admins: 1, logistics: 2, drivers: 15, representatives: 5, vehicles: 20 }
+    },
+    profissional: {
+        label: 'Profissional', valorSugerido: 349.90, features: { fretes: true, rotasProdutos: false },
+        limits: { admins: 1, logistics: 5, drivers: 50, representatives: 20, vehicles: 100 }
+    },
+    corporativo: {
+        label: 'Enterprise', valorSugerido: 699.90, features: { fretes: true, rotasProdutos: true },
+        limits: { admins: 3, logistics: 15, drivers: 200, representatives: 80, vehicles: 400 }
+    },
+    personalizado: {
+        label: 'Personalizado', valorSugerido: null, features: { fretes: true, rotasProdutos: true },
+        limits: { admins: 1, logistics: 2, drivers: 15, representatives: 5, vehicles: 20 }
+    }
 };
+
+const LIMITE_LABELS = { admins: 'Admins', logistics: 'Logística', drivers: 'Motoristas', representatives: 'Representantes', vehicles: 'Veículos' };
 
 function mascararCNPJ(valor) {
     return (valor || '')
@@ -96,6 +113,14 @@ window.aoMudarPlanoEmpresaForm = function() {
     if (valorEl && catalogo.valorSugerido !== null) {
         valorEl.value = catalogo.valorSugerido.toFixed(2);
     }
+
+    // Preenche os limites com o padrão do plano escolhido — o master ainda
+    // pode ajustar manualmente antes de salvar, inclusive fora do
+    // "Personalizado".
+    Object.entries(LIMITE_LABELS).forEach(([key]) => {
+        const el = document.getElementById(`modalCompanyLimit_${key}`);
+        if (el && catalogo.limits) el.value = catalogo.limits[key];
+    });
 };
 
 window.abrirModalNovaEmpresa = function() {
@@ -142,10 +167,7 @@ window.abrirModalNovaEmpresa = function() {
                 <div class="sm:col-span-1">
                     <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Plano</label>
                     <select id="modalCompanyPlan" onchange="aoMudarPlanoEmpresaForm()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs bg-white">
-                        <option value="basico">Básico</option>
-                        <option value="profissional">Profissional</option>
-                        <option value="corporativo">Corporativo</option>
-                        <option value="personalizado">Personalizado</option>
+                        ${Object.entries(PLANOS_CATALOGO).map(([key, p]) => `<option value="${key}">${p.label}</option>`).join('')}
                     </select>
                 </div>
                 <div>
@@ -158,6 +180,18 @@ window.abrirModalNovaEmpresa = function() {
                         <option value="mensal">Mensal</option>
                         <option value="anual">Anual</option>
                     </select>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-100 space-y-2">
+                <label class="block text-[11px] font-bold uppercase text-slate-600">Limites de Licença (editável, inclusive no Personalizado)</label>
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    ${Object.entries(LIMITE_LABELS).map(([key, label]) => `
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 mb-0.5">${label}</label>
+                            <input type="number" min="0" id="modalCompanyLimit_${key}" value="${PLANOS_CATALOGO.basico.limits[key]}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         </div>
@@ -177,6 +211,10 @@ window.abrirModalNovaEmpresa = function() {
         const plan = document.getElementById('modalCompanyPlan')?.value || 'basico';
         const planValue = parseFloat(document.getElementById('modalCompanyValue')?.value) || 0;
         const billingCycle = document.getElementById('modalCompanyBillingCycle')?.value || 'mensal';
+        const planLimits = {};
+        Object.keys(LIMITE_LABELS).forEach(key => {
+            planLimits[key] = parseInt(document.getElementById(`modalCompanyLimit_${key}`)?.value, 10) || 0;
+        });
 
         if (!name || !razaoSocial) {
             alert("Preencha o Nome Fantasia e a Razão Social.");
@@ -201,6 +239,7 @@ window.abrirModalNovaEmpresa = function() {
             plan,
             planValue,
             billingCycle,
+            planLimits,
             status: 'active',
             features: PLANOS_CATALOGO[plan]?.features || { fretes: true, rotasProdutos: true },
             createdAt: Date.now()
@@ -232,36 +271,54 @@ window.abrirModalNovoAdminEmpresa = function(companyId, companyName) {
                 <i class="fa-solid fa-building mr-1.5 text-[#152e50]"></i> Empresa: ${companyName || '—'}
             </p>
             <div>
-                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Nome do Admin *</label>
-                <input type="text" id="modalCompanyAdminName" placeholder="Ex: Carlos Mendes" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#152e50] outline-none">
+                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Nome Completo *</label>
+                <input type="text" id="modalCompanyAdminFullName" placeholder="Ex: Carlos Mendes Souza" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#152e50] outline-none">
             </div>
             <div>
-                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">PIN / Senha de Acesso</label>
+                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Nome de Usuário (login) *</label>
+                <input type="text" id="modalCompanyAdminName" placeholder="Ex: carlos.mendes" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#152e50] outline-none">
+                <p class="text-[10px] text-slate-400 mt-1">Não pode repetir dentro da mesma empresa.</p>
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Senha *</label>
                 <input type="text" id="modalCompanyAdminPin" placeholder="Ex: 1234 (Gerado se vazio)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
             </div>
         </div>
     `;
 
     window.abrirModalPersistente(`Criar Admin${companyName ? ' — ' + companyName : ''}`, html, async () => {
+        const fullName = document.getElementById('modalCompanyAdminFullName')?.value.trim();
         const name = document.getElementById('modalCompanyAdminName')?.value.trim();
         const pin = document.getElementById('modalCompanyAdminPin')?.value.trim() || Math.floor(1000 + Math.random() * 9000).toString();
 
-        if (!name) {
-            alert("Preencha o nome do Admin.");
+        if (!fullName || !name) {
+            alert("Preencha o Nome Completo e o Nome de Usuário do Admin.");
             return false;
         }
 
         const { error } = await window.db.rpc('create_team_member', {
-            p_role: 'admin', p_name: name, p_pin: pin, p_cpf: null, p_phone: null, p_company_id: companyId
+            p_role: 'admin', p_name: name, p_pin: pin, p_cpf: null, p_phone: null, p_company_id: companyId, p_full_name: fullName
         });
         if (error) {
             if (window.showToast) window.showToast("Erro ao criar Admin: " + error.message, "error");
             return false;
         }
 
-        if (window.showToast) window.showToast(`Admin "${name}" criado. PIN: ${pin}`, "success");
+        if (window.showToast) window.showToast(`Admin "${fullName}" criado. Usuário: ${name} · Senha: ${pin}`, "success");
         return true;
     });
+};
+
+// Conta quanto do plano já foi consumido — usado tanto no card da empresa
+// (painel do Master) quanto no widget de licenças do painel do Admin.
+window.calcularUsoLicencas = function(companyId) {
+    return {
+        admins: (window.allAdmins || []).filter(a => a.companyId === companyId).length,
+        logistics: (window.allLogistics || []).filter(l => l.companyId === companyId).length,
+        drivers: (window.allDrivers || []).filter(d => d.companyId === companyId).length,
+        representatives: (window.allReps || []).filter(r => r.companyId === companyId).length,
+        vehicles: (window.allVehicles || []).filter(v => v.companyId === companyId).length
+    };
 };
 
 window.renderCompaniesList = function() {
@@ -280,7 +337,22 @@ window.renderCompaniesList = function() {
         const admins = (window.allAdmins || []).filter(a => a.companyId === c.id);
         const adminsHtml = admins.length === 0
             ? `<p class="text-[11px] text-amber-600 font-bold mt-1.5"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Sem Admin cadastrado</p>`
-            : `<p class="text-[11px] text-emerald-700 font-medium mt-1.5"><i class="fa-solid fa-user-shield mr-1.5 text-[#152e50]"></i> Admin: ${admins.map(a => a.name).join(', ')}</p>`;
+            : `<p class="text-[11px] text-emerald-700 font-medium mt-1.5"><i class="fa-solid fa-user-shield mr-1.5 text-[#152e50]"></i> Admin: ${admins.map(a => a.fullName || a.name).join(', ')}</p>`;
+
+        const uso = window.calcularUsoLicencas(c.id);
+        const limits = c.planLimits || {};
+        const totalUsado = Object.keys(LIMITE_LABELS).reduce((soma, k) => soma + (uso[k] || 0), 0);
+        const totalLimite = Object.keys(LIMITE_LABELS).reduce((soma, k) => soma + (limits[k] || 0), 0);
+
+        const linhasLicenca = Object.entries(LIMITE_LABELS).map(([key, label]) => {
+            const usado = uso[key] || 0;
+            const limite = limits[key] ?? 0;
+            const restante = limite - usado;
+            const esgotado = limite > 0 && restante <= 0;
+            const pertoDoLimite = limite > 0 && !esgotado && restante <= Math.max(1, Math.ceil(limite * 0.1));
+            const corClasse = esgotado ? 'text-rose-600' : pertoDoLimite ? 'text-amber-600' : 'text-slate-500';
+            return `<div class="flex justify-between ${corClasse}"><span>${label}</span><span class="font-bold">${usado}/${limite}${esgotado ? ' · esgotado' : pertoDoLimite ? ' · quase no limite' : ''}</span></div>`;
+        }).join('');
 
         return `
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-3">
@@ -292,8 +364,16 @@ window.renderCompaniesList = function() {
                 ${c.razaoSocial ? `<p class="text-xs text-slate-500 mt-1.5"><i class="fa-solid fa-building mr-1.5 text-[#152e50]"></i> ${c.razaoSocial}</p>` : ''}
                 ${c.cnpj ? `<p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-id-card mr-1.5 text-[#152e50]"></i> ${c.cnpj}</p>` : ''}
                 ${c.cidade ? `<p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-location-dot mr-1.5 text-[#152e50]"></i> ${c.cidade}${c.uf ? '/' + c.uf : ''}</p>` : ''}
-                <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-tag mr-1.5 text-[#152e50]"></i> Plano: ${c.plan || 'básico'}</p>
+                <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-tag mr-1.5 text-[#152e50]"></i> Plano: ${PLANOS_CATALOGO[c.plan]?.label || c.plan || 'Básico'}</p>
                 ${adminsHtml}
+
+                <div class="mt-2.5 pt-2.5 border-t border-slate-100 space-y-1">
+                    <div class="flex justify-between text-[11px] font-bold text-slate-700">
+                        <span>Licenças usadas</span>
+                        <span>${totalUsado}/${totalLimite}</span>
+                    </div>
+                    <div class="text-[11px] space-y-0.5">${linhasLicenca}</div>
+                </div>
             </div>
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button onclick="abrirModalNovoAdminEmpresa('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" class="text-[#152e50] hover:bg-[#152e50]/5 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer">
