@@ -3016,9 +3016,25 @@
     // ---------------------------------------------------------------------
     // TODO 14.4: RENDERIZAÇÃO DA LISTA LATERAL E DRAG & DROP DE CIDADES
     // ---------------------------------------------------------------------
-    function renderizarCidadesRota(carga) {
-        const container = document.getElementById('listaCidadesRotaCorpo');
-        const badgeTotal = document.getElementById('badgeTotalCidadesRota');
+    // "ctx" descreve ONDE renderizar/interagir: por padrão, a página principal
+    // (document + mapaInstanciaLeaflet). A janela destacada ("Nova Janela") tem
+    // seu próprio document (clone) e sua própria instância do Leaflet, então
+    // passa seu próprio ctx - sem isso, funções chamadas a partir dos cards
+    // daquela janela acabavam lendo/escrevendo no document ESCONDIDO da janela
+    // principal (por isso arrastar/editar lá dentro não tinha efeito visível).
+    function contextoRotaPadrao() {
+        return {
+            raiz: document,
+            obterMapa: () => window.mapaInstanciaLeaflet,
+            renderizarMapa: (lista) => renderizarRotaNoMapa(lista)
+        };
+    }
+
+    function renderizarCidadesRota(carga, ctx) {
+        ctx = ctx || contextoRotaPadrao();
+        const raiz = ctx.raiz;
+        const container = raiz.querySelector('#listaCidadesRotaCorpo');
+        const badgeTotal = raiz.querySelector('#badgeTotalCidadesRota');
         if (!container) return;
 
         const listaCidades = obterListaCidadesCarga(carga);
@@ -3063,14 +3079,14 @@
             });
             const textoBusca = esc(termosBusca.filter(Boolean).join(' ').toLowerCase());
 
+            // Sem atributos inline (ondragstart="...") aqui de propósito: os
+            // handlers reais são presos via propriedade JS logo abaixo (depois
+            // do innerHTML), porque um atributo inline é resolvido no escopo
+            // global do document DONO do elemento - na janela destacada isso
+            // seria a janela pop-up, onde essas funções nunca existiram.
             html += `
                 <div
-                    draggable="${rotaBloqueada ? 'false' : 'true'}"
-                    ondragstart="${rotaBloqueada ? '' : 'iniciarArrastoCidade(event, ' + index + ')'}"
-                    ondragover="${rotaBloqueada ? '' : 'permitirSoltarCidade(event)'}"
-                    ondragleave="${rotaBloqueada ? '' : 'sairArrastoCidade(event)'}"
-                    ondrop="${rotaBloqueada ? '' : 'soltarCidade(event, ' + index + ')'}"
-                    onclick="selecionarCidadeRota(${jsArg(cidade)})"
+                    data-indice-parada="${index}"
                     data-busca-parada="${textoBusca}"
                     title="${rotaBloqueada ? 'Rota concluída - clique em \\"Editar\\" para reordenar' : 'Arraste para reordenar'}"
                     class="p-2.5 rounded-xl border transition mb-2 select-none ${rotaBloqueada ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} ${isAtiva ? 'bg-amber-50 border-amber-400 shadow-xs ring-1 ring-amber-400/30' : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
@@ -3097,18 +3113,33 @@
 
         container.innerHTML = html;
 
+        Array.from(container.children).forEach(card => {
+            const index = Number(card.dataset.indiceParada);
+            const cidade = listaCidades[index];
+            card.onclick = () => selecionarCidadeRota(cidade, ctx);
+
+            if (rotaBloqueada) return;
+
+            card.draggable = true;
+            card.ondragstart = (e) => iniciarArrastoCidade(e, index);
+            card.ondragover = (e) => permitirSoltarCidade(e);
+            card.ondragleave = (e) => sairArrastoCidade(e);
+            card.ondrop = (e) => soltarCidade(e, index, ctx);
+        });
+
         // Reaplica o filtro ativo (se houver) depois de reconstruir a lista -
         // sem isso, qualquer re-render (arrastar pra reordenar, selecionar uma
         // praça) desfaria a busca em andamento.
-        const inputFiltro = document.getElementById('inputFiltroParadasRota');
-        if (inputFiltro && inputFiltro.value) filtrarParadasRota(inputFiltro.value);
+        const inputFiltro = raiz.querySelector('#inputFiltroParadasRota');
+        if (inputFiltro && inputFiltro.value) filtrarParadasRota(inputFiltro.value, ctx);
     }
 
     // Filtra os cards de "Ordem das Paradas" sem alterar a lista/índices usados
     // no drag-and-drop - só esconde via CSS os que não combinam com a busca.
-    function filtrarParadasRota(termo) {
+    function filtrarParadasRota(termo, ctx) {
+        ctx = ctx || contextoRotaPadrao();
         const termoNormalizado = String(termo || '').trim().toLowerCase();
-        document.querySelectorAll('#listaCidadesRotaCorpo [data-busca-parada]').forEach(card => {
+        ctx.raiz.querySelectorAll('#listaCidadesRotaCorpo [data-busca-parada]').forEach(card => {
             const combina = !termoNormalizado || card.dataset.buscaParada.includes(termoNormalizado);
             card.classList.toggle('hidden', !combina);
         });
@@ -3143,27 +3174,30 @@
     // ---------------------------------------------------------------------
     // TODO 14.5: SELEÇÃO DE PRAÇA E DETALHAMENTO DOS PEDIDOS DA CIDADE
     // ---------------------------------------------------------------------
-    async function selecionarCidadeRota(nomeCidade) {
+    async function selecionarCidadeRota(nomeCidade, ctx) {
+        ctx = ctx || contextoRotaPadrao();
+        const raiz = ctx.raiz;
         window.cidadeRotaAtiva = nomeCidade;
         const carga = window.bancoCargasGlobal ? window.bancoCargasGlobal[window.cargaRotaAtivaId] : null;
         if (!carga) return;
 
-        renderizarCidadesRota(carga);
+        renderizarCidadesRota(carga, ctx);
 
         const coords = await buscarCoordenadasCidade(nomeCidade);
-        if (window.mapaInstanciaLeaflet && coords) {
-            window.mapaInstanciaLeaflet.flyTo(coords, 12, { duration: 1 });
+        const mapa = ctx.obterMapa ? ctx.obterMapa() : null;
+        if (mapa && coords) {
+            mapa.flyTo(coords, 12, { duration: 1 });
         }
 
-        const lblCidade = document.getElementById('lblCidadeSelecionadaRota');
+        const lblCidade = raiz.querySelector('#lblCidadeSelecionadaRota');
         if (lblCidade) lblCidade.innerText = String(nomeCidade).toUpperCase();
 
-        const container = document.getElementById('detalhesCidadeRotaCorpo');
+        const container = raiz.querySelector('#detalhesCidadeRotaCorpo');
         if (!container) return;
 
         const clientesDaCidade = obterClientesPorCidade(carga, nomeCidade);
 
-        const lblSubinfo = document.getElementById('lblSubinfoCidadeRota');
+        const lblSubinfo = raiz.querySelector('#lblSubinfoCidadeRota');
         if (lblSubinfo) lblSubinfo.innerText = `${clientesDaCidade.length} cliente(s) nesta praça`;
 
         if (clientesDaCidade.length === 0) {
@@ -3203,7 +3237,7 @@
                                 <span class="bg-[#152e50] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">PEDIDO</span>
                                 <span class="text-xs font-black text-slate-800">${esc(pedido.numeroPedido)}</span>
                             </div>
-                            <button onclick="toggleItensPedidoRota(${jsArg(pedido.numeroPedido)})" class="text-[10px] font-bold text-[#152e50] hover:text-amber-600 flex items-center gap-1 cursor-pointer">
+                            <button data-pedido-toggle="${esc(pedido.numeroPedido)}" class="text-[10px] font-bold text-[#152e50] hover:text-amber-600 flex items-center gap-1 cursor-pointer">
                                 <span id="txtToggleItensRota-${esc(pedido.numeroPedido)}">Itens (${(pedido.itens || []).length})</span>
                                 <i id="iconeToggleItensRota-${esc(pedido.numeroPedido)}" class="fa-solid fa-chevron-down text-[9px]"></i>
                             </button>
@@ -3230,12 +3264,20 @@
         });
 
         container.innerHTML = html;
+
+        // Sem atributo onclick inline (mesmo motivo do drag-and-drop acima) -
+        // presos via propriedade e escopados ao próprio container, já que os
+        // ids de pedido só precisam ser únicos dentro dele.
+        container.querySelectorAll('[data-pedido-toggle]').forEach(btn => {
+            btn.onclick = () => toggleItensPedidoRota(btn.dataset.pedidoToggle, container);
+        });
     }
     window.selecionarCidadeRota = selecionarCidadeRota;
 
-    function toggleItensPedidoRota(numeroPedido) {
-        const container = document.getElementById(`itensPedidoRota-${numeroPedido}`);
-        const icone = document.getElementById(`iconeToggleItensRota-${numeroPedido}`);
+    function toggleItensPedidoRota(numeroPedido, raiz) {
+        raiz = raiz || document;
+        const container = raiz.querySelector(`#itensPedidoRota-${numeroPedido}`);
+        const icone = raiz.querySelector(`#iconeToggleItensRota-${numeroPedido}`);
         if (!container) return;
 
         if (container.classList.contains('hidden')) {
@@ -3372,8 +3414,9 @@
     }
     window.fecharModalMontagemRota = fecharModalMontagemRota;
 
-    function atualizarBadgeStatusRota(isMontada) {
-        const badge = document.getElementById('badgeStatusMontagemRota');
+    function atualizarBadgeStatusRota(isMontada, ctx) {
+        ctx = ctx || contextoRotaPadrao();
+        const badge = ctx.raiz.querySelector('#badgeStatusMontagemRota');
         if (!badge) return;
 
         if (isMontada) {
@@ -3385,48 +3428,51 @@
         }
     }
 
-    async function salvarConclusaoRota() {
+    async function salvarConclusaoRota(ctx) {
+        ctx = ctx || contextoRotaPadrao();
         if (!window.cargaRotaAtivaId || !window.bancoCargasGlobal) return;
         const carga = window.bancoCargasGlobal[window.cargaRotaAtivaId];
         if (!carga) return;
 
         carga.montada = true;
-        atualizarBadgeStatusRota(true);
+        atualizarBadgeStatusRota(true, ctx);
+        renderizarCidadesRota(carga, ctx);
         if (typeof renderizarGridCargas === 'function') renderizarGridCargas();
 
         const salvou = await persistirCargas([window.cargaRotaAtivaId]);
         if (!salvou) return; // persistirCargas já avisou; mantém o modal aberto
         rotaEditadaNaoSalva = false;
-        
+
         exibirToast(`Rota da Carga #${carga.numeroCarga} salva com sucesso!`, 'Roteirização Concluída', 'sucesso');
-        
+
         setTimeout(() => {
             fecharModalMontagemRota();
         }, 1800);
     }
     window.salvarConclusaoRota = salvarConclusaoRota;
 
-    function habilitarEdicaoRota() {
+    function habilitarEdicaoRota(ctx) {
+        ctx = ctx || contextoRotaPadrao();
         if (!window.cargaRotaAtivaId || !window.bancoCargasGlobal) return;
         const carga = window.bancoCargasGlobal[window.cargaRotaAtivaId];
         if (carga) carga.montada = false;
 
         rotaEditadaNaoSalva = true;
-        atualizarBadgeStatusRota(false);
-        
+        atualizarBadgeStatusRota(false, ctx);
+        if (carga) renderizarCidadesRota(carga, ctx);
+
         exibirToast('Modo de edição habilitado para esta carga.', 'Modo de Edição', 'aviso');
     }
     window.habilitarEdicaoRota = habilitarEdicaoRota;
 
-    async function soltarCidade(e, indexDestino) {
+    async function soltarCidade(e, indexDestino, ctx) {
+        ctx = ctx || contextoRotaPadrao();
         e.preventDefault();
         const card = e.currentTarget;
         card.classList.remove('border-amber-500', 'ring-2', 'ring-amber-300');
 
         if (typeof indiceArrastadoCidade === 'undefined' || indiceArrastadoCidade === null || indiceArrastadoCidade === indexDestino) {
-            if (typeof renderizarCidadesRota === 'function') {
-                renderizarCidadesRota(window.bancoCargasGlobal[window.cargaRotaAtivaId]);
-            }
+            renderizarCidadesRota(window.bancoCargasGlobal[window.cargaRotaAtivaId], ctx);
             return;
         }
 
@@ -3438,19 +3484,25 @@
         lista.splice(indexDestino, 0, itemMovido);
 
         carga.cidades = lista;
-        carga.montada = false; 
+        carga.montada = false;
         rotaEditadaNaoSalva = true;
-        atualizarBadgeStatusRota(false);
+        atualizarBadgeStatusRota(false, ctx);
 
         indiceArrastadoCidade = null;
 
-        if (typeof renderizarCidadesRota === 'function') renderizarCidadesRota(carga);
-        if (typeof renderizarRotaNoMapa === 'function') await renderizarRotaNoMapa(lista);
+        renderizarCidadesRota(carga, ctx);
+        if (ctx.renderizarMapa) await ctx.renderizarMapa(lista);
     }
 
     // -------------------------------------------------------------------------
     // ABRIR EM JANELA DESTACADA COM FUNÇÕES E MAPA OPERACIONAIS
     // -------------------------------------------------------------------------
+    // A janela é um clone do modal, então tem seu PRÓPRIO document e sua própria
+    // instância do Leaflet. Antes, os cards de cidade/botões dessa janela ainda
+    // chamavam as funções de renderização "cruas" (sem ctx), que sempre liam e
+    // escreviam no document da página principal (escondido nesse momento) - por
+    // isso arrastar/reordenar, "Editar" e "Concluir Rota" pareciam não fazer
+    // nada dentro da janela destacada. Agora tudo passa por ctxPop.
     function destacarJanelaRota() {
         const idCarga = window.cargaRotaAtivaId;
         if (!idCarga || !window.bancoCargasGlobal) return;
@@ -3470,23 +3522,40 @@
 
         // A janela abre em "about:blank" (sem URL real), então os pedidos de tile
         // do OpenStreetMap saem sem Referer válido e o servidor os bloqueia
-        // ("Access blocked... tile usage policy"). Igualar a URL da janela à da
-        // página principal (mesma origem, então permitido) resolve isso.
+        // ("Access blocked... tile usage policy"). Duas camadas de correção:
+        // (1) tenta igualar a URL da janela à da página principal via History API
+        // - nem todo navegador aceita isso pra uma janela about:blank recém-aberta;
+        // (2) uma tag <meta name="referrer"> força o Referer a ser pelo menos a
+        // origem real da página (não vazio/about:blank), que é o que os
+        // navegadores garantidamente respeitam - essa é a correção que realmente
+        // resolve o bloqueio quando (1) é ignorada pelo navegador.
         try {
             win.history.replaceState(null, '', window.location.href);
-        } catch (err) { /* navegador bloqueou a troca de URL - segue sem isso */ }
+        } catch (err) { /* navegador bloqueou a troca de URL - segue só com o meta abaixo */ }
+
+        const metaReferrer = win.document.createElement('meta');
+        metaReferrer.name = 'referrer';
+        metaReferrer.content = 'origin';
+        win.document.head.appendChild(metaReferrer);
 
         Array.from(document.querySelectorAll('link[rel="stylesheet"], style')).forEach(no => {
             win.document.head.appendChild(no.cloneNode(true));
         });
 
         win.document.body.className = 'bg-slate-100 p-0 m-0 h-screen w-screen overflow-hidden';
-        
+
         const cloneModal = modalOriginal.firstElementChild.cloneNode(true);
         cloneModal.className = 'w-full h-full flex flex-col bg-slate-100 overflow-hidden rounded-none border-0';
         win.document.body.appendChild(cloneModal);
 
         fecharModalMontagemRota();
+
+        let mapaPopInstancia = null;
+        const ctxPop = {
+            raiz: cloneModal,
+            obterMapa: () => mapaPopInstancia,
+            renderizarMapa: (lista) => renderizarMarcadoresPop(lista)
+        };
 
         const btnFechar = cloneModal.querySelector('button[title="Fechar"]');
         if (btnFechar) {
@@ -3497,169 +3566,69 @@
         const btnSalvar = cloneModal.querySelector('button[onclick*="salvarConclusaoRota"]');
         if (btnSalvar) {
             btnSalvar.removeAttribute('onclick');
-            btnSalvar.onclick = () => {
-                salvarConclusaoRota();
-                const badge = cloneModal.querySelector('#badgeStatusMontagemRota');
-                if (badge) {
-                    badge.className = 'text-[10px] bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 px-2 py-0.5 rounded font-black uppercase';
-                    badge.innerText = 'Carga Montada';
-                }
-            };
+            btnSalvar.onclick = () => salvarConclusaoRota(ctxPop);
         }
 
         const btnEditar = cloneModal.querySelector('button[onclick*="habilitarEdicaoRota"]');
         if (btnEditar) {
             btnEditar.removeAttribute('onclick');
-            btnEditar.onclick = () => {
-                habilitarEdicaoRota();
-                const badge = cloneModal.querySelector('#badgeStatusMontagemRota');
-                if (badge) {
-                    badge.className = 'text-[10px] bg-amber-400/20 border border-amber-400/40 text-amber-300 px-2 py-0.5 rounded font-black uppercase';
-                    badge.innerText = 'Aguardando / Em Edição';
-                }
-            };
+            btnEditar.onclick = () => habilitarEdicaoRota(ctxPop);
         }
 
-        const listaCidadesCorpo = cloneModal.querySelector('#listaCidadesRotaCorpo');
-        const detalhesCidadeCorpo = cloneModal.querySelector('#detalhesCidadeRotaCorpo');
-        const lblCidadeSel = cloneModal.querySelector('#lblCidadeSelecionadaRota');
-        const lblSubinfo = cloneModal.querySelector('#lblSubinfoCidadeRota');
+        const inputFiltroPop = cloneModal.querySelector('#inputFiltroParadasRota');
+        if (inputFiltroPop) {
+            inputFiltroPop.removeAttribute('oninput');
+            inputFiltroPop.oninput = () => filtrarParadasRota(inputFiltroPop.value, ctxPop);
+        }
 
-        function atualizarVisualizacaoCidadePop(nomeCidade) {
-            if (lblCidadeSel) lblCidadeSel.innerText = String(nomeCidade).toUpperCase();
-            
-            const clientesDaCidade = typeof obterClientesPorCidade === 'function' 
-                ? obterClientesPorCidade(carga, nomeCidade) 
-                : [];
+        const listaCidades = obterListaCidadesCarga(carga);
 
-            if (lblSubinfo) lblSubinfo.innerText = `${clientesDaCidade.length} cliente(s) nesta praça`;
-            if (!detalhesCidadeCorpo) return;
+        async function renderizarMarcadoresPop(lista) {
+            if (!mapaPopInstancia) return;
 
-            if (clientesDaCidade.length === 0) {
-                detalhesCidadeCorpo.innerHTML = `<div class="py-10 text-center text-slate-400 text-xs font-semibold">Sem clientes vinculados a ${esc(nomeCidade)}.</div>`;
-                return;
+            if (mapaPopInstancia._camadaMarkersPop) mapaPopInstancia.removeLayer(mapaPopInstancia._camadaMarkersPop);
+            if (mapaPopInstancia._camadaLinhasPop) mapaPopInstancia.removeLayer(mapaPopInstancia._camadaLinhasPop);
+
+            const camadaMarkers = window.L.layerGroup().addTo(mapaPopInstancia);
+            const camadaLinhas = window.L.layerGroup().addTo(mapaPopInstancia);
+            mapaPopInstancia._camadaMarkersPop = camadaMarkers;
+            mapaPopInstancia._camadaLinhasPop = camadaLinhas;
+
+            const coordenadas = await Promise.all(lista.map(c => buscarCoordenadasCidade(c)));
+            const paradas = [];
+            coordenadas.forEach((coords, i) => {
+                if (!coords) return;
+                paradas.push({ coords, cidade: lista[i], index: i });
+                const iconCustom = window.L.divIcon({
+                    className: 'marker-rota-container',
+                    html: `<div class="w-8 h-8 rounded-full bg-[#152e50] border-2 border-[#fac043] text-[#fac043] font-black text-xs flex items-center justify-center shadow-lg cursor-pointer">${i + 1}</div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+                const marker = window.L.marker(coords, { icon: iconCustom }).addTo(camadaMarkers);
+                marker.on('click', () => selecionarCidadeRota(lista[i], ctxPop));
+            });
+
+            if (paradas.length > 1) {
+                const pts = paradas.map(p => p.coords);
+                window.L.polyline(pts, { color: '#152e50', weight: 6, opacity: 0.85 }).addTo(camadaLinhas);
+                window.L.polyline(pts, { color: '#fac043', weight: 3.5, opacity: 1 }).addTo(camadaLinhas);
+                mapaPopInstancia.fitBounds(pts, { padding: [40, 40] });
+            } else if (paradas.length === 1) {
+                mapaPopInstancia.setView(paradas[0].coords, 12);
             }
-
-            let html = '';
-            clientesDaCidade.forEach(cliente => {
-                const pedidosValidos = (cliente.pedidos || []).filter(ped => {
-                    const cidPed = typeof normalizarTextoCidade === 'function' ? normalizarTextoCidade(ped.cidade || cliente.cidade) : String(ped.cidade || cliente.cidade).toUpperCase();
-                    const cidNome = typeof normalizarTextoCidade === 'function' ? normalizarTextoCidade(nomeCidade) : String(nomeCidade).toUpperCase();
-                    return cidPed === cidNome;
-                });
-
-                if (pedidosValidos.length === 0) return;
-
-                let htmlPedidos = '';
-                pedidosValidos.forEach(pedido => {
-                    let htmlItens = '';
-                    (pedido.itens || []).forEach(item => {
-                        htmlItens += `
-                            <div class="flex justify-between items-center py-1 border-b border-slate-100 last:border-0 text-xs">
-                                <span class="text-slate-700 font-medium"><strong>${esc(item.codigo)}</strong> - ${esc(item.descricao)}</span>
-                                <span class="font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${esc(item.quantidade)} vol</span>
-                            </div>
-                        `;
-                    });
-
-                    htmlPedidos += `
-                        <div class="mt-2 bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
-                            <div class="p-2 bg-slate-100 flex items-center justify-between border-b border-slate-200">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="bg-[#152e50] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">PEDIDO</span>
-                                    <span class="text-xs font-black text-slate-800">${esc(pedido.numeroPedido)}</span>
-                                </div>
-                            </div>
-                            <div class="p-2.5 bg-white divide-y divide-slate-100">${htmlItens || '<p class="text-xs text-slate-400 italic">Sem itens.</p>'}</div>
-                        </div>
-                    `;
-                });
-
-                html += `
-                    <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-xs mb-2.5">
-                        <div>
-                            <span class="text-[9px] font-mono font-bold text-slate-400">CÓD: ${esc(cliente.codigo)}</span>
-                            <h5 class="text-xs font-black text-slate-800">${esc(cliente.nome)}</h5>
-                            <p class="text-[11px] text-slate-500 mt-0.5 truncate">
-                                <i class="fa-solid fa-map-pin text-slate-400 mr-1 text-[9px]"></i>${esc([cliente.endereco, cliente.bairro].filter(Boolean).join(' - ') || 'Endereço não informado')}
-                            </p>
-                        </div>
-                        ${htmlPedidos}
-                    </div>
-                `;
-            });
-
-            detalhesCidadeCorpo.innerHTML = html;
-        }
-
-        const listaCidades = typeof obterListaCidadesCarga === 'function' ? obterListaCidadesCarga(carga) : [];
-        if (listaCidadesCorpo) {
-            const cardsCidades = listaCidadesCorpo.children;
-            Array.from(cardsCidades).forEach((card, idx) => {
-                const cid = listaCidades[idx];
-                if (!cid) return;
-
-                card.removeAttribute('onclick');
-                card.onclick = () => {
-                    Array.from(cardsCidades).forEach(c => c.classList.remove('bg-amber-50', 'border-amber-400', 'ring-1', 'ring-amber-400/30'));
-                    card.classList.add('bg-amber-50', 'border-amber-400', 'ring-1', 'ring-amber-400/30');
-                    atualizarVisualizacaoCidadePop(cid);
-
-                    if (win._mapaLeafletPop && typeof buscarCoordenadasCidade === 'function') {
-                        buscarCoordenadasCidade(cid).then(coords => {
-                            if (coords) win._mapaLeafletPop.flyTo(coords, 12, { duration: 1 });
-                        });
-                    }
-                };
-            });
         }
 
         const elementoMapa = cloneModal.querySelector('#mapaRota');
         if (elementoMapa && window.L) {
             elementoMapa.id = 'mapaRotaPop_' + idCarga;
-            const mapaPop = window.L.map(elementoMapa, { zoomControl: true, attributionControl: false }).setView([-13.8576, -40.0827], 8);
-            window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(mapaPop);
-            win._mapaLeafletPop = mapaPop;
-
-            const camadaMarkers = window.L.layerGroup().addTo(mapaPop);
-            const camadaLinhas = window.L.layerGroup().addTo(mapaPop);
-
-            if (typeof buscarCoordenadasCidade === 'function') {
-                Promise.all(listaCidades.map(c => buscarCoordenadasCidade(c))).then(coordenadas => {
-                    const paradas = [];
-                    coordenadas.forEach((coords, i) => {
-                        if (coords) {
-                            paradas.push({ coords: coords, cidade: listaCidades[i], index: i });
-                            const iconCustom = window.L.divIcon({
-                                className: 'marker-rota-container',
-                                html: `<div class="w-8 h-8 rounded-full bg-[#152e50] border-2 border-[#fac043] text-[#fac043] font-black text-xs flex items-center justify-center shadow-lg cursor-pointer">${i + 1}</div>`,
-                                iconSize: [32, 32],
-                                iconAnchor: [16, 16]
-                            });
-                            const marker = window.L.marker(coords, { icon: iconCustom }).addTo(camadaMarkers);
-                            marker.on('click', () => {
-                                if (listaCidadesCorpo && listaCidadesCorpo.children[i]) {
-                                    listaCidadesCorpo.children[i].click();
-                                }
-                            });
-                        }
-                    });
-
-                    if (paradas.length > 1) {
-                        const pts = paradas.map(p => p.coords);
-                        window.L.polyline(pts, { color: '#152e50', weight: 6, opacity: 0.85 }).addTo(camadaLinhas);
-                        window.L.polyline(pts, { color: '#fac043', weight: 3.5, opacity: 1 }).addTo(camadaLinhas);
-                        mapaPop.fitBounds(pts, { padding: [40, 40] });
-                    } else if (paradas.length === 1) {
-                        mapaPop.setView(paradas[0].coords, 12);
-                    }
-                });
-            }
+            mapaPopInstancia = window.L.map(elementoMapa, { zoomControl: true, attributionControl: false }).setView([-13.8576, -40.0827], 8);
+            window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(mapaPopInstancia);
+            renderizarMarcadoresPop(listaCidades);
         }
 
-        if (listaCidades.length > 0) {
-            atualizarVisualizacaoCidadePop(listaCidades[0]);
-        }
+        renderizarCidadesRota(carga, ctxPop);
+        if (listaCidades.length > 0) selecionarCidadeRota(listaCidades[0], ctxPop);
     }
     window.destacarJanelaRota = destacarJanelaRota;
 </script>
