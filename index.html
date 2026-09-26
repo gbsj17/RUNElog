@@ -892,6 +892,9 @@
                                 <button onclick="mudarSubAbaFrota('representantes')" id="tabSubRepresentantes" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
                                     <i class="fa-solid fa-user-tie"></i> Representantes
                                 </button>
+                                <button onclick="mudarSubAbaFrota('logistica')" id="tabSubLogistica" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-dolly"></i> Logística
+                                </button>
                             </div>
                         </div>
 
@@ -944,6 +947,23 @@
                                 </div>
                             </div>
                             <div id="logRepsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                        </div>
+
+                        <!-- SUB-ABA 4: LOGÍSTICA (visível só pro Admin) -->
+                        <div id="subAbaLogisticaContent" class="space-y-4 hidden">
+                            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-sm">Equipe de Logística</h3>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">Acessos operacionais: roteirização, fretes e cadastros</p>
+                                </div>
+                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    <input type="text" id="searchLogisticsInput" oninput="renderlogLogisticsList()" placeholder="Buscar por CPF ou Nome..." class="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-[#152e50]">
+                                    <button onclick="abrirModalNovoLogistica()" class="px-3 py-2 bg-[#152e50] hover:bg-[#0f223d] text-[#fac043] rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer">
+                                        <i class="fa-solid fa-user-plus"></i> Novo Membro
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="logLogisticsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
                         </div>
                     </div>
 

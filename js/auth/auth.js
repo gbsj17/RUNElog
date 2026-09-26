@@ -167,6 +167,10 @@ window.salvarNovaSenhaPessoal = async (e) => {
         userObj = (window.allReps || []).find(r => r.id === window.currentRepId);
         collectionName = 'representatives';
         rpcRole = 'representative';
+    } else if (window.currentUserRole === 'logistics') {
+        userObj = (window.allLogistics || []).find(l => l.id === window.currentLogisticsId);
+        collectionName = 'logistics_users';
+        rpcRole = 'logistics';
     }
 
     if (!userObj || (userObj.pin || '').toString() !== atual) {
@@ -275,11 +279,12 @@ window.realizarLoginUnificado = async (e) => {
                         if (perfil.role === 'driver') window.currentDriverId = perfil.id;
                         if (perfil.role === 'representative') window.currentRepId = perfil.id;
                         if (perfil.role === 'admin') window.currentAdminId = perfil.id;
+                        if (perfil.role === 'logistics') window.currentLogisticsId = perfil.id;
 
                         if (perfil.role === 'master') {
                             salvarSessao();
                             if (window.iniciarPainelMaster) window.iniciarPainelMaster();
-                        } else if (perfil.role === 'admin') {
+                        } else if (perfil.role === 'admin' || perfil.role === 'logistics') {
                             await carregarFeaturesDaEmpresaLogada();
                             salvarSessao();
                             if (window.iniciarPainelAdmin) window.iniciarPainelAdmin();
@@ -308,6 +313,19 @@ window.realizarLoginUnificado = async (e) => {
     if (foundAdmin) {
         window.currentUserRole = 'admin';
         window.currentCompanyId = foundAdmin?.companyId || null;
+        await carregarFeaturesDaEmpresaLogada();
+        salvarSessao();
+        if (window.iniciarPainelAdmin) window.iniciarPainelAdmin();
+        document.getElementById('unifiedPinInput').value = '';
+        restaurarBotao();
+        return;
+    }
+
+    const foundLogistics = (window.allLogistics || []).find(l => (l.name || '').toLowerCase() === typedName && (l.pin || '').toString() === typedPin);
+    if (foundLogistics) {
+        window.currentUserRole = 'logistics';
+        window.currentLogisticsId = foundLogistics.id;
+        window.currentCompanyId = foundLogistics?.companyId || null;
         await carregarFeaturesDaEmpresaLogada();
         salvarSessao();
         if (window.iniciarPainelAdmin) window.iniciarPainelAdmin();
@@ -353,6 +371,7 @@ function salvarSessao() {
         driverId: window.currentDriverId,
         repId: window.currentRepId,
         adminId: window.currentAdminId,
+        logisticsId: window.currentLogisticsId,
         companyId: window.currentCompanyId || null
     }));
 }
@@ -378,6 +397,7 @@ window.fazerLogout = async () => {
     window.currentDriverId = null;
     window.currentRepId = null;
     window.currentAdminId = null;
+    window.currentLogisticsId = null;
     window.currentCompanyId = null;
     window.companyFeatures = null;
 
@@ -385,6 +405,7 @@ window.fazerLogout = async () => {
     if (window.unsubReps) window.unsubReps();
     if (window.unsubRoutes) window.unsubRoutes();
     if (window.unsubAdmins) window.unsubAdmins();
+    if (window.unsubLogistics) window.unsubLogistics();
     if (window.unsubCompanies) window.unsubCompanies();
 
     window.mostrarTelaComAnimacao('screenInitial');

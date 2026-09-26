@@ -45,7 +45,10 @@ export async function carregarCargasProntas() {
         query = window.currentCompanyId ? query.eq('companyId', window.currentCompanyId) : query.is('companyId', null);
         const { data, error } = await query.order('createdAt', { ascending: false });
         if (error) throw error;
-        return { cargas: (data || []).map(linha => linha.dados), erro: null };
+        // `_createdAt` vai junto do snapshot pra dar pra filtrar por mês nas
+        // métricas (mês em que a cotação foi fechada), sem mexer no formato
+        // que o resto da tela já espera de "dados".
+        return { cargas: (data || []).map(linha => ({ ...linha.dados, _createdAt: linha.createdAt })), erro: null };
     } catch (erro) {
         console.error('Erro ao carregar cargas prontas do Supabase:', erro);
         return { cargas: [], erro };

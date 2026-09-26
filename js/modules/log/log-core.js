@@ -156,6 +156,11 @@ window.alternarAbalog = (tab, direction = 'none') => {
         if (window.renderlogDriversList) window.renderlogDriversList();
         if (window.renderlogVehiclesList) window.renderlogVehiclesList();
         if (window.renderlogRepsList) window.renderlogRepsList();
+        if (window.renderlogLogisticsList) window.renderlogLogisticsList();
+        // Só o Admin cadastra/remove Logística (o próprio backend também bloqueia,
+        // isso aqui é só pra não mostrar uma opção que vai dar erro de permissão).
+        const tabLogistica = document.getElementById('tabSubLogistica');
+        if (tabLogistica) tabLogistica.classList.toggle('hidden', window.currentUserRole !== 'admin');
     } else if (tab === 'rotas-produtos') {
         if (window.alternarAbaRotasProdutos) {
             window.alternarAbaRotasProdutos('produtos');
@@ -187,12 +192,14 @@ window.mudarSubAbaFrota = function(aba) {
     const botoes = {
         motoristas: document.getElementById('tabSubMotoristas'),
         veiculos: document.getElementById('tabSubVeiculos'),
-        representantes: document.getElementById('tabSubRepresentantes')
+        representantes: document.getElementById('tabSubRepresentantes'),
+        logistica: document.getElementById('tabSubLogistica')
     };
     const conteudos = {
         motoristas: document.getElementById('subAbaMotoristasContent'),
         veiculos: document.getElementById('subAbaVeiculosContent'),
-        representantes: document.getElementById('subAbaRepresentantesContent')
+        representantes: document.getElementById('subAbaRepresentantesContent'),
+        logistica: document.getElementById('subAbaLogisticaContent')
     };
 
     Object.keys(botoes).forEach(key => {
@@ -207,6 +214,7 @@ window.mudarSubAbaFrota = function(aba) {
     });
 
     if (aba === 'representantes' && window.renderlogRepsList) window.renderlogRepsList();
+    if (aba === 'logistica' && window.renderlogLogisticsList) window.renderlogLogisticsList();
 };
 
 // -----------------------------------------------------
@@ -372,6 +380,95 @@ window.renderlogDriversList = function() {
             </div>
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button onclick="removerMotorista('${d.id}')" class="text-rose-500 hover:bg-rose-50 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer" title="Remover">
+                    <i class="fa-solid fa-trash-can"></i> Excluir
+                </button>
+            </div>
+        </div>
+    `).join('');
+};
+
+// 1.1 LOGÍSTICA (Funcionário de Logística — criado/removido só pelo Admin)
+window.abrirModalNovoLogistica = function() {
+    const html = `
+        <div class="space-y-3">
+            <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Nome Completo *</label>
+                <input type="text" id="modalLogName" placeholder="Ex: Maria Souza" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#152e50] outline-none">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">CPF</label>
+                    <input type="text" id="modalLogCpf" placeholder="000.000.000-00" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Telefone / WhatsApp</label>
+                    <input type="text" id="modalLogPhone" placeholder="(73) 99999-9999" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                </div>
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">PIN / Senha de Acesso</label>
+                <input type="text" id="modalLogPin" placeholder="Ex: 1234 (Gerado se vazio)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+            </div>
+        </div>
+    `;
+
+    window.abrirModalPersistente("Cadastrar Membro de Logística", html, async () => {
+        const name = document.getElementById('modalLogName')?.value.trim();
+        const cpf = document.getElementById('modalLogCpf')?.value.trim();
+        const phone = document.getElementById('modalLogPhone')?.value.trim();
+        const pin = document.getElementById('modalLogPin')?.value.trim() || Math.floor(1000 + Math.random() * 9000).toString();
+
+        if (!name) {
+            alert("Preencha o Nome do membro de Logística.");
+            return false;
+        }
+
+        if (window.useFirebase) {
+            const { error } = await window.db.rpc('create_team_member', { p_role: 'logistics', p_name: name, p_pin: pin, p_cpf: cpf, p_phone: phone });
+            if (error) {
+                if (window.showToast) window.showToast("Erro ao salvar membro de Logística: " + error.message, "error");
+                return false;
+            }
+        } else {
+            const novoLogistica = { id: 'log_' + Date.now(), name, cpf, phone, pin, companyId: window.currentCompanyId, createdAt: Date.now() };
+            const logisticos = window.LocalDb.get('logistics_users');
+            logisticos.push(novoLogistica);
+            window.LocalDb.set('logistics_users', logisticos);
+        }
+
+        if (window.renderlogLogisticsList) window.renderlogLogisticsList();
+        return true;
+    });
+};
+
+window.renderlogLogisticsList = function() {
+    const container = document.getElementById('logLogisticsList');
+    if (!container) return;
+
+    const query = (document.getElementById('searchLogisticsInput')?.value || "").toLowerCase().trim();
+    const logisticos = window.allLogistics || [];
+    const filtrados = logisticos.filter(l =>
+        (l.name || "").toLowerCase().includes(query) ||
+        (l.cpf || "").toLowerCase().includes(query)
+    );
+
+    if (filtrados.length === 0) {
+        container.innerHTML = `<div class="col-span-full p-6 bg-white rounded-2xl border border-slate-200 text-center text-xs text-slate-400">Nenhum membro de Logística cadastrado.</div>`;
+        return;
+    }
+
+    container.innerHTML = filtrados.map(l => `
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-3">
+            <div>
+                <div class="flex items-center justify-between">
+                    <h4 class="font-bold text-slate-800 text-sm">${l.name}</h4>
+                    <span class="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-md font-mono">PIN: ${l.pin}</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-1.5"><i class="fa-solid fa-id-card mr-1.5 text-[#152e50]"></i> CPF: ${l.cpf || 'Não informado'}</p>
+                <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-phone mr-1.5 text-[#152e50]"></i> Tel: ${l.phone || 'Não informado'}</p>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button onclick="removerLogistica('${l.id}')" class="text-rose-500 hover:bg-rose-50 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer" title="Remover">
                     <i class="fa-solid fa-trash-can"></i> Excluir
                 </button>
             </div>

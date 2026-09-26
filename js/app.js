@@ -122,49 +122,64 @@ window.togglePatch = (patchId) => {
 // TODO: BLOCO 7.5.2: LISTENERS E TEMPO REAL
 // =======================================================
 
+// Admin e Logística compartilham o mesmo painel operacional (dashboardAdmin):
+// cadastro de motoristas/representantes/frota, rotas e fretes. Só quem
+// gerencia empresas/planos (Master) e quem cria Admins fica de fora.
+window.ehPainelOperacional = function() {
+    return window.currentUserRole === 'admin' || window.currentUserRole === 'logistics';
+};
+
 window.startAdminListeners = function() {
     if (window.useFirebase) {
         const companyFilter = { companyId: window.currentCompanyId };
         if (!window.unsubDrivers) window.unsubDrivers = window.subscribeTable('drivers', data => {
             window.allDrivers = data;
-            if (window.currentUserRole === 'admin') {
+            if (window.ehPainelOperacional()) {
                 if (window.renderlogDriversList) window.renderlogDriversList();
                 if (window.renderAdminDashboard) window.renderAdminDashboard();
             }
         }, companyFilter);
         if (!window.unsubReps) window.unsubReps = window.subscribeTable('representatives', data => {
             window.allReps = data;
-            if (window.currentUserRole === 'admin' && window.renderlogRepsList) window.renderlogRepsList();
+            if (window.ehPainelOperacional() && window.renderlogRepsList) window.renderlogRepsList();
         }, companyFilter);
         if (!window.unsubAdmins) window.unsubAdmins = window.subscribeTable('admins', data => {
             window.allAdmins = data;
             if (window.currentUserRole === 'admin' && window.renderloglogsList) window.renderloglogsList();
         }, companyFilter);
+        if (!window.unsubLogistics) window.unsubLogistics = window.subscribeTable('logistics_users', data => {
+            window.allLogistics = data;
+            if (window.ehPainelOperacional() && window.renderlogLogisticsList) window.renderlogLogisticsList();
+        }, companyFilter);
         if (!window.unsubImportCargas) window.unsubImportCargas = window.subscribeTable('import_cargas', data => {
             window.allImportCargas = data;
-            if (window.currentUserRole === 'admin' && window.renderPainelFretes && window.fretesState?.viewModo === 'editor') {
+            if (window.ehPainelOperacional() && window.renderPainelFretes && window.fretesState?.viewModo === 'editor') {
                 window.renderPainelFretes();
             }
         }, companyFilter);
     } else {
-        window.unsubDrivers = LocalDb.subscribe('drivers', data => { 
-            window.allDrivers = data; 
-            if(window.currentUserRole === 'admin') { 
-                if (window.renderlogDriversList) window.renderlogDriversList(); 
-                if (window.renderAdminDashboard) window.renderAdminDashboard(); 
-            } 
+        window.unsubDrivers = LocalDb.subscribe('drivers', data => {
+            window.allDrivers = data;
+            if(window.ehPainelOperacional()) {
+                if (window.renderlogDriversList) window.renderlogDriversList();
+                if (window.renderAdminDashboard) window.renderAdminDashboard();
+            }
         });
-        window.unsubReps = LocalDb.subscribe('representatives', data => { 
-            window.allReps = data; 
-            if(window.currentUserRole === 'admin' && window.renderlogRepsList) window.renderlogRepsList(); 
+        window.unsubReps = LocalDb.subscribe('representatives', data => {
+            window.allReps = data;
+            if(window.ehPainelOperacional() && window.renderlogRepsList) window.renderlogRepsList();
         });
-        window.unsubAdmins = LocalDb.subscribe('admins', data => { 
-            window.allAdmins = data; 
-            if(window.currentUserRole === 'admin' && window.renderloglogsList) window.renderloglogsList(); 
+        window.unsubAdmins = LocalDb.subscribe('admins', data => {
+            window.allAdmins = data;
+            if(window.currentUserRole === 'admin' && window.renderloglogsList) window.renderloglogsList();
         });
-        window.unsubRoutes = LocalDb.subscribe('routes', data => { 
-            window.allRoutes = data; 
-            if(window.currentUserRole === 'admin') {
+        window.unsubLogistics = LocalDb.subscribe('logistics_users', data => {
+            window.allLogistics = data;
+            if (window.ehPainelOperacional() && window.renderlogLogisticsList) window.renderlogLogisticsList();
+        });
+        window.unsubRoutes = LocalDb.subscribe('routes', data => {
+            window.allRoutes = data;
+            if(window.ehPainelOperacional()) {
                 if (window.renderlogRoutesList) window.renderlogRoutesList();
                 if (window.renderlogArchivedRoutesList) window.renderlogArchivedRoutesList();
                 if (window.renderAdminDashboard) window.renderAdminDashboard();
@@ -325,6 +340,7 @@ async function verificarSessaoSalva() {
             if (perfil.role === 'driver') session.driverId = perfil.id;
             if (perfil.role === 'representative') session.repId = perfil.id;
             if (perfil.role === 'admin') session.adminId = perfil.id;
+            if (perfil.role === 'logistics') session.logisticsId = perfil.id;
         } catch (e) {
             console.error("Erro ao revalidar sessão do Supabase Auth:", e);
         }
@@ -334,6 +350,7 @@ async function verificarSessaoSalva() {
     window.currentDriverId = session.driverId;
     window.currentRepId = session.repId;
     window.currentAdminId = session.adminId;
+    window.currentLogisticsId = session.logisticsId;
     window.currentCompanyId = session.companyId || null;
 
     if (window.currentUserRole === 'master') {
@@ -342,7 +359,7 @@ async function verificarSessaoSalva() {
     }
 
     carregarDadosIniciais(async () => {
-        if (window.currentUserRole === 'admin' && window.iniciarPainelAdmin) {
+        if (window.ehPainelOperacional() && window.iniciarPainelAdmin) {
             if (window.carregarFeaturesDaEmpresaLogada) await window.carregarFeaturesDaEmpresaLogada();
             window.iniciarPainelAdmin();
         } else if (window.currentUserRole === 'driver' && window.iniciarPainelMotorista) {
@@ -363,7 +380,7 @@ function carregarDadosIniciais(callback) {
         const companyFilter = { companyId: window.currentCompanyId };
         window.subscribeTable('drivers', data => {
             window.allDrivers = data;
-            if (window.currentUserRole === 'admin') {
+            if (window.ehPainelOperacional()) {
                 if (window.renderlogDriversList) window.renderlogDriversList();
                 if (window.renderAdminDashboard) window.renderAdminDashboard();
             }
@@ -371,15 +388,19 @@ function carregarDadosIniciais(callback) {
         }, companyFilter);
         window.subscribeTable('representatives', data => {
             window.allReps = data;
-            if (window.currentUserRole === 'admin' && window.renderlogRepsList) window.renderlogRepsList();
+            if (window.ehPainelOperacional() && window.renderlogRepsList) window.renderlogRepsList();
         }, companyFilter);
         window.subscribeTable('admins', async data => {
             window.allAdmins = data;
             if (window.currentUserRole === 'admin' && window.renderloglogsList) window.renderloglogsList();
         }, companyFilter);
+        window.subscribeTable('logistics_users', data => {
+            window.allLogistics = data;
+            if (window.ehPainelOperacional() && window.renderlogLogisticsList) window.renderlogLogisticsList();
+        }, companyFilter);
         window.subscribeTable('routes', data => {
             window.allRoutes = data;
-            if (window.currentUserRole === 'admin') {
+            if (window.ehPainelOperacional()) {
                 if (window.renderlogRoutesList) window.renderlogRoutesList();
                 if (window.renderlogArchivedRoutesList) window.renderlogArchivedRoutesList();
                 if (window.renderAdminDashboard) window.renderAdminDashboard();
@@ -394,6 +415,7 @@ function carregarDadosIniciais(callback) {
         window.allReps = LocalDb.get('representatives');
         window.allRoutes = LocalDb.get('routes');
         window.allAdmins = LocalDb.get('admins');
+        window.allLogistics = LocalDb.get('logistics_users');
         if (callback) callback();
     }
 }

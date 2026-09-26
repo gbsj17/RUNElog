@@ -48,6 +48,20 @@
             });
         };
 
+        window.removerLogistica = (id) => {
+            window.pedirConfirmacao("Remover Membro de Logística", "Tem certeza que deseja remover este acesso de Logística?", async () => {
+                if (useFirebase) {
+                    const { error } = await db.rpc('delete_team_member', { p_role: 'logistics', p_id: id });
+                    if (error) return showToast("Erro ao remover membro de Logística: " + error.message, "error");
+                } else {
+                    const logisticos = LocalDb.get('logistics_users').filter(l => l.id !== id);
+                    LocalDb.set('logistics_users', logisticos);
+                }
+                showToast("Membro de Logística removido", "success");
+                if (window.renderlogLogisticsList) window.renderlogLogisticsList();
+            });
+        };
+
         window.removerRepresentante = (id) => {
             window.pedirConfirmacao("Remover Representante", "Tem certeza que deseja remover este representante?", async () => {
                 if (useFirebase) {
