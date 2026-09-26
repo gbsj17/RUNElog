@@ -1,11 +1,30 @@
 {
-  "currentVersion": "v2.0.0",
+  "currentVersion": "v2.0.1",
   "patches": [
     {
-      "_comentario_titulo": "=== PATCH v2.0.0 (ATUAL) ===",
+      "_comentario_titulo": "=== PATCH v2.0.1 (ATUAL) ===",
+      "id": "patch-201",
+      "version": "v2.0.1",
+      "badge": "Novo",
+      "title": "Perfil de Logística, Planos & Licenças, Cadastro Completo e Correções de Segurança",
+      "details": [
+        "<strong>Correção de Segurança (Rotas):</strong> Motorista e Representante agora só conseguem ler/editar as próprias rotas no banco de dados — antes esse isolamento existia só na tela, não no servidor, permitindo em tese acesso a rotas de outros usuários da mesma empresa.",
+        "<strong>Novo Perfil: Funcionário de Logística:</strong> Perfil de acesso próprio (login, cadastro e permissões independentes), criado pelo Admin, que cadastra motoristas, representantes, rotas e fretes sem acumular tudo na conta do Admin.",
+        "<strong>Master cria o Admin da Empresa:</strong> Ao cadastrar uma nova empresa, o RUNEmaster agora abre direto o cadastro do primeiro Admin dela — antes essa etapa não existia no app e dependia de alguém mexer direto no banco de dados.",
+        "<strong>Modal \"Gerenciar Credenciais\":</strong> Botão de trocar a senha/PIN de motoristas, representantes e membros de Logística direto pelo card de cada um, sem precisar recriar o cadastro.",
+        "<strong>Cadastro Completo:</strong> Nome Completo agora é separado do Nome de Usuário (login) em todos os cadastros de equipe. Cada tipo de usuário recebe um código sequencial automático da empresa (<code>adm 0001</code>, <code>log 0001</code>, <code>mot 0001</code>, <code>rep 0001</code>...), o sistema bloqueia nome de usuário repetido na mesma empresa, e todo cadastro (Motorista, Representante, Logística, Veículo) ganhou botão de Editar e exibe a Data de Cadastro.",
+        "<strong>Veículos Persistentes:</strong> A Frota de Veículos deixou de ser um cadastro temporário que se perdia ao recarregar a página e passou a ser salva de verdade no banco, com o mesmo padrão de código, edição e exclusão dos demais cadastros.",
+        "<strong>Planos & Licenças:</strong> Cada empresa agora tem um plano (Básico, Profissional, Enterprise ou Personalizado) com limite numérico de Admins, Logística, Motoristas, Representantes e Veículos. O cadastro é bloqueado automaticamente ao atingir o limite contratado, e o painel do Master (card da empresa) e do Admin mostram quanto da licença já foi usado.",
+        "<strong>Painel \"Gestão Operacional de Rotas\":</strong> Corrigido um problema em que a tela inicial do Admin/Logística nunca listava as rotas ativas nem as finalizadas (ficava travada em \"Calculando cargas ativas...\"), e o botão \"Apagar Selecionadas\" não funcionava.",
+        "<strong>Dashboards com Dados Reais:</strong> Painéis do Admin/Logística, Representante e Motorista ganharam métricas mensais reais (comparativo com o mês anterior, cidades mais atendidas, resumo do mês, histórico de rotas) — antes vários desses cartões ficavam zerados ou mostravam apenas a rota do momento.",
+        "<strong>Aviso de Nova Versão Mais Confiável:</strong> Corrigido um comportamento em que todo usuário novo via o aviso de \"Nova Versão\" já no primeiro acesso, mesmo sem nunca ter usado uma versão anterior do app."
+      ]
+    },
+    {
+      "_comentario_titulo": "=== PATCH v2.0.0 ===",
       "id": "patch-200",
       "version": "v2.0.0",
-      "badge": "Novo",
+      "badge": "",
       "title": "Migração para Supabase e Lançamento do RUNEmaster (Multi-Tenant SaaS)",
       "details": [
         "<strong>Troca de Backend:</strong> O sistema deixou de usar Firebase/Firestore e passou a rodar 100% sobre Supabase (Postgres), mantendo o mesmo comportamento em tempo real (cadastros, rotas e status sincronizam instantaneamente entre os painéis) e o fallback local para uso offline.",

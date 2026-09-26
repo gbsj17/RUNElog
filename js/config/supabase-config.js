@@ -16,7 +16,14 @@ window.db = null;
 window.useFirebase = false;
 window.appId = "rune-byte-logistics-v1";
 
-window.CURRENT_VERSION = localStorage.getItem('app_installed_version') || 'v2.0.0';
+// Sem valor fixo no fallback: se ficasse "v2.0.0" hardcoded aqui, todo
+// usuário novo (localStorage vazio) carregava com essa versão "instalada"
+// e via o aviso de "Nova Versão" na hora, mesmo nunca tendo usado o app
+// antes — e como o clique em "Atualizar" era o único jeito de gravar
+// app_installed_version, quem ignorava o aviso via ele pra sempre. Com
+// null aqui, carregarPatchNotesDinamico() (app.js) detecta a ausência e
+// já inicializa direto com a versão mais recente do patch-notes.json.
+window.CURRENT_VERSION = localStorage.getItem('app_installed_version') || null;
 
 window.solicitarPermissaoNotificacoes = function() {
     if ("Notification" in window && Notification.permission === "default") {
