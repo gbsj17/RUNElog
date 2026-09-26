@@ -787,8 +787,13 @@ window.renderAdminDashboard = () => {
 
     if (!activeCountElem) return;
 
+    // Consumo de licenças é informação de gestão do plano — só o Admin (e o
+    // Master, no próprio painel dele) deve ver isso, nunca a Logística.
+    const cardLicencasElem = document.getElementById('cardLicencasUso');
+    if (cardLicencasElem) cardLicencasElem.classList.toggle('hidden', window.currentUserRole !== 'admin');
+
     const licencasElem = document.getElementById('dashLicencasUso');
-    if (licencasElem && window.calcularUsoLicencas && window.currentCompanyId) {
+    if (licencasElem && window.currentUserRole === 'admin' && window.calcularUsoLicencas && window.currentCompanyId) {
         const uso = window.calcularUsoLicencas(window.currentCompanyId);
         const limits = window.companyPlanLimits || {};
         const labels = { admins: 'Admins', logistics: 'Logística', drivers: 'Motoristas', representatives: 'Representantes', vehicles: 'Veículos' };
@@ -950,26 +955,63 @@ window.renderAdminDashboard = () => {
         const driverNames = Object.keys(driverCounts);
         if (driverNames.length === 0) {
             driversMonthlyListElem.innerHTML = `<p class="text-xs text-slate-500 italic col-span-2">Nenhum motorista registrado este mês.</p>`;
-            return;
+        } else {
+            driverNames.forEach(dName => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 border border-slate-200 p-3.5 rounded-xl flex items-center justify-between";
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-[#152e50]/10 text-[#152e50] flex items-center justify-center font-bold text-xs">
+                            <i class="fa-solid fa-truck"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800 text-xs">${dName}</p>
+                            <p class="text-[11px] text-slate-500">Cargas carregadas no mês</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 rounded-lg bg-[#152e50] text-white font-extrabold text-xs shadow-sm">${driverCounts[dName]}</span>
+                `;
+                driversMonthlyListElem.appendChild(card);
+            });
         }
+    }
 
-        driverNames.forEach(dName => {
-            const card = document.createElement('div');
-            card.className = "bg-slate-50 border border-slate-200 p-3.5 rounded-xl flex items-center justify-between";
-            card.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-lg bg-[#152e50]/10 text-[#152e50] flex items-center justify-center font-bold text-xs">
-                        <i class="fa-solid fa-truck"></i>
-                    </div>
-                    <div>
-                        <p class="font-bold text-slate-800 text-xs">${dName}</p>
-                        <p class="text-[11px] text-slate-500">Cargas carregadas no mês</p>
-                    </div>
-                </div>
-                <span class="px-3 py-1 rounded-lg bg-[#152e50] text-white font-extrabold text-xs shadow-sm">${driverCounts[dName]}</span>
-            `;
-            driversMonthlyListElem.appendChild(card);
+    const repsMonthlyListElem = document.getElementById('dashRepsMonthlyList');
+    if (repsMonthlyListElem) {
+        let repCounts = {};
+        (window.allReps || []).forEach(r => { repCounts[r.name] = 0; });
+
+        (window.allRoutes || []).forEach(r => {
+            const routeDate = new Date(r.finishedAt || r.createdAt);
+            if (routeDate.getMonth() === currentMonth && routeDate.getFullYear() === currentYear && r.repName) {
+                repCounts[r.repName] = (repCounts[r.repName] || 0) + 1;
+            }
         });
+
+        repsMonthlyListElem.innerHTML = '';
+        const repNames = Object.keys(repCounts);
+        if (repNames.length === 0) {
+            repsMonthlyListElem.innerHTML = `<p class="text-xs text-slate-500 italic col-span-2">Nenhum representante registrado este mês.</p>`;
+        } else {
+            repNames.forEach(rName => {
+                const repObj = (window.allReps || []).find(r => r.name === rName);
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 border border-slate-200 p-3.5 rounded-xl flex items-center justify-between";
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-[#152e50]/10 text-[#152e50] flex items-center justify-center font-bold text-xs">
+                            <i class="fa-solid fa-handshake"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800 text-xs">${repObj?.fullName || rName}</p>
+                            <p class="text-[11px] text-slate-500">Rotas atendidas no mês</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 rounded-lg bg-[#152e50] text-white font-extrabold text-xs shadow-sm">${repCounts[rName]}</span>
+                `;
+                repsMonthlyListElem.appendChild(card);
+            });
+        }
     }
 };
 

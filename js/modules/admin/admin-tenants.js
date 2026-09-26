@@ -123,43 +123,49 @@ window.aoMudarPlanoEmpresaForm = function() {
     });
 };
 
-window.abrirModalNovaEmpresa = function() {
-    const html = `
+// Form compartilhado entre "Nova Empresa" e "Editar Empresa" — evita duplicar
+// os mesmos ~15 campos duas vezes. `prefill` vem vazio no cadastro e com os
+// dados atuais da empresa na edição.
+function formularioEmpresaHtml(prefill) {
+    prefill = prefill || {};
+    const esc = (v) => (v || '').toString().replace(/"/g, '&quot;');
+    const limits = prefill.planLimits || {};
+    return `
         <div class="space-y-3">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Nome Fantasia *</label>
-                    <input type="text" id="modalCompanyName" placeholder="Ex: Fibrasol Logística" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#152e50] outline-none">
+                    <input type="text" id="modalCompanyName" value="${esc(prefill.name)}" placeholder="Ex: Fibrasol Logística" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#152e50] outline-none">
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">CNPJ *</label>
-                    <input type="text" id="modalCompanyCnpj" oninput="aoDigitarCnpjEmpresaForm(this)" placeholder="00.000.000/0000-00" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+                    <input type="text" id="modalCompanyCnpj" value="${esc(prefill.cnpj)}" oninput="aoDigitarCnpjEmpresaForm(this)" placeholder="00.000.000/0000-00" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
                 </div>
             </div>
 
             <div>
                 <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Razão Social *</label>
-                <input type="text" id="modalCompanyRazaoSocial" placeholder="Ex: Fibrasol Transportes Ltda" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                <input type="text" id="modalCompanyRazaoSocial" value="${esc(prefill.razaoSocial)}" placeholder="Ex: Fibrasol Transportes Ltda" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Telefone</label>
-                    <input type="text" id="modalCompanyPhone" oninput="aoDigitarTelefoneEmpresaForm(this)" placeholder="(00) 00000-0000" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+                    <input type="text" id="modalCompanyPhone" value="${esc(prefill.phone)}" oninput="aoDigitarTelefoneEmpresaForm(this)" placeholder="(00) 00000-0000" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
                 </div>
             </div>
 
             <div class="pt-2 border-t border-slate-100 space-y-3">
                 <label class="block text-[11px] font-bold uppercase text-slate-600">Endereço</label>
                 <div class="grid grid-cols-2 gap-3">
-                    <input type="text" id="modalCompanyCep" oninput="aoDigitarCepEmpresaForm(this)" onblur="aoBlurCepEmpresaForm()" placeholder="CEP: 00000-000" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
-                    <input type="text" id="modalCompanyNumero" placeholder="Número" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                    <input type="text" id="modalCompanyCep" value="${esc(prefill.cep)}" oninput="aoDigitarCepEmpresaForm(this)" onblur="aoBlurCepEmpresaForm()" placeholder="CEP: 00000-000" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+                    <input type="text" id="modalCompanyNumero" value="${esc(prefill.numero)}" placeholder="Número" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
                 </div>
-                <input type="text" id="modalCompanyLogradouro" placeholder="Logradouro / Rua" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                <input type="text" id="modalCompanyLogradouro" value="${esc(prefill.logradouro)}" placeholder="Logradouro / Rua" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
                 <div class="grid grid-cols-5 gap-3">
-                    <input type="text" id="modalCompanyBairro" placeholder="Bairro" class="w-full col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                    <input type="text" id="modalCompanyCidade" placeholder="Cidade" class="w-full col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-                    <input type="text" id="modalCompanyUf" placeholder="UF" maxlength="2" class="w-full col-span-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs uppercase text-center">
+                    <input type="text" id="modalCompanyBairro" value="${esc(prefill.bairro)}" placeholder="Bairro" class="w-full col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                    <input type="text" id="modalCompanyCidade" value="${esc(prefill.cidade)}" placeholder="Cidade" class="w-full col-span-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                    <input type="text" id="modalCompanyUf" value="${esc(prefill.uf)}" placeholder="UF" maxlength="2" class="w-full col-span-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs uppercase text-center">
                 </div>
             </div>
 
@@ -167,35 +173,39 @@ window.abrirModalNovaEmpresa = function() {
                 <div class="sm:col-span-1">
                     <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Plano</label>
                     <select id="modalCompanyPlan" onchange="aoMudarPlanoEmpresaForm()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs bg-white">
-                        ${Object.entries(PLANOS_CATALOGO).map(([key, p]) => `<option value="${key}">${p.label}</option>`).join('')}
+                        ${Object.entries(PLANOS_CATALOGO).map(([key, p]) => `<option value="${key}" ${prefill.plan === key ? 'selected' : ''}>${p.label}</option>`).join('')}
                     </select>
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Valor (R$)</label>
-                    <input type="number" id="modalCompanyValue" step="0.01" placeholder="149.90" value="149.90" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                    <input type="number" id="modalCompanyValue" step="0.01" placeholder="149.90" value="${prefill.planValue ?? '149.90'}" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
                 </div>
                 <div>
                     <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Ciclo</label>
                     <select id="modalCompanyBillingCycle" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs bg-white">
-                        <option value="mensal">Mensal</option>
-                        <option value="anual">Anual</option>
+                        <option value="mensal" ${prefill.billingCycle === 'mensal' || !prefill.billingCycle ? 'selected' : ''}>Mensal</option>
+                        <option value="anual" ${prefill.billingCycle === 'anual' ? 'selected' : ''}>Anual</option>
                     </select>
                 </div>
             </div>
 
             <div class="pt-2 border-t border-slate-100 space-y-2">
-                <label class="block text-[11px] font-bold uppercase text-slate-600">Limites de Licença (editável, inclusive no Personalizado)</label>
+                <label class="block text-[11px] font-bold uppercase text-slate-600">Limites de Licença — liberar/restringir acessos (editável, inclusive no Personalizado)</label>
                 <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
                     ${Object.entries(LIMITE_LABELS).map(([key, label]) => `
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 mb-0.5">${label}</label>
-                            <input type="number" min="0" id="modalCompanyLimit_${key}" value="${PLANOS_CATALOGO.basico.limits[key]}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                            <input type="number" min="0" id="modalCompanyLimit_${key}" value="${limits[key] ?? PLANOS_CATALOGO.basico.limits[key]}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
                         </div>
                     `).join('')}
                 </div>
             </div>
         </div>
     `;
+}
+
+window.abrirModalNovaEmpresa = function() {
+    const html = formularioEmpresaHtml();
 
     window.abrirModalPersistente("Cadastrar Nova Empresa", html, async () => {
         const name = document.getElementById('modalCompanyName')?.value.trim();
@@ -309,6 +319,147 @@ window.abrirModalNovoAdminEmpresa = function(companyId, companyName) {
     });
 };
 
+// Edita os dados/plano/limites de uma empresa já cadastrada. É o mesmo form
+// do cadastro, só que pré-preenchido e fazendo update em vez de insert —
+// serve tanto pra corrigir dados quanto pra "Gerenciar Licenças" (mudar
+// plano ou os limites por tipo de usuário).
+window.abrirModalEditarEmpresa = function(companyId) {
+    const company = (window.allCompanies || []).find(c => c.id === companyId);
+    if (!company) return;
+
+    const html = formularioEmpresaHtml(company);
+
+    window.abrirModalPersistente(`Editar Empresa — ${company.name}`, html, async () => {
+        const name = document.getElementById('modalCompanyName')?.value.trim();
+        const razaoSocial = document.getElementById('modalCompanyRazaoSocial')?.value.trim();
+        const cnpj = document.getElementById('modalCompanyCnpj')?.value.trim();
+        const phone = document.getElementById('modalCompanyPhone')?.value.trim();
+        const cep = document.getElementById('modalCompanyCep')?.value.trim();
+        const numero = document.getElementById('modalCompanyNumero')?.value.trim();
+        const logradouro = document.getElementById('modalCompanyLogradouro')?.value.trim();
+        const bairro = document.getElementById('modalCompanyBairro')?.value.trim();
+        const cidade = document.getElementById('modalCompanyCidade')?.value.trim();
+        const uf = document.getElementById('modalCompanyUf')?.value.trim().toUpperCase();
+        const plan = document.getElementById('modalCompanyPlan')?.value || 'basico';
+        const planValue = parseFloat(document.getElementById('modalCompanyValue')?.value) || 0;
+        const billingCycle = document.getElementById('modalCompanyBillingCycle')?.value || 'mensal';
+        const planLimits = {};
+        Object.keys(LIMITE_LABELS).forEach(key => {
+            planLimits[key] = parseInt(document.getElementById(`modalCompanyLimit_${key}`)?.value, 10) || 0;
+        });
+
+        if (!name || !razaoSocial) {
+            alert("Preencha o Nome Fantasia e a Razão Social.");
+            return false;
+        }
+        if (!validarCNPJ(cnpj)) {
+            alert("CNPJ inválido. Confira os números digitados.");
+            return false;
+        }
+
+        const { error } = await window.db.from('companies').update({
+            name, razaoSocial, cnpj, phone, cep, numero, logradouro, bairro, cidade, uf,
+            plan, planValue, billingCycle, planLimits
+        }).eq('id', companyId);
+
+        if (error) {
+            if (window.showToast) window.showToast("Erro ao salvar empresa: " + error.message, "error");
+            return false;
+        }
+
+        if (window.showToast) window.showToast(`Empresa "${name}" atualizada.`, "success");
+        return true;
+    });
+};
+
+// Exclui a empresa — só permite se não houver nenhum usuário/veículo vinculado
+// (a própria FK do banco bloquearia mesmo, isso aqui só dá uma mensagem clara
+// em vez do erro cru do Postgres). Empresa com gente cadastrada usa Suspender.
+window.excluirEmpresa = function(companyId) {
+    const company = (window.allCompanies || []).find(c => c.id === companyId);
+    if (!company) return;
+
+    const uso = window.calcularUsoLicencas(companyId);
+    const totalVinculado = Object.values(uso).reduce((a, b) => a + b, 0);
+    if (totalVinculado > 0) {
+        alert(`Não é possível excluir "${company.name}": ainda há ${totalVinculado} usuário(s)/veículo(s) vinculado(s). Remova-os primeiro ou use Suspender.`);
+        return;
+    }
+
+    if (window.pedirConfirmacao) {
+        window.pedirConfirmacao("Excluir Empresa", `Excluir permanentemente a empresa "${company.name}"? Essa ação não pode ser desfeita.`, async () => {
+            const { data, error } = await window.db.from('companies').delete().eq('id', companyId).select('id');
+            if (error) {
+                if (window.showToast) window.showToast("Erro ao excluir empresa: " + error.message, "error");
+                return;
+            }
+            if (!data || data.length === 0) {
+                if (window.showToast) window.showToast("Empresa não foi excluída (sem permissão no banco). Rode master-delete-company-migration.sql no Supabase.", "error");
+                return;
+            }
+            if (window.showToast) window.showToast(`Empresa "${company.name}" excluída.`, "success");
+        });
+    }
+};
+
+// Editar/excluir um Admin específico de uma empresa (a partir do card no
+// painel do Master) — usa as mesmas RPCs já usadas pelo Admin/Logística
+// pra editar a própria equipe (master tem permissão em qualquer empresa).
+window.abrirModalEditarAdminEmpresa = function(adminId) {
+    const admin = (window.allAdmins || []).find(a => a.id === adminId);
+    if (!admin) return;
+
+    const esc = (v) => (v || '').toString().replace(/"/g, '&quot;');
+    const html = `
+        <div class="space-y-3">
+            <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Nome Completo *</label>
+                <input type="text" id="modalEditAdminFullName" value="${esc(admin.fullName)}" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#152e50] outline-none">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Nome de Usuário (login) *</label>
+                <input type="text" id="modalEditAdminName" value="${esc(admin.name)}" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#152e50] outline-none">
+            </div>
+        </div>
+    `;
+
+    window.abrirModalPersistente(`Editar Admin — ${admin.fullName || admin.name}`, html, async () => {
+        const fullName = document.getElementById('modalEditAdminFullName')?.value.trim();
+        const name = document.getElementById('modalEditAdminName')?.value.trim();
+        if (!fullName || !name) {
+            alert("Preencha o Nome Completo e o Nome de Usuário.");
+            return false;
+        }
+
+        const { error } = await window.db.rpc('update_team_member', {
+            p_role: 'admin', p_id: adminId, p_name: name, p_full_name: fullName, p_cpf: null, p_phone: null
+        });
+        if (error) {
+            if (window.showToast) window.showToast("Erro ao editar Admin: " + error.message, "error");
+            return false;
+        }
+
+        if (window.showToast) window.showToast(`Admin "${fullName}" atualizado.`, "success");
+        return true;
+    });
+};
+
+window.excluirAdminEmpresa = function(adminId) {
+    const admin = (window.allAdmins || []).find(a => a.id === adminId);
+    if (!admin) return;
+
+    if (window.pedirConfirmacao) {
+        window.pedirConfirmacao("Excluir Admin", `Excluir o Admin "${admin.fullName || admin.name}"? Ele perde o acesso imediatamente.`, async () => {
+            const { error } = await window.db.rpc('delete_team_member', { p_role: 'admin', p_id: adminId });
+            if (error) {
+                if (window.showToast) window.showToast("Erro ao excluir Admin: " + error.message, "error");
+                return;
+            }
+            if (window.showToast) window.showToast(`Admin "${admin.fullName || admin.name}" excluído.`, "success");
+        });
+    }
+};
+
 // Conta quanto do plano já foi consumido — usado tanto no card da empresa
 // (painel do Master) quanto no widget de licenças do painel do Admin.
 window.calcularUsoLicencas = function(companyId) {
@@ -337,7 +488,15 @@ window.renderCompaniesList = function() {
         const admins = (window.allAdmins || []).filter(a => a.companyId === c.id);
         const adminsHtml = admins.length === 0
             ? `<p class="text-[11px] text-amber-600 font-bold mt-1.5"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Sem Admin cadastrado</p>`
-            : `<p class="text-[11px] text-emerald-700 font-medium mt-1.5"><i class="fa-solid fa-user-shield mr-1.5 text-[#152e50]"></i> Admin: ${admins.map(a => a.fullName || a.name).join(', ')}</p>`;
+            : `<div class="mt-1.5 space-y-1">${admins.map(a => `
+                <div class="flex items-center justify-between text-[11px] text-emerald-700 font-medium">
+                    <span><i class="fa-solid fa-user-shield mr-1.5 text-[#152e50]"></i> ${a.fullName || a.name}${a.code ? ` <span class="text-slate-400 font-mono">(${a.code})</span>` : ''}</span>
+                    <span class="flex items-center gap-2 shrink-0">
+                        <i onclick="abrirModalEditarAdminEmpresa('${a.id}')" class="fa-solid fa-pen text-slate-400 hover:text-[#152e50] cursor-pointer" title="Editar Admin"></i>
+                        <i onclick="excluirAdminEmpresa('${a.id}')" class="fa-solid fa-trash text-slate-400 hover:text-rose-600 cursor-pointer" title="Excluir Admin"></i>
+                    </span>
+                </div>
+            `).join('')}</div>`;
 
         const uso = window.calcularUsoLicencas(c.id);
         const limits = c.planLimits || {};
@@ -365,6 +524,7 @@ window.renderCompaniesList = function() {
                 ${c.cnpj ? `<p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-id-card mr-1.5 text-[#152e50]"></i> ${c.cnpj}</p>` : ''}
                 ${c.cidade ? `<p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-location-dot mr-1.5 text-[#152e50]"></i> ${c.cidade}${c.uf ? '/' + c.uf : ''}</p>` : ''}
                 <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-tag mr-1.5 text-[#152e50]"></i> Plano: ${PLANOS_CATALOGO[c.plan]?.label || c.plan || 'Básico'}</p>
+                ${c.createdAt ? `<p class="text-xs text-slate-400 mt-1"><i class="fa-regular fa-calendar mr-1.5"></i> Cadastrada em ${new Date(c.createdAt).toLocaleDateString('pt-BR')}</p>` : ''}
                 ${adminsHtml}
 
                 <div class="mt-2.5 pt-2.5 border-t border-slate-100 space-y-1">
@@ -375,12 +535,18 @@ window.renderCompaniesList = function() {
                     <div class="text-[11px] space-y-0.5">${linhasLicenca}</div>
                 </div>
             </div>
-            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100 flex-wrap">
                 <button onclick="abrirModalNovoAdminEmpresa('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" class="text-[#152e50] hover:bg-[#152e50]/5 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer">
                     <i class="fa-solid fa-user-plus"></i> Criar Admin
                 </button>
+                <button onclick="abrirModalEditarEmpresa('${c.id}')" class="text-slate-600 hover:bg-slate-50 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer">
+                    <i class="fa-solid fa-pen"></i> Editar
+                </button>
                 <button onclick="alternarStatusEmpresa('${c.id}')" class="text-slate-600 hover:bg-slate-50 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer">
                     <i class="fa-solid fa-power-off"></i> ${c.status === 'active' ? 'Suspender' : 'Reativar'}
+                </button>
+                <button onclick="excluirEmpresa('${c.id}')" class="text-rose-600 hover:bg-rose-50 p-2 rounded-lg text-xs font-bold transition-all cursor-pointer">
+                    <i class="fa-solid fa-trash"></i> Excluir
                 </button>
             </div>
         </div>

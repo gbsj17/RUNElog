@@ -1,8 +1,22 @@
 {
-  "currentVersion": "v2.0.1",
+  "currentVersion": "v2.0.2",
   "patches": [
     {
-      "_comentario_titulo": "=== PATCH v2.0.1 (ATUAL) ===",
+      "_comentario_titulo": "=== PATCH v2.0.2 (ATUAL) ===",
+      "id": "patch-202",
+      "version": "v2.0.2",
+      "badge": "Novo",
+      "title": "Auditoria do Painel Master: Editar/Excluir Empresas e Admins, Licenças Só no Admin",
+      "details": [
+        "<strong>Editar e Excluir Empresa:</strong> O RUNEmaster ganhou botões de Editar (dados, plano e limites de licença) e Excluir no card de cada empresa — antes só existia \"Criar Admin\" e \"Suspender\".",
+        "<strong>Editar e Excluir Admin pelo Master:</strong> Cada Admin listado no card da empresa agora tem ícones de editar e excluir próprios, em vez de aparecer só como texto.",
+        "<strong>Data de Cadastro da Empresa:</strong> O card de cada empresa no RUNEmaster agora mostra quando ela foi cadastrada.",
+        "<strong>Licenças Só no Painel do Admin:</strong> O widget \"Uso de Licenças do Plano\" deixou de aparecer no painel da Logística — é informação de gestão do plano, exclusiva do Admin (e do Master).",
+        "<strong>Desempenho de Representantes:</strong> Novo card no dashboard mostrando quantas rotas cada representante atendeu no mês, no mesmo padrão do card de motoristas."
+      ]
+    },
+    {
+      "_comentario_titulo": "=== PATCH v2.0.1 ===",
       "id": "patch-201",
       "version": "v2.0.1",
       "badge": "Novo",
