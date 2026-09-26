@@ -260,11 +260,13 @@
                 </div>
             </div>
 
-            <!-- CORPO DIVIDIDO: 30% LATERAL / 70% MAPA -->
-            <div class="flex flex-1 overflow-hidden">
-                
-                <!-- COLUNA LATERAL (30%): PARADAS E PEDIDOS -->
-                <div class="w-full md:w-[32%] lg:w-[28%] bg-slate-50 border-r border-slate-200 flex flex-col overflow-hidden shrink-0">
+            <!-- CORPO DIVIDIDO: LATERAL COM LARGURA FIXA / MAPA OCUPA O RESTO -->
+            <!-- Largura fixa (não em %) para não quebrar quando a janela é redimensionada -->
+            <!-- pra um tamanho menor que o breakpoint md (a lateral não deve virar full-width) -->
+            <div class="flex flex-1 min-h-0 overflow-hidden">
+
+                <!-- COLUNA LATERAL: PARADAS E PEDIDOS -->
+                <div class="w-[280px] sm:w-[320px] max-w-[85vw] bg-slate-50 border-r border-slate-200 flex flex-col overflow-hidden shrink-0">
                     <div class="p-3 bg-white border-b border-slate-200 flex justify-between items-center shrink-0">
                         <span class="text-xs font-black text-[#152e50] uppercase tracking-wider flex items-center gap-1.5">
                             <i class="fa-solid fa-list-ol text-amber-500"></i> Ordem das Paradas
@@ -297,9 +299,9 @@
                     </div>
                 </div>
 
-                <!-- PAINEL PRINCIPAL (70%): MAPA INTERATIVO LEAFLET -->
-                <div class="flex-1 bg-slate-200 relative overflow-hidden">
-                    <div id="mapaRota" class="w-full h-full min-h-[400px]"></div>
+                <!-- PAINEL PRINCIPAL: MAPA INTERATIVO LEAFLET (ocupa o espaço restante) -->
+                <div class="flex-1 min-w-0 bg-slate-200 relative overflow-hidden">
+                    <div id="mapaRota" class="w-full h-full"></div>
                 </div>
 
             </div>
